@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,8 +6,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Configure PDF.js worker with a more robust approach
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.js',
+  import.meta.url,
+).toString();
 
 interface UploadState {
   file: File | null;
@@ -17,6 +19,7 @@ interface UploadState {
   error: string | null;
   isAnalyzing: boolean;
   analysisResult: string;
+  fullText: string;
 }
 
 const ContractAnalysisSection = () => {
@@ -26,10 +29,13 @@ const ContractAnalysisSection = () => {
     textPreview: "",
     error: null,
     isAnalyzing: false,
-    analysisResult: ""
+    analysisResult: "",
+    fullText: ""
   });
 
   const validateFile = (file: File): string | null => {
+    console.log("Validando arquivo:", file.name, "Tamanho:", file.size, "bytes");
+    
     if (file.type !== "application/pdf") {
       return "Por favor, selecione apenas arquivos PDF.";
     }
@@ -40,22 +46,56 @@ const ContractAnalysisSection = () => {
   };
 
   const extractTextFromPDF = async (file: File): Promise<string> => {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    console.log("Iniciando extração de texto do PDF:", file.name);
     
-    let fullText = "";
-    const numPages = Math.min(pdf.numPages, 3); // Primeiras 3 páginas para preview
-    
-    for (let i = 1; i <= numPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .join(" ");
-      fullText += pageText + " ";
-    }
-    
-    return fullText;
+    return new Promise((resolve, reject) => {
+      const fileReader = new FileReader();
+      
+      fileReader.onload = async function() {
+        try {
+          const typedArray = new Uint8Array(this.result as ArrayBuffer);
+          console.log("Arquivo carregado, processando com PDF.js...");
+          
+          const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+          console.log("PDF processado. Número de páginas:", pdf.numPages);
+          
+          let fullText = "";
+          
+          // Extrair texto de todas as páginas
+          for (let i = 1; i <= pdf.numPages; i++) {
+            try {
+              const page = await pdf.getPage(i);
+              const textContent = await page.getTextContent();
+              const pageText = textContent.items
+                .map((item: any) => item.str)
+                .join(" ");
+              fullText += pageText + " ";
+              console.log(`Página ${i} processada, caracteres extraídos:`, pageText.length);
+            } catch (pageError) {
+              console.warn(`Erro ao processar página ${i}:`, pageError);
+            }
+          }
+          
+          console.log("Texto completo extraído. Primeiros 100 caracteres:", fullText.substring(0, 100));
+          
+          if (fullText.trim().length === 0) {
+            resolve("PDF_NO_TEXT");
+          } else {
+            resolve(fullText.trim());
+          }
+        } catch (error) {
+          console.error("Erro durante extração:", error);
+          reject(error);
+        }
+      };
+      
+      fileReader.onerror = () => {
+        console.error("Erro ao ler arquivo");
+        reject(new Error("Erro ao ler o arquivo"));
+      };
+      
+      fileReader.readAsArrayBuffer(file);
+    });
   };
 
   const processFile = async (file: File) => {
@@ -72,28 +112,55 @@ const ContractAnalysisSection = () => {
       isLoading: true,
       error: null,
       textPreview: "",
-      analysisResult: ""
+      analysisResult: "",
+      fullText: ""
     }));
 
     try {
-      const text = await extractTextFromPDF(file);
-      const preview = text.slice(0, 1000) + (text.length > 1000 ? "..." : "");
+      const extractedText = await extractTextFromPDF(file);
       
-      setUploadState(prev => ({
-        ...prev,
-        isLoading: false,
-        textPreview: preview
-      }));
-      
-      toast.success("PDF processado com sucesso!");
-    } catch (error) {
+      if (extractedText === "PDF_NO_TEXT") {
+        setUploadState(prev => ({
+          ...prev,
+          isLoading: false,
+          textPreview: "PDF processado, mas não foi possível extrair prévia do texto (pode ser um PDF escaneado)",
+          fullText: ""
+        }));
+        toast.info("PDF carregado, mas não contém texto extraível");
+      } else {
+        // Mostrar as primeiras 300 palavras
+        const words = extractedText.split(/\s+/);
+        const preview = words.slice(0, 300).join(" ") + (words.length > 300 ? "..." : "");
+        
+        setUploadState(prev => ({
+          ...prev,
+          isLoading: false,
+          textPreview: preview,
+          fullText: extractedText
+        }));
+        
+        toast.success("PDF processado com sucesso!");
+      }
+    } catch (error: any) {
       console.error("Erro ao processar PDF:", error);
+      
+      let errorMessage = "Erro ao processar o arquivo PDF.";
+      
+      // Tratamento de erros específicos
+      if (error.message?.includes("Invalid PDF")) {
+        errorMessage = "PDF corrompido ou inválido. Tente outro arquivo.";
+      } else if (error.message?.includes("Password")) {
+        errorMessage = "PDF protegido por senha. Remova a proteção e tente novamente.";
+      } else if (error.message?.includes("fetch")) {
+        errorMessage = "Erro de carregamento. Verifique sua conexão e tente novamente.";
+      }
+      
       setUploadState(prev => ({
         ...prev,
         isLoading: false,
-        error: "Erro ao processar o arquivo PDF. Tente novamente."
+        error: errorMessage
       }));
-      toast.error("Erro ao processar o PDF");
+      toast.error(errorMessage);
     }
   };
 
@@ -143,7 +210,8 @@ const ContractAnalysisSection = () => {
       textPreview: "",
       error: null,
       isAnalyzing: false,
-      analysisResult: ""
+      analysisResult: "",
+      fullText: ""
     });
   };
 
@@ -171,7 +239,7 @@ const ContractAnalysisSection = () => {
           {uploadState.isLoading ? (
             <>
               <Loader2 className="h-12 w-12 text-blue-500 mx-auto mb-4 animate-spin" />
-              <p className="text-blue-600 mb-2">Processando PDF...</p>
+              <p className="text-blue-600 mb-2">Extraindo texto do PDF...</p>
             </>
           ) : uploadState.file ? (
             <>
