@@ -6,11 +6,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configure PDF.js worker with a more robust approach
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.js',
-  import.meta.url,
-).toString();
+// Configure PDF.js worker with a working CDN URL
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.js';
 
 interface UploadState {
   file: File | null;
@@ -56,7 +53,14 @@ const ContractAnalysisSection = () => {
           const typedArray = new Uint8Array(this.result as ArrayBuffer);
           console.log("Arquivo carregado, processando com PDF.js...");
           
-          const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+          const loadingTask = pdfjsLib.getDocument({ 
+            data: typedArray,
+            useWorkerFetch: false,
+            isEvalSupported: false,
+            useSystemFonts: true
+          });
+          
+          const pdf = await loadingTask.promise;
           console.log("PDF processado. Número de páginas:", pdf.numPages);
           
           let fullText = "";
