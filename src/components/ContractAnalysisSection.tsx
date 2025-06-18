@@ -9,8 +9,8 @@ import { openaiService } from '@/services/openaiService';
 import ApiKeyModal from './ApiKeyModal';
 import AnalysisReport from './AnalysisReport';
 
-// Configure PDF.js worker with local file
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.js';
+// Configure PDF.js worker with CDN URL directly
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
 
 interface UploadState {
   file: File | null;
