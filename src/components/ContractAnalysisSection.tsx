@@ -9,8 +9,20 @@ import { openaiService } from '@/services/openaiService';
 import ApiKeyModal from './ApiKeyModal';
 import AnalysisReport from './AnalysisReport';
 
-// Configure PDF.js worker with CDN URL directly
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+// Configure PDF.js worker with multiple fallback options
+const configurePDFWorker = () => {
+  const workerUrls = [
+    'https://unpkg.com/pdfjs-dist@4.0.379/build/pdf.worker.min.js',
+    'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js'
+  ];
+
+  // Try the first URL
+  pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrls[0];
+  console.log("Configurando PDF.js worker com URL:", workerUrls[0]);
+};
+
+configurePDFWorker();
 
 interface UploadState {
   file: File | null;
@@ -58,9 +70,42 @@ const ContractAnalysisSection = () => {
           const typedArray = new Uint8Array(this.result as ArrayBuffer);
           console.log("Arquivo carregado, processando com PDF.js...");
           
-          const loadingTask = pdfjsLib.getDocument({ 
-            data: typedArray
-          });
+          // Try to load PDF with current worker configuration
+          let loadingTask;
+          try {
+            loadingTask = pdfjsLib.getDocument({ 
+              data: typedArray,
+              useSystemFonts: true,
+              disableFontFace: false
+            });
+          } catch (workerError) {
+            console.warn("Erro ao configurar worker, tentando fallback...", workerError);
+            // Try fallback worker URLs
+            const fallbackUrls = [
+              'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.js',
+              'https://unpkg.com/pdfjs-dist@4.0.379/build/pdf.worker.min.js'
+            ];
+            
+            for (const url of fallbackUrls) {
+              try {
+                console.log("Tentando worker fallback:", url);
+                pdfjsLib.GlobalWorkerOptions.workerSrc = url;
+                loadingTask = pdfjsLib.getDocument({ 
+                  data: typedArray,
+                  useSystemFonts: true,
+                  disableFontFace: false
+                });
+                break;
+              } catch (e) {
+                console.warn("Fallback URL falhou:", url, e);
+                continue;
+              }
+            }
+            
+            if (!loadingTask) {
+              throw new Error("Não foi possível configurar o worker do PDF.js");
+            }
+          }
           
           const pdf = await loadingTask.promise;
           console.log("PDF processado. Número de páginas:", pdf.numPages);
@@ -157,8 +202,8 @@ const ContractAnalysisSection = () => {
         errorMessage = "PDF corrompido ou inválido. Tente outro arquivo.";
       } else if (error.message?.includes("Password")) {
         errorMessage = "PDF protegido por senha. Remova a proteção e tente novamente.";
-      } else if (error.message?.includes("fetch")) {
-        errorMessage = "Erro de carregamento. Verifique sua conexão e tente novamente.";
+      } else if (error.message?.includes("fetch") || error.message?.includes("worker")) {
+        errorMessage = "Erro de carregamento do processador PDF. Tente recarregar a página.";
       }
       
       setUploadState(prev => ({
