@@ -6,8 +6,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configure PDF.js worker with a working CDN URL
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.js';
+// Configure PDF.js worker with local file
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.js';
 
 interface UploadState {
   file: File | null;
@@ -55,9 +55,7 @@ const ContractAnalysisSection = () => {
           
           const loadingTask = pdfjsLib.getDocument({ 
             data: typedArray,
-            useWorkerFetch: false,
-            isEvalSupported: false,
-            useSystemFonts: true
+            workerSrc: '/pdf.worker.js'
           });
           
           const pdf = await loadingTask.promise;
