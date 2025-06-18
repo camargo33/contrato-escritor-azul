@@ -54,8 +54,7 @@ const ContractAnalysisSection = () => {
           console.log("Arquivo carregado, processando com PDF.js...");
           
           const loadingTask = pdfjsLib.getDocument({ 
-            data: typedArray,
-            workerSrc: '/pdf.worker.js'
+            data: typedArray
           });
           
           const pdf = await loadingTask.promise;
