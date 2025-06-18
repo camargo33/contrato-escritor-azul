@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, FileText, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
+import { Upload, FileText, AlertCircle, CheckCircle, Loader2, Settings } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import * as pdfjsLib from 'pdfjs-dist';
+import { openaiService } from '@/services/openaiService';
+import ApiKeyModal from './ApiKeyModal';
+import AnalysisReport from './AnalysisReport';
 
 // Configure PDF.js worker with local file
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.js';
@@ -15,7 +18,7 @@ interface UploadState {
   textPreview: string;
   error: string | null;
   isAnalyzing: boolean;
-  analysisResult: string;
+  analysisResult: any;
   fullText: string;
 }
 
@@ -26,9 +29,11 @@ const ContractAnalysisSection = () => {
     textPreview: "",
     error: null,
     isAnalyzing: false,
-    analysisResult: "",
+    analysisResult: null,
     fullText: ""
   });
+
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
 
   const validateFile = (file: File): string | null => {
     console.log("Validando arquivo:", file.name, "Tamanho:", file.size, "bytes");
@@ -113,7 +118,7 @@ const ContractAnalysisSection = () => {
       isLoading: true,
       error: null,
       textPreview: "",
-      analysisResult: "",
+      analysisResult: null,
       fullText: ""
     }));
 
@@ -187,21 +192,60 @@ const ContractAnalysisSection = () => {
     }
   };
 
-  const handleAnalyze = () => {
-    if (!uploadState.file) return;
+  const handleAnalyze = async () => {
+    if (!uploadState.file || !uploadState.fullText) return;
 
-    setUploadState(prev => ({ ...prev, isAnalyzing: true }));
+    // Verificar se tem API key
+    if (!openaiService.hasApiKey()) {
+      setShowApiKeyModal(true);
+      return;
+    }
 
-    // Simular análise ortográfica
-    setTimeout(() => {
-      const result = "Análise concluída! Contrato analisado com sucesso. Foram encontrados 3 erros ortográficos menores que foram destacados no documento.";
+    setUploadState(prev => ({ ...prev, isAnalyzing: true, analysisResult: null }));
+
+    try {
+      const result = await openaiService.analyzeContract(
+        uploadState.fullText, 
+        uploadState.file.name
+      );
+
+      if (result.success) {
+        setUploadState(prev => ({
+          ...prev,
+          isAnalyzing: false,
+          analysisResult: result
+        }));
+        toast.success("Análise concluída com sucesso!");
+      } else {
+        setUploadState(prev => ({
+          ...prev,
+          isAnalyzing: false,
+          error: result.error || "Erro na análise"
+        }));
+        toast.error(result.error || "Erro na análise");
+      }
+    } catch (error: any) {
+      console.error("Erro na análise:", error);
       setUploadState(prev => ({
         ...prev,
         isAnalyzing: false,
-        analysisResult: result
+        error: "Erro inesperado na análise"
       }));
-      toast.success("Análise concluída!");
-    }, 2000);
+      toast.error("Erro inesperado na análise");
+    }
+  };
+
+  const handleApiKeySet = (key: string) => {
+    openaiService.setApiKey(key);
+    handleAnalyze();
+  };
+
+  const handleNewAnalysis = () => {
+    setUploadState(prev => ({
+      ...prev,
+      analysisResult: null,
+      error: null
+    }));
   };
 
   const resetUpload = () => {
@@ -211,133 +255,164 @@ const ContractAnalysisSection = () => {
       textPreview: "",
       error: null,
       isAnalyzing: false,
-      analysisResult: "",
+      analysisResult: null,
       fullText: ""
     });
   };
 
   return (
-    <Card className="h-fit">
-      <CardHeader className="bg-slate-700 text-white">
-        <CardTitle className="text-xl">Análise de Contrato</CardTitle>
-      </CardHeader>
-      <CardContent className="p-6 space-y-6">
-        {/* Área de Upload */}
-        <div
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-            uploadState.isLoading 
-              ? "border-blue-300 bg-blue-50" 
-              : uploadState.error 
-                ? "border-red-300 bg-red-50" 
-                : uploadState.file 
-                  ? "border-green-300 bg-green-50" 
-                  : "border-gray-300 hover:border-slate-400"
-          }`}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          onClick={() => !uploadState.isLoading && document.getElementById('file-input')?.click()}
-        >
-          {uploadState.isLoading ? (
-            <>
-              <Loader2 className="h-12 w-12 text-blue-500 mx-auto mb-4 animate-spin" />
-              <p className="text-blue-600 mb-2">Extraindo texto do PDF...</p>
-            </>
-          ) : uploadState.file ? (
-            <>
-              <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <p className="text-green-600 mb-2">Arquivo carregado com sucesso!</p>
-              <p className="text-sm text-slate-600 font-medium mb-2">
-                {uploadState.file.name}
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  resetUpload();
-                }}
-              >
-                Remover arquivo
-              </Button>
-            </>
-          ) : (
-            <>
-              <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-2">
-                Arraste seu contrato aqui ou clique para selecionar
-              </p>
-              <p className="text-xs text-gray-500">
-                Apenas arquivos PDF até 10MB
-              </p>
-            </>
+    <>
+      <Card className="h-fit">
+        <CardHeader className="bg-slate-700 text-white">
+          <CardTitle className="text-xl flex items-center justify-between">
+            Análise de Contrato
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowApiKeyModal(true)}
+              className="text-white hover:bg-slate-600"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6 space-y-6">
+          {/* Área de Upload */}
+          <div
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
+              uploadState.isLoading 
+                ? "border-blue-300 bg-blue-50" 
+                : uploadState.error 
+                  ? "border-red-300 bg-red-50" 
+                  : uploadState.file 
+                    ? "border-green-300 bg-green-50" 
+                    : "border-gray-300 hover:border-slate-400"
+            }`}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onClick={() => !uploadState.isLoading && document.getElementById('file-input')?.click()}
+          >
+            {uploadState.isLoading ? (
+              <>
+                <Loader2 className="h-12 w-12 text-blue-500 mx-auto mb-4 animate-spin" />
+                <p className="text-blue-600 mb-2">Extraindo texto do PDF...</p>
+              </>
+            ) : uploadState.file ? (
+              <>
+                <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                <p className="text-green-600 mb-2">Arquivo carregado com sucesso!</p>
+                <p className="text-sm text-slate-600 font-medium mb-2">
+                  {uploadState.file.name}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    resetUpload();
+                  }}
+                >
+                  Remover arquivo
+                </Button>
+              </>
+            ) : (
+              <>
+                <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 mb-2">
+                  Arraste seu contrato aqui ou clique para selecionar
+                </p>
+                <p className="text-xs text-gray-500">
+                  Apenas arquivos PDF até 10MB
+                </p>
+              </>
+            )}
+            
+            <input
+              id="file-input"
+              type="file"
+              accept=".pdf,application/pdf"
+              onChange={handleFileSelect}
+              className="hidden"
+              disabled={uploadState.isLoading}
+            />
+          </div>
+
+          {/* Erro */}
+          {uploadState.error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{uploadState.error}</AlertDescription>
+            </Alert>
           )}
-          
-          <input
-            id="file-input"
-            type="file"
-            accept=".pdf,application/pdf"
-            onChange={handleFileSelect}
-            className="hidden"
-            disabled={uploadState.isLoading}
-          />
-        </div>
 
-        {/* Erro */}
-        {uploadState.error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{uploadState.error}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Preview do Texto */}
-        {uploadState.textPreview && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg text-slate-700 flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Prévia do Texto
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                {uploadState.textPreview}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Botão de Análise */}
-        <Button
-          onClick={handleAnalyze}
-          disabled={!uploadState.file || uploadState.isLoading || uploadState.isAnalyzing}
-          className="w-full bg-slate-700 hover:bg-slate-800 disabled:bg-gray-300"
-        >
-          {uploadState.isAnalyzing ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Analisando...
-            </>
-          ) : (
-            "Analisar Contrato"
+          {/* Preview do Texto */}
+          {uploadState.textPreview && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg text-slate-700 flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Prévia do Texto
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  {uploadState.textPreview}
+                </p>
+              </CardContent>
+            </Card>
           )}
-        </Button>
 
-        {/* Resultado da Análise */}
-        {uploadState.analysisResult && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle className="text-lg text-slate-700">
-                Resultado da Análise
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-700">{uploadState.analysisResult}</p>
-            </CardContent>
-          </Card>
-        )}
-      </CardContent>
-    </Card>
+          {/* Status da API Key */}
+          {!openaiService.hasApiKey() && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Configure sua API key da OpenAI para realizar análises inteligentes.
+                <Button 
+                  variant="link" 
+                  className="ml-2 p-0 h-auto"
+                  onClick={() => setShowApiKeyModal(true)}
+                >
+                  Configurar agora
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Botão de Análise */}
+          <Button
+            onClick={handleAnalyze}
+            disabled={!uploadState.file || uploadState.isLoading || uploadState.isAnalyzing || !uploadState.fullText}
+            className="w-full bg-slate-700 hover:bg-slate-800 disabled:bg-gray-300"
+          >
+            {uploadState.isAnalyzing ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Analisando com IA...
+              </>
+            ) : (
+              "Analisar Contrato"
+            )}
+          </Button>
+
+          {/* Resultado da Análise */}
+          {uploadState.analysisResult && uploadState.analysisResult.success && (
+            <AnalysisReport
+              content={uploadState.analysisResult.content}
+              timestamp={uploadState.analysisResult.timestamp}
+              filename={uploadState.analysisResult.filename}
+              onNewAnalysis={handleNewAnalysis}
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      <ApiKeyModal
+        open={showApiKeyModal}
+        onOpenChange={setShowApiKeyModal}
+        onApiKeySet={handleApiKeySet}
+      />
+    </>
   );
 };
 
