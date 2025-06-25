@@ -8,7 +8,7 @@ interface AnalysisResult {
 }
 
 export class OpenAIService {
-  private openaiApiKey = 'sk-proj-5M2J8f9dGVQZ3QP4K7HL6mN8bV2nF3yW9qC5xR7tA1oL4pX6zK8vM3nB9qW2eR5yT7uP4mN6bV8cX1zK3gH5jL9pQ2wE4rT6yU8iO0aS3dF6gH9jK2lM5nP8qV1bN4xZ7cR9tY3uI6oA2sD5fG8hJ1kL4mP7qW0eR3tY6uI9oA2sD5f';
+  private openaiApiKey = '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';
 
   async analyzeContract(contractText: string, filename: string): Promise<AnalysisResult> {
     console.log("=== INICIANDO ANÁLISE DIRETA COM OPENAI ===");
@@ -44,7 +44,7 @@ export class OpenAIService {
         
         let errorMessage = "Erro na análise do contrato";
         if (response.status === 401) {
-          errorMessage = "Erro de autenticação com OpenAI";
+          errorMessage = "Erro de autenticação com OpenAI - API key inválida";
         } else if (response.status === 429) {
           errorMessage = "Limite de uso atingido. Tente novamente em alguns minutos.";
         } else if (response.status === 400) {
