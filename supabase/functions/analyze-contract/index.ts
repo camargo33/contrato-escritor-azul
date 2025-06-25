@@ -39,17 +39,24 @@ serve(async (req) => {
   }
 
   try {
+    console.log("=== ANALYZE CONTRACT FUNCTION STARTED ===");
+    
     const { contractText, filename } = await req.json();
 
     if (!contractText) {
+      console.error("Erro: Texto do contrato não fornecido");
       throw new Error('Texto do contrato é obrigatório');
     }
 
+    console.log("Verificando API key da OpenAI...");
     if (!openAIApiKey) {
-      throw new Error('OPENAI_API_KEY não configurada');
+      console.error("ERRO CRÍTICO: OPENAI_API_KEY não configurada no Supabase");
+      throw new Error('API key da OpenAI não está configurada. Entre em contato com o administrador.');
     }
 
-    console.log("Iniciando análise com OpenAI para arquivo:", filename);
+    console.log("API key encontrada, iniciando análise...");
+    console.log("Arquivo:", filename);
+    console.log("Tamanho do texto:", contractText.length, "caracteres");
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -71,17 +78,29 @@ serve(async (req) => {
       signal: AbortSignal.timeout(45000)
     });
 
+    console.log("Status da resposta OpenAI:", response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Erro na API OpenAI: ${response.status} - ${errorText}`);
-      throw new Error(`Erro na API OpenAI: ${response.status} - ${response.statusText}`);
+      
+      if (response.status === 401) {
+        throw new Error('API key da OpenAI inválida ou expirada. Verifique a configuração.');
+      } else if (response.status === 429) {
+        throw new Error('Limite de uso da API OpenAI atingido. Tente novamente em alguns minutos.');
+      } else {
+        throw new Error(`Erro na API OpenAI: ${response.status} - ${response.statusText}`);
+      }
     }
 
     const data = await response.json();
     
     if (!data.choices || data.choices.length === 0) {
+      console.error("Resposta inválida da OpenAI:", data);
       throw new Error('Resposta inválida da OpenAI');
     }
+
+    console.log("Análise concluída com sucesso!");
 
     const result = {
       success: true,
@@ -95,17 +114,22 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error("Erro na análise:", error);
+    console.error("=== ERRO NA ANÁLISE ===");
+    console.error("Tipo do erro:", error.name);
+    console.error("Mensagem:", error.message);
+    console.error("Stack:", error.stack);
     
     let errorMessage = "Erro desconhecido na análise";
     
     if (error.name === 'AbortError') {
       errorMessage = "Timeout na análise (45s). Tente novamente com um arquivo menor.";
-    } else if (error.message.includes('401')) {
-      errorMessage = "API key inválida. Verifique sua chave da OpenAI.";
+    } else if (error.message.includes('API key da OpenAI não está configurada')) {
+      errorMessage = "API key da OpenAI não configurada. Entre em contato com o administrador.";
+    } else if (error.message.includes('401') || error.message.includes('inválida')) {
+      errorMessage = "API key da OpenAI inválida. Verifique sua chave da OpenAI.";
     } else if (error.message.includes('429')) {
       errorMessage = "Limite de uso da API atingido. Tente novamente em alguns minutos.";
-    } else if (error.message.includes('network')) {
+    } else if (error.message.includes('network') || error.message.includes('fetch')) {
       errorMessage = "Erro de conexão. Verifique sua internet e tente novamente.";
     } else {
       errorMessage = error.message || "Erro na comunicação com OpenAI";
