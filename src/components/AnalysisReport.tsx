@@ -12,28 +12,79 @@ interface AnalysisReportProps {
 
 const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: AnalysisReportProps) => {
   const parseAnalysisContent = (content: string) => {
-    const lines = content.split('\n');
-    const errors: string[] = [];
+    // Conta quantos erros foram encontrados baseado em padrões mais específicos
+    const errorPatterns = [
+      /\d+\.\s*(.+)$/gm, // Itens numerados
+      /[-•]\s*(.+)$/gm,  // Itens com bullets
+      /erro/gi,
+      /incorreto/gi,
+      /faltando/gi,
+      /inconsistente/gi,
+      /problema/gi
+    ];
+    
     let errorCount = 0;
-
-    lines.forEach(line => {
-      const trimmedLine = line.trim();
-      if (trimmedLine && (
-        trimmedLine.match(/^\d+\./) || 
-        trimmedLine.includes('erro') || 
-        trimmedLine.includes('incorreto') ||
-        trimmedLine.includes('faltando') ||
-        trimmedLine.includes('inconsistent')
-      )) {
-        errors.push(trimmedLine);
-        errorCount++;
+    errorPatterns.forEach(pattern => {
+      const matches = content.match(pattern);
+      if (matches) {
+        errorCount += matches.length;
       }
     });
 
-    return { errors, errorCount, fullContent: content };
+    // Se não encontrou erros pelos padrões, verifica se contém palavras indicativas
+    if (errorCount === 0 && (content.toLowerCase().includes('erro') || content.toLowerCase().includes('incorreto'))) {
+      errorCount = 1; // Pelo menos um erro foi detectado
+    }
+
+    return { errorCount, fullContent: content };
   };
 
-  const { errors, errorCount, fullContent } = parseAnalysisContent(content);
+  const { errorCount, fullContent } = parseAnalysisContent(content);
+
+  const formatContent = (text: string) => {
+    // Quebra o texto em linhas e formata melhor
+    return text.split('\n').map((line, index) => {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) return null;
+      
+      // Verifica se é um título ou seção
+      if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
+        return (
+          <h4 key={index} className="text-lg font-semibold text-slate-700 mt-4 mb-2">
+            {trimmedLine.replace(/\*\*/g, '')}
+          </h4>
+        );
+      }
+      
+      // Verifica se é um item numerado
+      if (/^\d+\./.test(trimmedLine)) {
+        return (
+          <div key={index} className="bg-red-50 border-l-4 border-red-400 p-3 mb-2 rounded-r-lg">
+            <div className="flex items-start">
+              <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 mr-3 flex-shrink-0" />
+              <p className="text-red-700 font-medium">{trimmedLine}</p>
+            </div>
+          </div>
+        );
+      }
+      
+      // Verifica se é um item com bullet
+      if (/^[-•]/.test(trimmedLine)) {
+        return (
+          <div key={index} className="ml-4 mb-1">
+            <p className="text-gray-700">{trimmedLine}</p>
+          </div>
+        );
+      }
+      
+      // Linha normal
+      return (
+        <p key={index} className="text-gray-700 mb-2 leading-relaxed">
+          {trimmedLine}
+        </p>
+      );
+    }).filter(Boolean);
+  };
 
   return (
     <Card className="mt-6 bg-white border-2">
@@ -65,7 +116,7 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
             )}
             {errorCount === 0 
               ? 'Nenhum erro encontrado - Contrato aprovado!' 
-              : `${errorCount} erro${errorCount > 1 ? 's' : ''} encontrado${errorCount > 1 ? 's' : ''}`
+              : `Análise concluída - Verificar pontos destacados`
             }
           </div>
         </div>
@@ -75,34 +126,19 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
             Resultado da Análise:
           </h3>
           
-          {errors.length > 0 ? (
-            <div className="space-y-3">
-              {errors.map((error, index) => (
-                <div key={index} className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
-                  <div className="flex items-start">
-                    <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 mr-3 flex-shrink-0" />
-                    <p className="text-red-700 font-medium">{error}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="whitespace-pre-wrap text-gray-700 leading-relaxed font-mono text-sm">
-                {fullContent}
-              </div>
-            </div>
-          )}
+          <div className="space-y-3">
+            {formatContent(fullContent)}
+          </div>
         </div>
 
         <div className="mt-8 pt-6 border-t">
           <div className="flex justify-between items-center">
             <div className={`text-lg font-bold ${
-              errorCount === 0 ? 'text-green-600' : 'text-red-600'
+              errorCount === 0 ? 'text-green-600' : 'text-slate-600'
             }`}>
-              Resumo: {errorCount === 0 
+              Status: {errorCount === 0 
                 ? 'Contrato aprovado sem erros' 
-                : `${errorCount} erro${errorCount > 1 ? 's' : ''} encontrado${errorCount > 1 ? 's' : ''}`
+                : 'Análise concluída'
               }
             </div>
             
