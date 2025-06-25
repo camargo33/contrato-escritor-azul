@@ -2,8 +2,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -49,9 +47,17 @@ serve(async (req) => {
     }
 
     console.log("Verificando API key da OpenAI...");
+    
+    // Tenta diferentes formas de acessar a API key
+    let openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
-      console.error("ERRO CRÍTICO: OPENAI_API_KEY não configurada no Supabase");
-      throw new Error('API key da OpenAI não está configurada. Entre em contato com o administrador.');
+      openAIApiKey = Deno.env.get('OpenAI');
+    }
+    
+    if (!openAIApiKey) {
+      console.error("ERRO CRÍTICO: Nenhuma API key encontrada");
+      console.log("Variáveis disponíveis:", Object.keys(Deno.env.toObject()));
+      throw new Error('API key da OpenAI não configurada. Verifique se OPENAI_API_KEY ou OpenAI está definida nos secrets do Supabase.');
     }
 
     console.log("API key encontrada, iniciando análise...");
@@ -75,7 +81,7 @@ serve(async (req) => {
         max_tokens: 4000,
         temperature: 0.1
       }),
-      signal: AbortSignal.timeout(45000)
+      signal: AbortSignal.timeout(60000) // Aumentado para 60 segundos
     });
 
     console.log("Status da resposta OpenAI:", response.status);
@@ -85,9 +91,11 @@ serve(async (req) => {
       console.error(`Erro na API OpenAI: ${response.status} - ${errorText}`);
       
       if (response.status === 401) {
-        throw new Error('API key da OpenAI inválida ou expirada. Verifique a configuração.');
+        throw new Error('API key da OpenAI inválida ou expirada. Verifique se a chave está correta nos secrets do Supabase.');
       } else if (response.status === 429) {
         throw new Error('Limite de uso da API OpenAI atingido. Tente novamente em alguns minutos.');
+      } else if (response.status === 400) {
+        throw new Error('Erro na requisição para OpenAI. Verifique o formato dos dados enviados.');
       } else {
         throw new Error(`Erro na API OpenAI: ${response.status} - ${response.statusText}`);
       }
@@ -122,13 +130,15 @@ serve(async (req) => {
     let errorMessage = "Erro desconhecido na análise";
     
     if (error.name === 'AbortError') {
-      errorMessage = "Timeout na análise (45s). Tente novamente com um arquivo menor.";
-    } else if (error.message.includes('API key da OpenAI não está configurada')) {
-      errorMessage = "API key da OpenAI não configurada. Entre em contato com o administrador.";
+      errorMessage = "Timeout na análise (60s). Tente novamente com um arquivo menor.";
+    } else if (error.message.includes('API key da OpenAI não configurada')) {
+      errorMessage = "API key da OpenAI não configurada. Verifique os secrets do Supabase.";
     } else if (error.message.includes('401') || error.message.includes('inválida')) {
-      errorMessage = "API key da OpenAI inválida. Verifique sua chave da OpenAI.";
+      errorMessage = "API key da OpenAI inválida. Verifique sua chave da OpenAI nos secrets do Supabase.";
     } else if (error.message.includes('429')) {
       errorMessage = "Limite de uso da API atingido. Tente novamente em alguns minutos.";
+    } else if (error.message.includes('400')) {
+      errorMessage = "Erro no formato da requisição. Tente novamente com um contrato diferente.";
     } else if (error.message.includes('network') || error.message.includes('fetch')) {
       errorMessage = "Erro de conexão. Verifique sua internet e tente novamente.";
     } else {
