@@ -8,7 +8,7 @@ interface AnalysisResult {
 }
 
 export class OpenAIService {
-  private supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  private supabaseUrl = 'https://kwwqyfvkpjatckvngtur.supabase.co';
 
   async analyzeContract(contractText: string, filename: string): Promise<AnalysisResult> {
     console.log("Iniciando análise via Edge Function...");
