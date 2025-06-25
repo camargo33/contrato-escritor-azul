@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Upload, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { Upload, Loader2, CheckCircle, AlertCircle, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 
@@ -18,34 +18,43 @@ interface AddContractModalProps {
 }
 
 const AddContractModal = ({ isOpen, onClose, onAddContract }: AddContractModalProps) => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const validateFile = (file: File): string | null => {
     if (file.type !== "application/pdf") {
-      return "Por favor, selecione apenas arquivos PDF.";
+      return `${file.name}: Por favor, selecione apenas arquivos PDF.`;
     }
     if (file.size > 10 * 1024 * 1024) { // 10MB
-      return "O arquivo deve ter no máximo 10MB.";
+      return `${file.name}: O arquivo deve ter no máximo 10MB.`;
     }
     return null;
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const file = files[0];
-      const validationError = validateFile(file);
-      
-      if (validationError) {
-        setError(validationError);
-        toast.error(validationError);
-        return;
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      const validFiles: File[] = [];
+      const errors: string[] = [];
+
+      files.forEach(file => {
+        const validationError = validateFile(file);
+        if (validationError) {
+          errors.push(validationError);
+        } else {
+          validFiles.push(file);
+        }
+      });
+
+      if (errors.length > 0) {
+        setError(errors.join('\n'));
+        toast.error(`${errors.length} arquivo(s) com erro`);
+      } else {
+        setError(null);
       }
 
-      setSelectedFile(file);
-      setError(null);
+      setSelectedFiles(prev => [...prev, ...validFiles]);
     }
   };
 
@@ -57,47 +66,63 @@ const AddContractModal = ({ isOpen, onClose, onAddContract }: AddContractModalPr
     e.preventDefault();
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
-      const file = files[0];
-      const validationError = validateFile(file);
-      
-      if (validationError) {
-        setError(validationError);
-        toast.error(validationError);
-        return;
+      const validFiles: File[] = [];
+      const errors: string[] = [];
+
+      files.forEach(file => {
+        const validationError = validateFile(file);
+        if (validationError) {
+          errors.push(validationError);
+        } else {
+          validFiles.push(file);
+        }
+      });
+
+      if (errors.length > 0) {
+        setError(errors.join('\n'));
+        toast.error(`${errors.length} arquivo(s) com erro`);
+      } else {
+        setError(null);
       }
 
-      setSelectedFile(file);
-      setError(null);
+      setSelectedFiles(prev => [...prev, ...validFiles]);
     }
   };
 
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setError(null);
+  };
+
   const handleUpload = async () => {
-    if (!selectedFile) return;
+    if (selectedFiles.length === 0) return;
 
     setIsUploading(true);
     
-    // Simular upload
-    setTimeout(() => {
-      onAddContract(selectedFile.name);
-      toast.success("Contrato base adicionado com sucesso!");
-      setIsUploading(false);
-      setSelectedFile(null);
-      setError(null);
-      onClose();
-    }, 1500);
+    // Simular upload com delay progressivo
+    for (let i = 0; i < selectedFiles.length; i++) {
+      await new Promise(resolve => setTimeout(resolve, 500 + (i * 300)));
+      onAddContract(selectedFiles[i].name);
+    }
+    
+    toast.success(`${selectedFiles.length} contrato(s) base adicionado(s) com sucesso!`);
+    setIsUploading(false);
+    setSelectedFiles([]);
+    setError(null);
+    onClose();
   };
 
   const handleClose = () => {
-    setSelectedFile(null);
+    setSelectedFiles([]);
     setError(null);
     onClose();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Adicionar Novo Contrato Base</DialogTitle>
+          <DialogTitle>Adicionar Contratos Base</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
@@ -106,7 +131,7 @@ const AddContractModal = ({ isOpen, onClose, onAddContract }: AddContractModalPr
             className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
               error 
                 ? "border-red-300 bg-red-50" 
-                : selectedFile 
+                : selectedFiles.length > 0
                   ? "border-green-300 bg-green-50" 
                   : "border-gray-300 hover:border-slate-400"
             }`}
@@ -114,25 +139,13 @@ const AddContractModal = ({ isOpen, onClose, onAddContract }: AddContractModalPr
             onDrop={handleDrop}
             onClick={() => document.getElementById('contract-file-input')?.click()}
           >
-            {selectedFile ? (
-              <>
-                <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                <p className="text-green-600 text-sm mb-1">Arquivo selecionado:</p>
-                <p className="text-sm font-medium text-slate-600">
-                  {selectedFile.name}
-                </p>
-              </>
-            ) : (
-              <>
-                <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-600 text-sm mb-1">
-                  Arraste um PDF aqui ou clique para selecionar
-                </p>
-                <p className="text-xs text-gray-500">
-                  Apenas PDFs até 10MB
-                </p>
-              </>
-            )}
+            <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+            <p className="text-gray-600 text-sm mb-1">
+              Arraste PDFs aqui ou clique para selecionar
+            </p>
+            <p className="text-xs text-gray-500">
+              Selecione múltiplos PDFs (até 10MB cada)
+            </p>
             
             <input
               id="contract-file-input"
@@ -140,14 +153,50 @@ const AddContractModal = ({ isOpen, onClose, onAddContract }: AddContractModalPr
               accept=".pdf,application/pdf"
               onChange={handleFileSelect}
               className="hidden"
+              multiple
             />
           </div>
+
+          {/* Lista de Arquivos Selecionados */}
+          {selectedFiles.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-gray-700">
+                Arquivos selecionados ({selectedFiles.length}):
+              </h4>
+              <div className="max-h-32 overflow-y-auto space-y-2">
+                {selectedFiles.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded-lg"
+                  >
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm text-gray-700 truncate">
+                        {file.name}
+                      </span>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeFile(index);
+                      }}
+                      className="h-6 w-6 p-0 hover:bg-red-100"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Erro */}
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription className="whitespace-pre-line">{error}</AlertDescription>
             </Alert>
           )}
 
@@ -163,7 +212,7 @@ const AddContractModal = ({ isOpen, onClose, onAddContract }: AddContractModalPr
             </Button>
             <Button
               onClick={handleUpload}
-              disabled={!selectedFile || isUploading}
+              disabled={selectedFiles.length === 0 || isUploading}
               className="flex-1"
             >
               {isUploading ? (
@@ -172,7 +221,7 @@ const AddContractModal = ({ isOpen, onClose, onAddContract }: AddContractModalPr
                   Adicionando...
                 </>
               ) : (
-                "Adicionar"
+                `Adicionar ${selectedFiles.length > 0 ? `(${selectedFiles.length})` : ''}`
               )}
             </Button>
           </div>
