@@ -6,7 +6,6 @@ import { AlertCircle, Settings } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { openaiService } from '@/services/openaiService';
-import ApiKeyModal from './ApiKeyModal';
 import AnalysisReport from './AnalysisReport';
 import FileUploadArea from './FileUploadArea';
 import TextPreviewCard from './TextPreviewCard';
@@ -15,16 +14,9 @@ import { useContractUpload } from '@/hooks/useContractUpload';
 
 const ContractAnalysisSection = () => {
   const { uploadState, setUploadState, resetUpload, handleNewAnalysis } = useContractUpload();
-  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
 
   const handleAnalyze = async () => {
     if (!uploadState.file || !uploadState.fullText) return;
-
-    // Verificar se tem API key
-    if (!openaiService.hasApiKey()) {
-      setShowApiKeyModal(true);
-      return;
-    }
 
     setUploadState(prev => ({ ...prev, isAnalyzing: true, analysisResult: null }));
 
@@ -60,87 +52,54 @@ const ContractAnalysisSection = () => {
     }
   };
 
-  const handleApiKeySet = (key: string) => {
-    openaiService.setApiKey(key);
-    handleAnalyze();
-  };
-
   return (
-    <>
-      <Card className="h-fit">
-        <CardHeader className="bg-slate-700 text-white">
-          <CardTitle className="text-xl flex items-center justify-between">
-            Análise de Contrato
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowApiKeyModal(true)}
-              className="text-white hover:bg-slate-600"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6 space-y-6">
-          {/* Área de Upload */}
-          <FileUploadArea
-            uploadState={uploadState}
-            setUploadState={setUploadState}
-            onReset={resetUpload}
+    <Card className="h-fit">
+      <CardHeader className="bg-slate-700 text-white">
+        <CardTitle className="text-xl flex items-center justify-between">
+          Análise de Contrato
+          <div className="flex items-center gap-2">
+            <div className="text-xs bg-green-600 px-2 py-1 rounded">
+              API Conectada
+            </div>
+          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-6 space-y-6">
+        {/* Área de Upload */}
+        <FileUploadArea
+          uploadState={uploadState}
+          setUploadState={setUploadState}
+          onReset={resetUpload}
+        />
+
+        {/* Erro */}
+        {uploadState.error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{uploadState.error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Preview do Texto */}
+        <TextPreviewCard textPreview={uploadState.textPreview} />
+
+        {/* Botão de Análise */}
+        <AnalyzeButton
+          uploadState={uploadState}
+          onClick={handleAnalyze}
+        />
+
+        {/* Resultado da Análise */}
+        {uploadState.analysisResult && uploadState.analysisResult.success && (
+          <AnalysisReport
+            content={uploadState.analysisResult.content}
+            timestamp={uploadState.analysisResult.timestamp}
+            filename={uploadState.analysisResult.filename}
+            onNewAnalysis={handleNewAnalysis}
           />
-
-          {/* Erro */}
-          {uploadState.error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{uploadState.error}</AlertDescription>
-            </Alert>
-          )}
-
-          {/* Preview do Texto */}
-          <TextPreviewCard textPreview={uploadState.textPreview} />
-
-          {/* Status da API Key */}
-          {!openaiService.hasApiKey() && (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Configure sua API key da OpenAI para realizar análises inteligentes.
-                <Button 
-                  variant="link" 
-                  className="ml-2 p-0 h-auto"
-                  onClick={() => setShowApiKeyModal(true)}
-                >
-                  Configurar agora
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Botão de Análise */}
-          <AnalyzeButton
-            uploadState={uploadState}
-            onClick={handleAnalyze}
-          />
-
-          {/* Resultado da Análise */}
-          {uploadState.analysisResult && uploadState.analysisResult.success && (
-            <AnalysisReport
-              content={uploadState.analysisResult.content}
-              timestamp={uploadState.analysisResult.timestamp}
-              filename={uploadState.analysisResult.filename}
-              onNewAnalysis={handleNewAnalysis}
-            />
-          )}
-        </CardContent>
-      </Card>
-
-      <ApiKeyModal
-        open={showApiKeyModal}
-        onOpenChange={setShowApiKeyModal}
-        onApiKeySet={handleApiKeySet}
-      />
-    </>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
