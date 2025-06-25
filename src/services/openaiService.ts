@@ -11,7 +11,9 @@ export class OpenAIService {
   private supabaseUrl = 'https://kwwqyfvkpjatckvngtur.supabase.co';
 
   async analyzeContract(contractText: string, filename: string): Promise<AnalysisResult> {
-    console.log("Iniciando análise via Edge Function...");
+    console.log("=== INICIANDO ANÁLISE VIA EDGE FUNCTION ===");
+    console.log("URL da Edge Function:", `${this.supabaseUrl}/functions/v1/analyze-contract`);
+    console.log("Tamanho do texto:", contractText.length, "caracteres");
     
     try {
       const response = await fetch(`${this.supabaseUrl}/functions/v1/analyze-contract`, {
@@ -25,16 +27,22 @@ export class OpenAIService {
         })
       });
 
+      console.log("Status da resposta:", response.status);
+      
       const data = await response.json();
+      console.log("Dados recebidos:", data);
       
       if (!response.ok) {
+        console.error("Erro na resposta:", data);
         throw new Error(data.error || `Erro ${response.status}`);
       }
 
       return data;
 
     } catch (error: any) {
-      console.error("Erro na análise:", error);
+      console.error("=== ERRO NA COMUNICAÇÃO ===");
+      console.error("Tipo:", error.name);
+      console.error("Mensagem:", error.message);
       
       return {
         success: false,
@@ -45,15 +53,14 @@ export class OpenAIService {
     }
   }
 
-  // Método legado mantido para compatibilidade
+  // Método mantido para compatibilidade
   hasApiKey(): boolean {
-    return true; // Sempre true pois agora usa edge function
+    return true; // Sempre true pois usa edge function
   }
 
-  // Método legado mantido para compatibilidade
+  // Método mantido para compatibilidade
   setApiKey(key: string) {
-    // Não faz nada pois agora usa edge function
-    console.log("API key será configurada via Supabase Secrets");
+    console.log("API key configurada via Supabase Secrets");
   }
 }
 

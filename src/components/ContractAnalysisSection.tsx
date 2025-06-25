@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Settings } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { openaiService } from '@/services/openaiService';
@@ -21,10 +21,13 @@ const ContractAnalysisSection = () => {
     setUploadState(prev => ({ ...prev, isAnalyzing: true, analysisResult: null }));
 
     try {
+      console.log("Iniciando análise do contrato...");
       const result = await openaiService.analyzeContract(
         uploadState.fullText, 
         uploadState.file.name
       );
+
+      console.log("Resultado da análise:", result);
 
       if (result.success) {
         setUploadState(prev => ({
@@ -36,7 +39,7 @@ const ContractAnalysisSection = () => {
       } else {
         setUploadState(prev => ({
           ...prev,
-          isAnalyzing: false,
+          isAnalyizing: false,
           error: result.error || "Erro na análise"
         }));
         toast.error(result.error || "Erro na análise");
@@ -59,7 +62,7 @@ const ContractAnalysisSection = () => {
           Análise de Contrato
           <div className="flex items-center gap-2">
             <div className="text-xs bg-green-600 px-2 py-1 rounded">
-              API Conectada
+              API Configurada ✓
             </div>
           </div>
         </CardTitle>
