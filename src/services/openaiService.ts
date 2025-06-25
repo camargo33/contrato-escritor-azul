@@ -1,4 +1,3 @@
-
 interface AnalysisResult {
   success: boolean;
   content?: string;
@@ -8,7 +7,7 @@ interface AnalysisResult {
 }
 
 export class OpenAIService {
-  private openaiApiKey = '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';
+  private openaiApiKey = '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';
 
   async analyzeContract(contractText: string, filename: string): Promise<AnalysisResult> {
     console.log("=== INICIANDO ANÁLISE DIRETA COM OPENAI ===");
