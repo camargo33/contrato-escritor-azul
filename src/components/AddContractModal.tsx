@@ -14,10 +14,10 @@ import { toast } from "sonner";
 interface AddContractModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddContract: (contractName: string) => void;
+  onAddContracts: (files: File[]) => Promise<{ successCount: number; errorCount: number }>;
 }
 
-const AddContractModal = ({ isOpen, onClose, onAddContract }: AddContractModalProps) => {
+const AddContractModal = ({ isOpen, onClose, onAddContracts }: AddContractModalProps) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,17 +99,20 @@ const AddContractModal = ({ isOpen, onClose, onAddContract }: AddContractModalPr
 
     setIsUploading(true);
     
-    // Simular upload com delay progressivo
-    for (let i = 0; i < selectedFiles.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 500 + (i * 300)));
-      onAddContract(selectedFiles[i].name);
+    try {
+      const result = await onAddContracts(selectedFiles);
+      
+      if (result.successCount > 0) {
+        setSelectedFiles([]);
+        setError(null);
+        onClose();
+      }
+    } catch (error) {
+      console.error("Erro no upload:", error);
+      toast.error("Erro inesperado no upload");
+    } finally {
+      setIsUploading(false);
     }
-    
-    toast.success(`${selectedFiles.length} contrato(s) base adicionado(s) com sucesso!`);
-    setIsUploading(false);
-    setSelectedFiles([]);
-    setError(null);
-    onClose();
   };
 
   const handleClose = () => {
@@ -218,7 +221,7 @@ const AddContractModal = ({ isOpen, onClose, onAddContract }: AddContractModalPr
               {isUploading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Adicionando...
+                  Salvando no banco...
                 </>
               ) : (
                 `Adicionar ${selectedFiles.length > 0 ? `(${selectedFiles.length})` : ''}`

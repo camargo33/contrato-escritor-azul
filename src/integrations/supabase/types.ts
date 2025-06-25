@@ -9,7 +9,176 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      analysis_history: {
+        Row: {
+          analysis_content: Json
+          analysis_duration_ms: number | null
+          analysis_timestamp: string
+          analyzed_filename: string
+          base_contracts_used: string[] | null
+          created_at: string
+          errors_found: number | null
+          id: string
+          openai_tokens_used: number | null
+          user_id: string
+        }
+        Insert: {
+          analysis_content: Json
+          analysis_duration_ms?: number | null
+          analysis_timestamp?: string
+          analyzed_filename: string
+          base_contracts_used?: string[] | null
+          created_at?: string
+          errors_found?: number | null
+          id?: string
+          openai_tokens_used?: number | null
+          user_id: string
+        }
+        Update: {
+          analysis_content?: Json
+          analysis_duration_ms?: number | null
+          analysis_timestamp?: string
+          analyzed_filename?: string
+          base_contracts_used?: string[] | null
+          created_at?: string
+          errors_found?: number | null
+          id?: string
+          openai_tokens_used?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      base_contracts: {
+        Row: {
+          contract_type: string | null
+          created_at: string
+          file_path: string | null
+          id: string
+          is_processed: boolean | null
+          name: string
+          original_filename: string
+          plan_name: string | null
+          processed_at: string | null
+          updated_at: string
+          upload_date: string
+          user_id: string
+        }
+        Insert: {
+          contract_type?: string | null
+          created_at?: string
+          file_path?: string | null
+          id?: string
+          is_processed?: boolean | null
+          name: string
+          original_filename: string
+          plan_name?: string | null
+          processed_at?: string | null
+          updated_at?: string
+          upload_date?: string
+          user_id: string
+        }
+        Update: {
+          contract_type?: string | null
+          created_at?: string
+          file_path?: string | null
+          id?: string
+          is_processed?: boolean | null
+          name?: string
+          original_filename?: string
+          plan_name?: string | null
+          processed_at?: string | null
+          updated_at?: string
+          upload_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      contract_clauses: {
+        Row: {
+          base_contract_id: string
+          clause_content: string
+          clause_title: string | null
+          clause_type: string
+          created_at: string
+          id: string
+          is_standard: boolean | null
+          section_number: string | null
+        }
+        Insert: {
+          base_contract_id: string
+          clause_content: string
+          clause_title?: string | null
+          clause_type: string
+          created_at?: string
+          id?: string
+          is_standard?: boolean | null
+          section_number?: string | null
+        }
+        Update: {
+          base_contract_id?: string
+          clause_content?: string
+          clause_title?: string | null
+          clause_type?: string
+          created_at?: string
+          id?: string
+          is_standard?: boolean | null
+          section_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_clauses_base_contract_id_fkey"
+            columns: ["base_contract_id"]
+            isOneToOne: false
+            referencedRelation: "base_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_templates: {
+        Row: {
+          contract_type: string
+          created_at: string
+          equipment_info: Json | null
+          id: string
+          is_active: boolean | null
+          name: string
+          plan_name: string | null
+          pricing_info: Json | null
+          standard_clauses: Json | null
+          terms_info: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contract_type: string
+          created_at?: string
+          equipment_info?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          plan_name?: string | null
+          pricing_info?: Json | null
+          standard_clauses?: Json | null
+          terms_info?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contract_type?: string
+          created_at?: string
+          equipment_info?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          plan_name?: string | null
+          pricing_info?: Json | null
+          standard_clauses?: Json | null
+          terms_info?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
