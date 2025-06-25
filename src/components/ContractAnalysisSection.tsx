@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,9 +9,9 @@ import { openaiService } from '@/services/openaiService';
 import ApiKeyModal from './ApiKeyModal';
 import AnalysisReport from './AnalysisReport';
 
-// Configure PDF.js worker with a single reliable CDN
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@4.0.379/build/pdf.worker.min.js';
-console.log("PDF.js worker configurado");
+// Configure PDF.js worker to use the bundled version
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+console.log("PDF.js worker configurado para versão:", pdfjsLib.version);
 
 interface UploadState {
   file: File | null;
@@ -63,7 +62,8 @@ const ContractAnalysisSection = () => {
           const loadingTask = pdfjsLib.getDocument({ 
             data: typedArray,
             useSystemFonts: true,
-            disableFontFace: false
+            disableFontFace: false,
+            verbosity: 0 // Reduce console noise
           });
           
           const pdf = await loadingTask.promise;
@@ -86,7 +86,7 @@ const ContractAnalysisSection = () => {
             }
           }
           
-          console.log("Texto completo extraído. Primeiros 100 caracteres:", fullText.substring(0, 100));
+          console.log("Texto completo extraído. Total de caracteres:", fullText.length);
           
           if (fullText.trim().length === 0) {
             resolve("PDF_NO_TEXT");
@@ -160,8 +160,8 @@ const ContractAnalysisSection = () => {
         errorMessage = "PDF corrompido ou inválido. Tente outro arquivo.";
       } else if (error.message?.includes("Password")) {
         errorMessage = "PDF protegido por senha. Remova a proteção e tente novamente.";
-      } else if (error.message?.includes("worker") || error.message?.includes("Setting up fake worker")) {
-        errorMessage = "Erro no processador PDF. Tente recarregar a página.";
+      } else if (error.message?.includes("worker") || error.message?.includes("CORS")) {
+        errorMessage = "Erro de CORS ao carregar processador PDF. Tente recarregar a página.";
       }
       
       setUploadState(prev => ({
