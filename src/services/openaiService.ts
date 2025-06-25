@@ -9,6 +9,7 @@ interface AnalysisResult {
 
 export class OpenAIService {
   private supabaseUrl = 'https://kwwqyfvkpjatckvngtur.supabase.co';
+  private supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3d3F5ZnZrcGphdGNrdm5ndHVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM0MzE0NTMsImV4cCI6MjA0OTAwNzQ1M30.6ILKEVFIWuRNiWvpVZaJVj8QO6nqIaHgVl8KsxBrGE0';
 
   async analyzeContract(contractText: string, filename: string): Promise<AnalysisResult> {
     console.log("=== INICIANDO ANÁLISE VIA EDGE FUNCTION ===");
@@ -20,6 +21,9 @@ export class OpenAIService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseAnonKey}`,
+          'apikey': this.supabaseAnonKey,
+          'x-client-info': 'contract-analyzer'
         },
         body: JSON.stringify({
           contractText,
