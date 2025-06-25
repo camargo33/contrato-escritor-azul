@@ -2,8 +2,12 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import { toast } from "sonner";
 
-// Configure PDF.js worker to use the bundled version
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Configure PDF.js worker usando uma URL que funciona com Vite
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url
+).toString();
+
 console.log("PDF.js worker configurado para versão:", pdfjsLib.version);
 
 export const validateFile = (file: File): string | null => {
@@ -33,7 +37,7 @@ export const extractTextFromPDF = async (file: File): Promise<string> => {
           data: typedArray,
           useSystemFonts: true,
           disableFontFace: false,
-          verbosity: 0 // Reduce console noise
+          verbosity: 0
         });
         
         const pdf = await loadingTask.promise;
@@ -134,7 +138,7 @@ export const processFile = async (
     } else if (error.message?.includes("Password")) {
       errorMessage = "PDF protegido por senha. Remova a proteção e tente novamente.";
     } else if (error.message?.includes("worker") || error.message?.includes("CORS")) {
-      errorMessage = "Erro de CORS ao carregar processador PDF. Tente recarregar a página.";
+      errorMessage = "Erro de configuração do processador PDF. Tente recarregar a página.";
     }
     
     setUploadState((prev: any) => ({
