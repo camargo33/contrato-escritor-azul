@@ -39,7 +39,7 @@ const ContractAnalysisSection = () => {
       } else {
         setUploadState(prev => ({
           ...prev,
-          isAnalyizing: false,
+          isAnalyzing: false,
           error: result.error || "Erro na análise"
         }));
         toast.error(result.error || "Erro na análise");
