@@ -83,89 +83,83 @@ export class OpenAIService {
   }
 
   private createPrompt(contractText: string): string {
-    return `# PROMPT PARA ANÁLISE DE CONTRATOS DE INTERNET
+    return `# PROMPT PARA ANÁLISE DE CONTRATOS CIABRASNET
 
 ## CONTEXTO
-Você é um especialista em análise de contratos de provedores de internet. Sua função é identificar erros, inconsistências e problemas em contratos baseado em um modelo de referência.
+Você é um especialista em análise de contratos da CIABRASNET. Analise APENAS os campos destacados/grifados nos contratos, focando exclusivamente em inconsistências, erros de digitação e problemas de formatação dos campos importantes.
 
-## INSTRUÇÕES DE ANÁLISE
+## CAMPOS ESPECÍFICOS PARA ANALISAR:
 
-### 1. CAMPOS OBRIGATÓRIOS A VERIFICAR:
+### 1. DADOS DO ASSINANTE:
+- **Nome**: Verificar se está completo e sem erros de digitação
+- **CPF/CNPJ**: Consistência com tipo de pessoa (PF=CPF, PJ=CNPJ)
+- **Email**: Verificar erros de digitação (ex: letras duplicadas)
+- **Endereço**: Completude dos dados
+- **Telefone**: Formato (XX) XXXXX-XXXX
 
-**Dados Pessoais:**
-- Nome completo (sem abreviações)
-- CPF/CNPJ (formato e validade)
-- RG/IE (quando aplicável)
-- Endereço completo (rua, número, bairro, cidade, UF, CEP)
-- Telefone (formato brasileiro)
-- Email (formato válido)
-- Data de nascimento/fundação
+### 2. DADOS DO PLANO E VALORES:
+- **Valor do plano**: Verificar se valor numérico está correto
+- **Valor por extenso**: Consistência entre R$ 700,00 e valor escrito
+- **Tipo de plano vs Fidelidade**: 
+  - Residencial = 12 meses
+  - Corporativo = 24 meses
+- **Endereço eletrônico**: Deve incluir protocolo https://
 
-**Dados do Contrato:**
-- Razão social da operadora
-- CNPJ da operadora
-- Endereço da operadora
-- Autorização ANATEL
-- Número do contrato de referência
+### 3. VALIDAÇÕES CRÍTICAS:
 
-**Dados do Plano:**
-- Descrição do plano
-- Velocidade de download/upload
-- Valor da mensalidade
-- Tipo de plano (residencial/corporativo)
-- Garantia de banda
+**Erros de Digitação:**
+- Email com letras duplicadas: "samaraa" → "samara"
+- Valores escritos errados: "Quinhentos" vs "Setecentos"
 
-**Fidelidade e Pagamento:**
-- Prazo de fidelidade (12 meses PF / 24 meses PJ)
-- Opção de fidelidade marcada corretamente
-- Valor da taxa de instalação
-- Forma de pagamento
-- Data de vencimento
+**Inconsistências de Dados:**
+- Plano corporativo com 12 meses (deve ser 24)
+- Valor R$ 700,00 escrito como "Quinhentos reais" (deve ser "Setecentos")
+- URL sem protocolo: "ciabrasnet.com.br" → "https://ciabrasnet.com.br"
 
-### 2. VALIDAÇÕES ESPECÍFICAS:
+**Campos Obrigatórios:**
+- Verificar se campos essenciais estão preenchidos
+- Consistência entre documentos e tipo de pessoa
 
-**Validação de CPF/CNPJ:**
-- Formato correto (XXX.XXX.XXX-XX ou XX.XXX.XXX/XXXX-XX)
-- Dígitos verificadores válidos
-- Consistência com tipo de pessoa
+### 5. VALIDAÇÕES ESPECÍFICAS:
 
-**Validação de Consistência:**
-- Se pessoa física → fidelidade 12 meses
-- Se pessoa jurídica → fidelidade 24 meses
-- Valores monetários em formato brasileiro (R$ X.XXX,XX)
-- Datas no formato DD/MM/AAAA
-- CEP no formato XXXXX-XXX
+**Erros de Digitação Comuns:**
+- Email duplicado: "samaraa" em vez de "samara"
+- Números escritos errados: "Quinhentos" vs "Setecentos"
+- CEP sem hífen: "89400000" deve ser "89400-000"
+- URL incompleta: "ciabrasnet.com.br" deve ser "https://ciabrasnet.com.br"
 
-**Validação de Campos Relacionados:**
-- Endereço de instalação vs endereço de cobrança
-- Velocidade contratada vs valor do plano
-- Tipo de pessoa vs documentos apresentados
-- Equipamentos vs valor de mercado
+**Inconsistências de Dados:**
+- Valor em número vs valor por extenso diferentes
+- Tipo de pessoa não bate com prazo de fidelidade
+- Documentos não condizem com tipo de pessoa
 
-### 3. TIPOS DE ERRO E SEVERIDADE:
+### 6. NÃO ANALISAR:
+- Campos não grifados no contrato original
+- Dados da operadora (já são padrão)
+- Termos e condições gerais
+- Informações de equipamentos
+- Dados de testemunhas
+
+### 7. TIPOS DE ERRO E SEVERIDADE:
 
 **CRÍTICO:**
-- CPF/CNPJ inválido
-- Campos obrigatórios em branco
-- Inconsistência entre tipo pessoa e fidelidade
-- Valores monetários incorretos
+- Inconsistência valor numérico vs escrito
+- Tipo pessoa vs fidelidade incorreta
+- CPF/CNPJ com formato inválido
 
 **ALTO:**
-- Formato de data incorreto
-- Email inválido
-- Telefone incompleto
-- Endereço incompleto
+- Email com erros de digitação
+- URL sem protocolo (https://)
+- Data em formato incorreto
 
 **MÉDIO:**
-- Abreviações em nomes
 - CEP sem hífen
-- Valores sem centavos
-- Campos de observação vazios
+- Telefone incompleto
+- Nome com abreviações
 
 **BAIXO:**
 - Espaços extras
-- Maiúsculas/minúsculas inconsistentes
-- Formatação de texto
+- Maiúsculas/minúsculas
 
 ### 4. FORMATO DE RESPOSTA:
 
@@ -195,7 +189,57 @@ Para cada erro encontrado, retorne:
 }
 \`\`\`
 
-### 5. CONTEXTO DO PROVEDOR:
+### 8. EXEMPLOS DE ERROS REAIS:
+
+**Inconsistência Valor Numérico vs Escrito:**
+\`\`\`json
+{
+  "severidade": "critico",
+  "campo": "Valor da Taxa de Instalação",
+  "valor_encontrado": "R$ 700,00 (Quinhentos reais)",
+  "valor_esperado": "R$ 700,00 (Setecentos reais)",
+  "sugestao_correcao": "Corrigir valor por extenso para 'Setecentos reais'",
+  "confianca": 100
+}
+\`\`\`
+
+**Email com Erro de Digitação:**
+\`\`\`json
+{
+  "severidade": "alto",
+  "campo": "Email",
+  "valor_encontrado": "Samaraa.geronco@gmail.com",
+  "valor_esperado": "samara.geronco@gmail.com",
+  "sugestao_correcao": "Remover 'a' duplicado e corrigir maiúscula",
+  "confianca": 95
+}
+\`\`\`
+
+**CEP sem Formatação:**
+\`\`\`json
+{
+  "severidade": "medio",
+  "campo": "CEP",
+  "valor_encontrado": "89400000",
+  "valor_esperado": "89400-000",
+  "sugestao_correcao": "Adicionar hífen no CEP",
+  "confianca": 100
+}
+\`\`\`
+
+**URL Incompleta:**
+\`\`\`json
+{
+  "severidade": "alto",
+  "campo": "Endereço Eletrônico",
+  "valor_encontrado": "ciabrasnet.com.br",
+  "valor_esperado": "https://ciabrasnet.com.br",
+  "sugestao_correcao": "Adicionar protocolo HTTPS ao endereço",
+  "confianca": 100
+}
+\`\`\`
+
+### 6. CONTEXTO DO PROVEDOR:
 
 **CIABRASNET CENTRAL BRASILEIRA DE INTERNET LTDA**
 - CNPJ: 10.731.345/0001-79
@@ -203,7 +247,7 @@ Para cada erro encontrado, retorne:
 - Cidade: Porto União/SC, CEP: 89.400-000
 - Autorização ANATEL: Termo de Autorização Ato n.º 444/2009
 
-### 6. REGRAS DE NEGÓCIO:
+### 7. REGRAS DE NEGÓCIO:
 
 - Planos residenciais: fidelidade 12 meses
 - Planos corporativos: fidelidade 24 meses
