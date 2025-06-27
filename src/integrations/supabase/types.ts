@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      analises: {
+        Row: {
+          arquivo_nome: string
+          created_at: string
+          id: string
+          status: string
+          tempo_processamento: number | null
+          total_erros: number | null
+        }
+        Insert: {
+          arquivo_nome: string
+          created_at?: string
+          id?: string
+          status?: string
+          tempo_processamento?: number | null
+          total_erros?: number | null
+        }
+        Update: {
+          arquivo_nome?: string
+          created_at?: string
+          id?: string
+          status?: string
+          tempo_processamento?: number | null
+          total_erros?: number | null
+        }
+        Relationships: []
+      }
       analysis_history: {
         Row: {
           analysis_content: Json
@@ -92,6 +119,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      campos_extraidos: {
+        Row: {
+          analise_id: string
+          campos_identificados: Json | null
+          created_at: string
+          id: string
+          pagina_numero: number
+          texto_bruto: string | null
+        }
+        Insert: {
+          analise_id: string
+          campos_identificados?: Json | null
+          created_at?: string
+          id?: string
+          pagina_numero: number
+          texto_bruto?: string | null
+        }
+        Update: {
+          analise_id?: string
+          campos_identificados?: Json | null
+          created_at?: string
+          id?: string
+          pagina_numero?: number
+          texto_bruto?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campos_extraidos_analise_id_fkey"
+            columns: ["analise_id"]
+            isOneToOne: false
+            referencedRelation: "analises"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contract_clauses: {
         Row: {
@@ -178,6 +240,80 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      contratos_modelo: {
+        Row: {
+          campos_obrigatorios: Json | null
+          created_at: string
+          id: string
+          nome: string
+          regras_validacao: Json | null
+          template_ativo: boolean
+        }
+        Insert: {
+          campos_obrigatorios?: Json | null
+          created_at?: string
+          id?: string
+          nome: string
+          regras_validacao?: Json | null
+          template_ativo?: boolean
+        }
+        Update: {
+          campos_obrigatorios?: Json | null
+          created_at?: string
+          id?: string
+          nome?: string
+          regras_validacao?: Json | null
+          template_ativo?: boolean
+        }
+        Relationships: []
+      }
+      erros_detectados: {
+        Row: {
+          analise_id: string
+          campo_afetado: string
+          confianca: number
+          created_at: string
+          id: string
+          severidade: string
+          sugestao_correcao: string | null
+          tipo_erro: string
+          valor_encontrado: string | null
+          valor_esperado: string | null
+        }
+        Insert: {
+          analise_id: string
+          campo_afetado: string
+          confianca: number
+          created_at?: string
+          id?: string
+          severidade: string
+          sugestao_correcao?: string | null
+          tipo_erro: string
+          valor_encontrado?: string | null
+          valor_esperado?: string | null
+        }
+        Update: {
+          analise_id?: string
+          campo_afetado?: string
+          confianca?: number
+          created_at?: string
+          id?: string
+          severidade?: string
+          sugestao_correcao?: string | null
+          tipo_erro?: string
+          valor_encontrado?: string | null
+          valor_esperado?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erros_detectados_analise_id_fkey"
+            columns: ["analise_id"]
+            isOneToOne: false
+            referencedRelation: "analises"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

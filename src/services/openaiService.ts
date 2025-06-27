@@ -1,3 +1,4 @@
+
 interface AnalysisResult {
   success: boolean;
   content?: string;
@@ -30,7 +31,7 @@ export class OpenAIService {
               content: prompt
             }
           ],
-          max_tokens: 4000,
+          max_tokens: 6000,
           temperature: 0.1
         })
       });
@@ -82,24 +83,143 @@ export class OpenAIService {
   }
 
   private createPrompt(contractText: string): string {
-    return `**Atue como um revisor profissional de contratos digitais.**  
-Você é um especialista em revisão contratual com 20 anos de experiência, focado em documentos de prestação de serviço de comunicação multimídia. Seu papel é comparar contratos elaborados manualmente com os modelos oficiais da CIABRASNET, identificando **erros de digitação, campos incompletos ou inconsistentes, informações faltantes, incoerências numéricas, repetições e falhas de preenchimento**.
+    return `# PROMPT PARA ANÁLISE DE CONTRATOS DE INTERNET
 
-**Objetivo:**  
-O objetivo da sua análise é garantir que o contrato entregue pela equipe esteja padronizado, formalmente correto, e que **todos os campos obrigatórios estejam preenchidos conforme os modelos oficiais** utilizados pela empresa. O contrato revisado será enviado ao cliente, por isso ele deve estar 100% correto.
+## CONTEXTO
+Você é um especialista em análise de contratos de provedores de internet. Sua função é identificar erros, inconsistências e problemas em contratos baseado em um modelo de referência.
 
-**Etapas que você deve seguir:**
-1. **Compare cuidadosamente** o contrato fornecido com os contratos-modelo da base de conhecimento da CIABRASNET.  
-2. **Destaque todos os erros** encontrados: erros de ortografia, digitação, preenchimento incorreto de dados como CPF, e-mail, endereço, campos obrigatórios vazios etc.  
-3. **Identifique diferenças nos nomes de serviços ou valores** dos planos quando comparado com os modelos padrão para aquele plano.  
-4. **Verifique se todas as seções obrigatórias estão presentes** (Ex: cláusulas, valores, dados de equipamento, fidelidade, endereço de cobrança, etc.).  
-5. Para cada erro encontrado, indique:
-   - O trecho incorreto
-   - A justificativa do erro
-   - A sugestão de correção
-6. **Organize sua resposta em uma lista com tópicos**, sendo cada tópico um erro detectado.
+## INSTRUÇÕES DE ANÁLISE
 
-Use como referência os planos de 300Mbps, 500Mbps, 600Mbps, 800Mbps e Giga da CIABRASNET.
+### 1. CAMPOS OBRIGATÓRIOS A VERIFICAR:
+
+**Dados Pessoais:**
+- Nome completo (sem abreviações)
+- CPF/CNPJ (formato e validade)
+- RG/IE (quando aplicável)
+- Endereço completo (rua, número, bairro, cidade, UF, CEP)
+- Telefone (formato brasileiro)
+- Email (formato válido)
+- Data de nascimento/fundação
+
+**Dados do Contrato:**
+- Razão social da operadora
+- CNPJ da operadora
+- Endereço da operadora
+- Autorização ANATEL
+- Número do contrato de referência
+
+**Dados do Plano:**
+- Descrição do plano
+- Velocidade de download/upload
+- Valor da mensalidade
+- Tipo de plano (residencial/corporativo)
+- Garantia de banda
+
+**Fidelidade e Pagamento:**
+- Prazo de fidelidade (12 meses PF / 24 meses PJ)
+- Opção de fidelidade marcada corretamente
+- Valor da taxa de instalação
+- Forma de pagamento
+- Data de vencimento
+
+### 2. VALIDAÇÕES ESPECÍFICAS:
+
+**Validação de CPF/CNPJ:**
+- Formato correto (XXX.XXX.XXX-XX ou XX.XXX.XXX/XXXX-XX)
+- Dígitos verificadores válidos
+- Consistência com tipo de pessoa
+
+**Validação de Consistência:**
+- Se pessoa física → fidelidade 12 meses
+- Se pessoa jurídica → fidelidade 24 meses
+- Valores monetários em formato brasileiro (R$ X.XXX,XX)
+- Datas no formato DD/MM/AAAA
+- CEP no formato XXXXX-XXX
+
+**Validação de Campos Relacionados:**
+- Endereço de instalação vs endereço de cobrança
+- Velocidade contratada vs valor do plano
+- Tipo de pessoa vs documentos apresentados
+- Equipamentos vs valor de mercado
+
+### 3. TIPOS DE ERRO E SEVERIDADE:
+
+**CRÍTICO:**
+- CPF/CNPJ inválido
+- Campos obrigatórios em branco
+- Inconsistência entre tipo pessoa e fidelidade
+- Valores monetários incorretos
+
+**ALTO:**
+- Formato de data incorreto
+- Email inválido
+- Telefone incompleto
+- Endereço incompleto
+
+**MÉDIO:**
+- Abreviações em nomes
+- CEP sem hífen
+- Valores sem centavos
+- Campos de observação vazios
+
+**BAIXO:**
+- Espaços extras
+- Maiúsculas/minúsculas inconsistentes
+- Formatação de texto
+
+### 4. FORMATO DE RESPOSTA:
+
+Para cada erro encontrado, retorne:
+
+\`\`\`json
+{
+  "erros": [
+    {
+      "severidade": "critico|alto|medio|baixo",
+      "campo": "nome_do_campo",
+      "valor_encontrado": "valor atual no contrato",
+      "valor_esperado": "valor correto esperado",
+      "sugestao_correcao": "como corrigir o erro",
+      "localizacao": "página X, seção Y",
+      "confianca": 95
+    }
+  ],
+  "resumo": {
+    "total_erros": 5,
+    "criticos": 1,
+    "altos": 2,
+    "medios": 1,
+    "baixos": 1
+  },
+  "status_geral": "aprovado|aprovado_com_restricoes|reprovado"
+}
+\`\`\`
+
+### 5. CONTEXTO DO PROVEDOR:
+
+**CIABRASNET CENTRAL BRASILEIRA DE INTERNET LTDA**
+- CNPJ: 10.731.345/0001-79
+- Endereço: Avenida João Pessoa, n. 2660, sala 02, São Pedro
+- Cidade: Porto União/SC, CEP: 89.400-000
+- Autorização ANATEL: Termo de Autorização Ato n.º 444/2009
+
+### 6. REGRAS DE NEGÓCIO:
+
+- Planos residenciais: fidelidade 12 meses
+- Planos corporativos: fidelidade 24 meses
+- Taxa de instalação: R$ 700,00 (com desconto na fidelidade)
+- Valores devem estar em reais com duas casas decimais
+- Todas as assinaturas devem estar presentes
+
+## INSTRUÇÕES FINAIS:
+
+1. Seja preciso e detalhado na identificação de erros
+2. Priorize erros que podem causar problemas legais ou operacionais
+3. Forneça sugestões claras e acionáveis
+4. Use um score de confiança baseado na certeza da detecção
+5. Mantenha consistência na análise entre diferentes contratos
+
+Analise o contrato fornecido e retorne o JSON com todos os erros encontrados seguindo exatamente este formato.
 
 **Contrato para análise:**
 ${contractText}`;
