@@ -3,11 +3,16 @@ import UserMenu from "./UserMenu";
 
 const Header = () => {
   return (
-    <header className="bg-slate-800 text-white py-6 shadow-lg">
-      <div className="container mx-auto px-4 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">
-          Analisador Ortográfico de Contratos
-        </h1>
+    <header className="bg-white border-b border-border shadow-sm">
+      <div className="container mx-auto px-4 flex items-center justify-between h-16">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
+            <span className="text-sm font-bold">C</span>
+          </div>
+          <h1 className="text-lg font-semibold text-foreground">
+            Analisador Ortográfico de Contratos
+          </h1>
+        </div>
         <UserMenu />
       </div>
     </header>
