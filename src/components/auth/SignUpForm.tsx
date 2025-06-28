@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Mail, Lock, User, AlertCircle, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import InteractiveButton from "../InteractiveButton";
 
 interface SignUpFormProps {
   onSignUpSuccess: () => void;
@@ -102,13 +103,15 @@ const SignUpForm = ({ onSignUpSuccess }: SignUpFormProps) => {
 
   if (success) {
     return (
-      <div className="text-center space-y-4">
-        <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
+      <div className="text-center space-y-4 animate-scale-in">
+        <div className="w-16 h-16 bg-success rounded-full flex items-center justify-center mx-auto shadow-lift">
+          <CheckCircle className="h-8 w-8 text-white" />
+        </div>
         <div>
-          <h3 className="text-lg font-semibold text-green-700">
+          <h3 className="text-lg font-semibold text-success mb-2">
             Cadastro realizado com sucesso!
           </h3>
-          <p className="text-sm text-gray-600 mt-2">
+          <p className="text-body text-muted-foreground">
             Verifique seu email para confirmar a conta.
           </p>
         </div>
@@ -117,18 +120,20 @@ const SignUpForm = ({ onSignUpSuccess }: SignUpFormProps) => {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
-        <Label htmlFor="name">Nome completo</Label>
+        <Label htmlFor="name" className="text-label text-foreground">
+          Nome completo
+        </Label>
         <div className="relative">
-          <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             id="name"
             type="text"
             placeholder="Seu nome completo"
             value={formData.name}
             onChange={(e) => handleInputChange("name", e.target.value)}
-            className="pl-10"
+            className="pl-10 focus-ring hover:border-primary/50 transition-colors"
             required
             disabled={isLoading}
           />
@@ -136,16 +141,18 @@ const SignUpForm = ({ onSignUpSuccess }: SignUpFormProps) => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="signup-email">Email</Label>
+        <Label htmlFor="signup-email" className="text-label text-foreground">
+          Email
+        </Label>
         <div className="relative">
-          <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             id="signup-email"
             type="email"
             placeholder="seu@email.com"
             value={formData.email}
             onChange={(e) => handleInputChange("email", e.target.value)}
-            className="pl-10"
+            className="pl-10 focus-ring hover:border-primary/50 transition-colors"
             required
             disabled={isLoading}
           />
@@ -153,16 +160,18 @@ const SignUpForm = ({ onSignUpSuccess }: SignUpFormProps) => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="signup-password">Senha</Label>
+        <Label htmlFor="signup-password" className="text-label text-foreground">
+          Senha
+        </Label>
         <div className="relative">
-          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             id="signup-password"
             type="password"
             placeholder="Mínimo 6 caracteres"
             value={formData.password}
             onChange={(e) => handleInputChange("password", e.target.value)}
-            className="pl-10"
+            className="pl-10 focus-ring hover:border-primary/50 transition-colors"
             required
             disabled={isLoading}
           />
@@ -170,16 +179,18 @@ const SignUpForm = ({ onSignUpSuccess }: SignUpFormProps) => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="confirm-password">Confirmar senha</Label>
+        <Label htmlFor="confirm-password" className="text-label text-foreground">
+          Confirmar senha
+        </Label>
         <div className="relative">
-          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             id="confirm-password"
             type="password"
             placeholder="Confirme sua senha"
             value={formData.confirmPassword}
             onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-            className="pl-10"
+            className="pl-10 focus-ring hover:border-primary/50 transition-colors"
             required
             disabled={isLoading}
           />
@@ -187,26 +198,23 @@ const SignUpForm = ({ onSignUpSuccess }: SignUpFormProps) => {
       </div>
 
       {error && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="animate-fade-in">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      <Button
+      <InteractiveButton
         type="submit"
-        className="w-full bg-slate-700 hover:bg-slate-800"
+        className="w-full bg-gradient-orange hover:opacity-90 text-white font-medium shadow-colored"
+        loading={isLoading}
+        loadingText="Criando conta..."
+        interactive={true}
+        glowEffect={true}
         disabled={isLoading}
       >
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Criando conta...
-          </>
-        ) : (
-          "Criar conta"
-        )}
-      </Button>
+        {!isLoading && "Criar conta"}
+      </InteractiveButton>
     </form>
   );
 };

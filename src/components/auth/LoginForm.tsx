@@ -8,6 +8,7 @@ import { Loader2, Mail, Lock, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import InteractiveButton from "../InteractiveButton";
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
@@ -64,18 +65,20 @@ const LoginForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email" className="text-label text-foreground">
+          Email
+        </Label>
         <div className="relative">
-          <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             id="email"
             type="email"
             placeholder="seu@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="pl-10"
+            className="pl-10 focus-ring hover:border-primary/50 transition-colors"
             required
             disabled={isLoading}
           />
@@ -83,16 +86,18 @@ const LoginForm = () => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password">Senha</Label>
+        <Label htmlFor="password" className="text-label text-foreground">
+          Senha
+        </Label>
         <div className="relative">
-          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             id="password"
             type="password"
             placeholder="Sua senha"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="pl-10"
+            className="pl-10 focus-ring hover:border-primary/50 transition-colors"
             required
             disabled={isLoading}
           />
@@ -100,26 +105,23 @@ const LoginForm = () => {
       </div>
 
       {error && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="animate-fade-in">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      <Button
+      <InteractiveButton
         type="submit"
-        className="w-full bg-slate-700 hover:bg-slate-800"
+        className="w-full bg-gradient-orange hover:opacity-90 text-white font-medium shadow-colored"
+        loading={isLoading}
+        loadingText="Entrando..."
+        interactive={true}
+        glowEffect={true}
         disabled={isLoading}
       >
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Entrando...
-          </>
-        ) : (
-          "Entrar"
-        )}
-      </Button>
+        {!isLoading && "Entrar"}
+      </InteractiveButton>
     </form>
   );
 };
