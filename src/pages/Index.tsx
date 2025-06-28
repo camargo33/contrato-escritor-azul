@@ -1,40 +1,17 @@
 
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
-import ContractsBaseSection from '../components/ContractsBaseSection';
-import ContractAnalysisSection from '../components/ContractAnalysisSection';
+// Este arquivo foi substituído pelo novo sistema de páginas separadas
+// Redirecionando para Dashboard
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
-  return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
-        <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border bg-background px-4 shadow-sm">
-            <SidebarTrigger className="-ml-1" />
-            <div className="flex-1">
-              <h1 className="text-xl font-semibold text-foreground">
-                Analisador Ortográfico de Contratos
-              </h1>
-            </div>
-          </header>
-          
-          <main className="flex-1 overflow-auto bg-background p-6">
-            <div className="mx-auto max-w-7xl">
-              <div className="flex flex-col lg:flex-row gap-6">
-                <div className="lg:w-2/5">
-                  <ContractsBaseSection />
-                </div>
-                <div className="lg:w-3/5">
-                  <ContractAnalysisSection />
-                </div>
-              </div>
-            </div>
-          </main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
-  );
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    navigate('/', { replace: true });
+  }, [navigate]);
+
+  return null;
 };
 
 export default Index;
