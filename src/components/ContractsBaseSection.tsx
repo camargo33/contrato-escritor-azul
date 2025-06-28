@@ -3,18 +3,22 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, Calendar, CheckCircle } from "lucide-react";
+import { FileText, Plus, Calendar, CheckCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import AddContractModal from './AddContractModal';
 import ContractPreviewModal from './ContractPreviewModal';
+import DeleteContractDialog from './DeleteContractDialog';
 import AnimatedCard from './AnimatedCard';
 import InteractiveButton from './InteractiveButton';
 import { useBaseContracts } from '@/hooks/useBaseContracts';
+import { BaseContract } from '@/services/contractService';
 
 const ContractsBaseSection = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [previewContract, setPreviewContract] = useState<any>(null);
-  const { contracts, isLoading, error, refetch, addMultipleContracts } = useBaseContracts();
+  const [contractToDelete, setContractToDelete] = useState<BaseContract | null>(null);
+  const [isDeletingContract, setIsDeletingContract] = useState(false);
+  const { contracts, isLoading, error, refetch, addMultipleContracts, deleteContract } = useBaseContracts();
 
   const handleContractAdded = () => {
     refetch();
@@ -23,6 +27,29 @@ const ContractsBaseSection = () => {
 
   const handlePreview = (contract: any) => {
     setPreviewContract(contract);
+  };
+
+  const handleDeleteClick = (contract: BaseContract, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevenir abertura do preview
+    setContractToDelete(contract);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!contractToDelete) return;
+
+    setIsDeletingContract(true);
+    const success = await deleteContract(contractToDelete.id);
+    setIsDeletingContract(false);
+    
+    if (success) {
+      setContractToDelete(null);
+    }
+  };
+
+  const handleCloseDeleteDialog = () => {
+    if (!isDeletingContract) {
+      setContractToDelete(null);
+    }
   };
 
   if (error) {
@@ -77,11 +104,20 @@ const ContractsBaseSection = () => {
               {contracts.map((contract, index) => (
                 <div 
                   key={contract.id}
-                  className="stagger-item group p-4 rounded-lg border border-border bg-card hover:bg-accent/50 hover:border-primary/20 transition-all duration-200 cursor-pointer hover:shadow-sm"
+                  className="stagger-item group relative p-4 rounded-lg border border-border bg-card hover:bg-accent/50 hover:border-primary/20 transition-all duration-200 cursor-pointer hover:shadow-sm"
                   style={{ animationDelay: `${index * 0.1}s` }}
                   onClick={() => handlePreview(contract)}
                 >
-                  <div className="flex items-center gap-3">
+                  {/* Botão de Delete */}
+                  <button
+                    onClick={(e) => handleDeleteClick(contract, e)}
+                    className="absolute top-3 right-3 p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 opacity-0 group-hover:opacity-100 z-10"
+                    title="Remover contrato"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+
+                  <div className="flex items-center gap-3 pr-10">
                     <div className="p-2 bg-primary/10 text-primary rounded-lg group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200">
                       <FileText className="h-4 w-4" />
                     </div>
@@ -148,6 +184,14 @@ const ContractsBaseSection = () => {
         isOpen={!!previewContract}
         onClose={() => setPreviewContract(null)}
         contractName={previewContract?.name || previewContract?.original_filename || 'Contrato'}
+      />
+
+      <DeleteContractDialog
+        isOpen={!!contractToDelete}
+        onClose={handleCloseDeleteDialog}
+        onConfirm={handleConfirmDelete}
+        contract={contractToDelete}
+        isDeleting={isDeletingContract}
       />
     </>
   );

@@ -115,6 +115,81 @@ export const contractService = {
     }
   },
 
+  // Remover contrato base
+  async deleteBaseContract(contractId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      console.log("Iniciando remoção do contrato:", contractId);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error("Usuário não autenticado");
+        return { success: false, error: "Usuário não autenticado" };
+      }
+
+      // 1. Buscar dados do contrato para obter o file_path
+      const { data: contract, error: fetchError } = await supabase
+        .from('base_contracts')
+        .select('file_path, user_id')
+        .eq('id', contractId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (fetchError || !contract) {
+        console.error("Erro ao buscar contrato ou contrato não encontrado:", fetchError);
+        return { success: false, error: "Contrato não encontrado ou sem permissão" };
+      }
+
+      console.log("Contrato encontrado:", contract);
+
+      // 2. Remover cláusulas relacionadas
+      const { error: clausesError } = await supabase
+        .from('contract_clauses')
+        .delete()
+        .eq('base_contract_id', contractId);
+
+      if (clausesError) {
+        console.error("Erro ao remover cláusulas:", clausesError);
+        return { success: false, error: "Erro ao remover cláusulas do contrato" };
+      }
+
+      console.log("Cláusulas removidas com sucesso");
+
+      // 3. Remover registro do banco
+      const { error: deleteError } = await supabase
+        .from('base_contracts')
+        .delete()
+        .eq('id', contractId)
+        .eq('user_id', user.id);
+
+      if (deleteError) {
+        console.error("Erro ao remover contrato do banco:", deleteError);
+        return { success: false, error: "Erro ao remover contrato do banco de dados" };
+      }
+
+      console.log("Contrato removido do banco com sucesso");
+
+      // 4. Remover arquivo do storage (se existir)
+      if (contract.file_path) {
+        const { error: storageError } = await supabase.storage
+          .from('base-contracts')
+          .remove([contract.file_path]);
+
+        if (storageError) {
+          console.error("Erro ao remover arquivo do storage:", storageError);
+          // Não retorna erro aqui pois o registro já foi removido do banco
+          console.warn("Arquivo pode não ter sido removido do storage, mas contrato foi removido do sistema");
+        } else {
+          console.log("Arquivo removido do storage com sucesso");
+        }
+      }
+
+      return { success: true };
+    } catch (error: any) {
+      console.error("Erro geral na remoção:", error);
+      return { success: false, error: `Erro inesperado na remoção: ${error.message || 'Erro desconhecido'}` };
+    }
+  },
+
   // Processamento em background do contrato
   async processContractInBackground(contractId: string, file: File) {
     try {

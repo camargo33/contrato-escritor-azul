@@ -89,6 +89,24 @@ export const useBaseContracts = () => {
     return { successCount, errorCount };
   };
 
+  const deleteContract = async (contractId: string) => {
+    console.log("Removendo contrato:", contractId);
+    const result = await contractService.deleteBaseContract(contractId);
+    
+    if (result.success) {
+      toast.success("Contrato removido com sucesso!");
+      // Remover da lista local imediatamente para melhor UX
+      setContracts(prev => prev.filter(contract => contract.id !== contractId));
+      // Recarregar a lista para garantir consistência
+      await loadContracts();
+      return true;
+    } else {
+      console.error("Erro ao remover contrato:", result.error);
+      toast.error(result.error || "Erro ao remover contrato");
+      return false;
+    }
+  };
+
   useEffect(() => {
     loadContracts();
   }, []);
@@ -100,6 +118,7 @@ export const useBaseContracts = () => {
     refetch,
     loadContracts,
     addContract,
-    addMultipleContracts
+    addMultipleContracts,
+    deleteContract
   };
 };
