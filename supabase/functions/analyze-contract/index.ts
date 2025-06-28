@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -168,26 +167,39 @@ serve(async (req) => {
       throw new Error('Texto do contrato é obrigatório');
     }
 
-    console.log("Verificando API key da OpenAI...");
+    console.log("=== VERIFICANDO CONFIGURAÇÃO DA API KEY ===");
     
-    // Verificar múltiplas possibilidades de configuração da API key
-    let openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIApiKey) {
-      openAIApiKey = Deno.env.get('OpenAI');
-    }
-    if (!openAIApiKey) {
-      openAIApiKey = Deno.env.get('OPENAI');
+    // Verificar todas as possíveis configurações da API key
+    const possibleKeys = ['OPENAI_API_KEY', 'OpenAI', 'OPENAI'];
+    let openAIApiKey = null;
+    
+    for (const keyName of possibleKeys) {
+      const key = Deno.env.get(keyName);
+      if (key) {
+        console.log(`✓ Encontrada API key: ${keyName}`);
+        openAIApiKey = key;
+        break;
+      } else {
+        console.log(`✗ Não encontrada: ${keyName}`);
+      }
     }
     
+    // Listar todas as variáveis de ambiente disponíveis (sem mostrar valores)
+    const allEnvVars = Object.keys(Deno.env.toObject());
+    console.log("Variáveis de ambiente disponíveis:", allEnvVars);
+    
     if (!openAIApiKey) {
-      console.error("ERRO CRÍTICO: Nenhuma API key encontrada");
-      console.log("Variáveis de ambiente disponíveis:", Object.keys(Deno.env.toObject()));
+      console.error("❌ ERRO CRÍTICO: Nenhuma API key da OpenAI encontrada");
       
       const result = {
         success: false,
-        error: "Chave da API OpenAI não configurada. Por favor, configure OPENAI_API_KEY nos secrets do Supabase Edge Functions.",
+        error: "API key da OpenAI não configurada. Verifique se uma das seguintes variáveis está definida nos secrets: OPENAI_API_KEY, OpenAI, ou OPENAI",
         timestamp: new Date().toLocaleString('pt-BR'),
-        filename: filename || 'arquivo.pdf'
+        filename: filename || 'arquivo.pdf',
+        debug: {
+          available_env_vars: allEnvVars,
+          checked_keys: possibleKeys
+        }
       };
 
       return new Response(JSON.stringify(result), {
@@ -196,13 +208,14 @@ serve(async (req) => {
       });
     }
 
-    // Validar se a API key tem o formato correto
+    // Validar formato da API key
     if (!openAIApiKey.startsWith('sk-')) {
-      console.error("ERRO: API key não tem o formato correto (deve começar com 'sk-')");
+      console.error("❌ ERRO: API key não tem o formato correto");
+      console.log("Formato atual:", openAIApiKey.substring(0, 10) + "...");
       
       const result = {
         success: false,
-        error: "Chave da API OpenAI inválida. Verifique se a chave está no formato correto (deve começar com 'sk-').",
+        error: "API key da OpenAI inválida. A chave deve começar com 'sk-'. Verifique se a chave foi copiada corretamente.",
         timestamp: new Date().toLocaleString('pt-BR'),
         filename: filename || 'arquivo.pdf'
       };
@@ -213,10 +226,13 @@ serve(async (req) => {
       });
     }
 
-    console.log("API key encontrada e validada, iniciando análise...");
-    console.log("Arquivo:", filename);
+    console.log("✅ API key validada com sucesso");
+    console.log("Iniciando análise para arquivo:", filename);
     console.log("Tamanho do texto:", contractText.length, "caracteres");
 
+    // Testar conectividade com OpenAI
+    console.log("🔄 Testando conectividade com OpenAI...");
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -237,20 +253,23 @@ serve(async (req) => {
       signal: AbortSignal.timeout(60000)
     });
 
-    console.log("Status da resposta OpenAI:", response.status);
+    console.log("📡 Status da resposta OpenAI:", response.status);
+    console.log("📡 Headers da resposta:", Object.fromEntries(response.headers.entries()));
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Erro na API OpenAI: ${response.status} - ${errorText}`);
+      console.error(`❌ Erro na API OpenAI: ${response.status} - ${errorText}`);
       
       let errorMessage = "Erro na comunicação com OpenAI";
       
       if (response.status === 401) {
-        errorMessage = 'Chave da API OpenAI inválida ou expirada. Verifique se a chave está correta nos secrets do Supabase.';
+        errorMessage = 'API key da OpenAI inválida ou expirada. Verifique se a chave está correta e ativa em sua conta OpenAI.';
       } else if (response.status === 429) {
-        errorMessage = 'Limite de uso da API OpenAI atingido. Tente novamente em alguns minutos.';
+        errorMessage = 'Limite de uso da API OpenAI atingido. Tente novamente em alguns minutos ou verifique seu plano OpenAI.';
       } else if (response.status === 400) {
-        errorMessage = 'Erro na requisição para OpenAI. Verifique o formato dos dados enviados.';
+        errorMessage = 'Erro na requisição para OpenAI. O formato dos dados pode estar incorreto.';
+      } else if (response.status === 503) {
+        errorMessage = 'Serviço da OpenAI temporariamente indisponível. Tente novamente em alguns minutos.';
       } else {
         errorMessage = `Erro na API OpenAI: ${response.status} - ${response.statusText}`;
       }
@@ -259,7 +278,11 @@ serve(async (req) => {
         success: false,
         error: errorMessage,
         timestamp: new Date().toLocaleString('pt-BR'),
-        filename: filename || 'arquivo.pdf'
+        filename: filename || 'arquivo.pdf',
+        debug: {
+          status: response.status,
+          response_text: errorText.substring(0, 500)
+        }
       };
 
       return new Response(JSON.stringify(result), {
@@ -271,11 +294,11 @@ serve(async (req) => {
     const data = await response.json();
     
     if (!data.choices || data.choices.length === 0) {
-      console.error("Resposta inválida da OpenAI:", data);
+      console.error("❌ Resposta inválida da OpenAI:", data);
       
       const result = {
         success: false,
-        error: 'Resposta inválida da OpenAI',
+        error: 'Resposta inválida da OpenAI. Tente novamente.',
         timestamp: new Date().toLocaleString('pt-BR'),
         filename: filename || 'arquivo.pdf'
       };
@@ -286,7 +309,7 @@ serve(async (req) => {
       });
     }
 
-    console.log("Análise concluída com sucesso!");
+    console.log("✅ Análise concluída com sucesso!");
 
     const result = {
       success: true,
@@ -310,9 +333,9 @@ serve(async (req) => {
     if (error.name === 'AbortError') {
       errorMessage = "Timeout na análise (60s). Tente novamente com um arquivo menor.";
     } else if (error.message.includes('API key da OpenAI não configurada')) {
-      errorMessage = "Chave da API OpenAI não configurada. Verifique os secrets do Supabase.";
+      errorMessage = "API key da OpenAI não configurada. Verifique os secrets do Supabase.";
     } else if (error.message.includes('401') || error.message.includes('inválida')) {
-      errorMessage = "Chave da API OpenAI inválida. Verifique sua chave da OpenAI nos secrets do Supabase.";
+      errorMessage = "API key da OpenAI inválida. Verifique sua chave da OpenAI nos secrets do Supabase.";
     } else if (error.message.includes('429')) {
       errorMessage = "Limite de uso da API atingido. Tente novamente em alguns minutos.";
     } else if (error.message.includes('400')) {
@@ -327,7 +350,11 @@ serve(async (req) => {
       success: false,
       error: errorMessage,
       timestamp: new Date().toLocaleString('pt-BR'),
-      filename: ''
+      filename: '',
+      debug: {
+        error_name: error.name,
+        error_message: error.message
+      }
     };
 
     return new Response(JSON.stringify(result), {
