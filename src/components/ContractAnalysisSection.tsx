@@ -6,6 +6,7 @@ import { AlertCircle, Zap } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { openaiService } from '@/services/openaiService';
+import { useQueryClient } from "@tanstack/react-query";
 import AnalysisReport from './AnalysisReport';
 import FileUploadArea from './FileUploadArea';
 import TextPreviewCard from './TextPreviewCard';
@@ -16,6 +17,7 @@ import { useContractUpload } from '@/hooks/useContractUpload';
 
 const ContractAnalysisSection = () => {
   const { uploadState, setUploadState, resetUpload, handleNewAnalysis } = useContractUpload();
+  const queryClient = useQueryClient();
 
   const handleAnalyze = async () => {
     if (!uploadState.file || !uploadState.fullText) return;
@@ -37,6 +39,12 @@ const ContractAnalysisSection = () => {
           isAnalyzing: false,
           analysisResult: result
         }));
+        
+        // Invalidar queries para atualizar dashboard e relatórios
+        queryClient.invalidateQueries({ queryKey: ['analysis-history'] });
+        queryClient.invalidateQueries({ queryKey: ['analysis-reports'] });
+        queryClient.invalidateQueries({ queryKey: ['base-contracts-stats'] });
+        
         toast.success("Análise concluída com sucesso!");
       } else {
         setUploadState(prev => ({
@@ -55,6 +63,13 @@ const ContractAnalysisSection = () => {
       }));
       toast.error("Erro inesperado na análise");
     }
+  };
+
+  const handleNewAnalysisWithRefresh = () => {
+    handleNewAnalysis();
+    // Invalidar queries novamente para garantir dados atualizados
+    queryClient.invalidateQueries({ queryKey: ['analysis-history'] });
+    queryClient.invalidateQueries({ queryKey: ['analysis-reports'] });
   };
 
   return (
@@ -127,7 +142,7 @@ const ContractAnalysisSection = () => {
               content={uploadState.analysisResult.content}
               timestamp={uploadState.analysisResult.timestamp}
               filename={uploadState.analysisResult.filename}
-              onNewAnalysis={handleNewAnalysis}
+              onNewAnalysis={handleNewAnalysisWithRefresh}
             />
           </div>
         )}
