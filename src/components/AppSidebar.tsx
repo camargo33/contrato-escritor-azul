@@ -5,9 +5,6 @@ import {
   Home, 
   FileText, 
   BarChart3, 
-  Settings, 
-  Users, 
-  Archive,
   ChevronRight,
   FileSearch
 } from "lucide-react";
@@ -50,27 +47,6 @@ const navigationItems = [
     url: "/relatorios",
     icon: BarChart3,
     description: "Estatísticas e relatórios"
-  },
-  {
-    title: "Usuários",
-    url: "/usuarios",
-    icon: Users,
-    description: "Gerenciar usuários"
-  },
-  {
-    title: "Arquivo",
-    url: "/arquivo",
-    icon: Archive,
-    description: "Contratos arquivados"
-  }
-];
-
-const settingsItems = [
-  {
-    title: "Configurações",
-    url: "/configuracoes",
-    icon: Settings,
-    description: "Configurações do sistema"
   }
 ];
 
@@ -124,37 +100,6 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
               {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      className={getNavClassName(item.url)}
-                      title={isCollapsed ? item.title : item.description}
-                    >
-                      <item.icon className="h-5 w-5 shrink-0" />
-                      {!isCollapsed && (
-                        <>
-                          <span className="flex-1">{item.title}</span>
-                          {isActive(item.url) && (
-                            <ChevronRight className="h-4 w-4 opacity-60" />
-                          )}
-                        </>
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup className="mt-8">
-          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground mb-2">
-            {!isCollapsed && "Sistema"}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {settingsItems.map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild>
                     <NavLink
