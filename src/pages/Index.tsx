@@ -1,17 +1,16 @@
 
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import Header from '../components/Header';
 import ContractsBaseSection from '../components/ContractsBaseSection';
 import ContractAnalysisSection from '../components/ContractAnalysisSection';
 
 const Index = () => {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-slate-50">
+      <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border bg-background px-4 shadow-sm">
             <SidebarTrigger className="-ml-1" />
             <div className="flex-1">
               <h1 className="text-xl font-semibold text-foreground">
@@ -20,7 +19,7 @@ const Index = () => {
             </div>
           </header>
           
-          <main className="flex-1 overflow-auto bg-slate-50 p-6">
+          <main className="flex-1 overflow-auto bg-background p-6">
             <div className="mx-auto max-w-7xl">
               <div className="flex flex-col lg:flex-row gap-6">
                 <div className="lg:w-2/5">

@@ -2,131 +2,152 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Loader2, Clock, CheckCircle } from "lucide-react";
-import ContractPreviewModal from "./ContractPreviewModal";
-import AddContractModal from "./AddContractModal";
-import { useBaseContracts } from "@/hooks/useBaseContracts";
-import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { FileText, Plus, Calendar, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
+import AddContractModal from './AddContractModal';
+import ContractPreviewModal from './ContractPreviewModal';
+import AnimatedCard from './AnimatedCard';
+import InteractiveButton from './InteractiveButton';
+import { useBaseContracts } from '@/hooks/useBaseContracts';
 
 const ContractsBaseSection = () => {
-  const { contracts, isLoading, addMultipleContracts } = useBaseContracts();
-  const [selectedContract, setSelectedContract] = useState<string | null>(null);
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [previewContract, setPreviewContract] = useState<any>(null);
+  const { contracts, isLoading, error, refetch } = useBaseContracts();
 
-  const handleContractClick = (contractName: string) => {
-    setSelectedContract(contractName);
-    setIsPreviewModalOpen(true);
+  const handleContractAdded = () => {
+    refetch();
+    toast.success("Contrato base adicionado com sucesso!");
   };
 
-  const handleAddContracts = async (files: File[]) => {
-    return await addMultipleContracts(files);
+  const handlePreview = (contract: any) => {
+    setPreviewContract(contract);
   };
 
-  if (isLoading) {
+  if (error) {
     return (
-      <Card className="h-fit">
-        <CardHeader className="bg-slate-700 text-white">
-          <CardTitle className="text-xl">Contratos Base</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-slate-600" />
-          <span className="ml-2 text-slate-600">Carregando contratos...</span>
-        </CardContent>
-      </Card>
+      <AnimatedCard className="border-destructive bg-destructive/5">
+        <div className="text-center p-4">
+          <p className="text-destructive">Erro ao carregar contratos base</p>
+        </div>
+      </AnimatedCard>
     );
   }
 
   return (
     <>
-      <Card className="h-fit">
-        <CardHeader className="bg-slate-700 text-white">
-          <CardTitle className="text-xl">
-            Contratos Base ({contracts.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-4">
-          {contracts.length === 0 ? (
-            <div className="text-center py-8">
-              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 mb-4">
-                Nenhum contrato base adicionado ainda.
-              </p>
-              <p className="text-sm text-gray-400 mb-6">
-                Adicione seus contratos base para começar as análises comparativas.
-              </p>
+      <AnimatedCard 
+        className="h-fit shadow-sm border-border bg-card hover:shadow-lift transition-all duration-300"
+        hoverEffect="lift"
+      >
+        <div className="bg-secondary text-secondary-foreground rounded-t-lg p-6 -m-6 mb-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-secondary-foreground/10 rounded-lg">
+                <FileText className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold">Contratos Base</h2>
+                <p className="text-sm opacity-90">
+                  ({contracts?.length || 0}) contratos disponíveis
+                </p>
+              </div>
             </div>
-          ) : (
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {isLoading ? (
             <div className="space-y-3">
-              {contracts.map((contract) => (
-                <div
-                  key={contract.id}
-                  className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                  onClick={() => handleContractClick(contract.name)}
-                >
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-slate-600" />
-                    {contract.is_processed ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <Clock className="h-4 w-4 text-yellow-500" />
-                    )}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-700 font-medium truncate">
-                        {contract.name}
-                      </span>
-                      {contract.contract_type && (
-                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                          {contract.contract_type}
-                        </span>
-                      )}
-                      {contract.plan_name && (
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                          {contract.plan_name}
-                        </span>
-                      )}
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="flex items-center gap-3 p-4 rounded-lg border border-border bg-muted/30">
+                    <div className="h-10 w-10 bg-muted rounded-lg"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-muted rounded w-3/4"></div>
+                      <div className="h-3 bg-muted rounded w-1/2"></div>
                     </div>
-                    <p className="text-xs text-gray-500">
-                      Adicionado em {format(new Date(contract.upload_date), 'dd/MM/yyyy')}
-                      {contract.is_processed ? (
-                        <span className="text-green-600 ml-2">• Processado</span>
-                      ) : (
-                        <span className="text-yellow-600 ml-2">• Processando...</span>
-                      )}
-                    </p>
                   </div>
                 </div>
               ))}
             </div>
+          ) : contracts && contracts.length > 0 ? (
+            <div className="space-y-3">
+              {contracts.map((contract, index) => (
+                <div 
+                  key={contract.id}
+                  className="stagger-item group p-4 rounded-lg border border-border bg-card hover:bg-accent/50 hover:border-primary/20 transition-all duration-200 cursor-pointer hover:shadow-sm"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                  onClick={() => handlePreview(contract)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 text-primary rounded-lg group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200">
+                      <FileText className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-medium text-card-foreground group-hover:text-primary transition-colors duration-200">
+                          {contract.title}
+                        </h3>
+                        <Badge 
+                          variant="secondary" 
+                          className="text-xs bg-success/10 text-success border-success/20 hover:bg-success hover:text-success-foreground transition-colors duration-200"
+                        >
+                          auto_detected
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>Adicionado em {new Date(contract.created_at).toLocaleDateString('pt-BR')}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3 text-success" />
+                          <span className="text-success">Processado</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="p-4 bg-muted/30 rounded-lg mb-4 inline-block">
+                <FileText className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground mb-4">
+                Nenhum contrato base encontrado
+              </p>
+            </div>
           )}
-          
-          <div className="mt-6">
-            <Button 
-              variant="outline" 
-              className="w-full border-slate-600 text-slate-700 hover:bg-slate-50"
+
+          <div className="pt-4 border-t border-border">
+            <InteractiveButton
               onClick={() => setIsAddModalOpen(true)}
+              className="w-full bg-background border border-border text-foreground hover:bg-accent hover:border-primary/50 transition-all duration-200"
+              variant="outline"
+              glowEffect={false}
+              bounceOnClick={true}
             >
+              <Plus className="h-4 w-4 mr-2" />
               Adicionar Novos Contratos Base
-            </Button>
+            </InteractiveButton>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </AnimatedCard>
 
-      {/* Modal de Preview */}
-      <ContractPreviewModal
-        isOpen={isPreviewModalOpen}
-        onClose={() => setIsPreviewModalOpen(false)}
-        contractName={selectedContract || ""}
-      />
-
-      {/* Modal de Adicionar */}
       <AddContractModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onAddContracts={handleAddContracts}
+        onContractAdded={handleContractAdded}
+      />
+
+      <ContractPreviewModal
+        contract={previewContract}
+        isOpen={!!previewContract}
+        onClose={() => setPreviewContract(null)}
       />
     </>
   );

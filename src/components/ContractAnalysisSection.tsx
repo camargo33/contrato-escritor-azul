@@ -1,7 +1,8 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Zap } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { openaiService } from '@/services/openaiService';
@@ -58,14 +59,24 @@ const ContractAnalysisSection = () => {
 
   return (
     <AnimatedCard 
-      className="h-fit"
+      className="h-fit shadow-sm border-border bg-card hover:shadow-lift transition-all duration-300"
       hoverEffect="lift"
     >
-      <div className="bg-secondary text-secondary-foreground rounded-t-lg p-6 -m-6 mb-6">
+      <div className="bg-secondary text-secondary-foreground rounded-t-lg p-6 -m-6 mb-6 shadow-sm">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Análise de Contrato</h2>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-secondary-foreground/10 rounded-lg">
+              <Zap className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold">Análise de Contrato</h2>
+              <p className="text-sm opacity-90">
+                Análise inteligente com IA
+              </p>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
-            <div className="text-xs bg-whatsapp px-2 py-1 rounded text-white">
+            <div className="text-xs bg-success px-3 py-1.5 rounded-full text-success-foreground font-medium shadow-sm">
               API Configurada ✓
             </div>
           </div>
@@ -89,6 +100,7 @@ const ContractAnalysisSection = () => {
               type="error"
               title="Erro na Análise"
               message={uploadState.error}
+              className="border-destructive/20 bg-destructive/5"
             />
           </div>
         )}
