@@ -21,6 +21,14 @@ export default {
 		extend: {
 			fontFamily: {
 				'inter': ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+				'sans': ['Inter', 'system-ui', '-apple-system', 'sans-serif']
+			},
+			fontSize: {
+				'title': ['2rem', { lineHeight: '2.5rem', fontWeight: '700' }],
+				'subtitle': ['1.25rem', { lineHeight: '1.75rem', fontWeight: '500' }],
+				'body': ['1rem', { lineHeight: '1.75rem', fontWeight: '400' }],
+				'label': ['0.875rem', { lineHeight: '1.25rem', fontWeight: '500' }],
+				'caption': ['0.75rem', { lineHeight: '1rem', fontWeight: '400' }]
 			},
 			colors: {
 				border: 'hsl(var(--border))',
@@ -68,7 +76,20 @@ export default {
 				},
 				whatsapp: 'hsl(var(--whatsapp-green))',
 				purple: 'hsl(var(--accent-purple))',
-				'bg-light': 'hsl(var(--bg-light))'
+				'bg-light': 'hsl(var(--bg-light))',
+				// Estados de feedback
+				success: {
+					DEFAULT: 'hsl(var(--success))',
+					foreground: 'hsl(var(--success-foreground))'
+				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning))',
+					foreground: 'hsl(var(--warning-foreground))'
+				},
+				info: {
+					DEFAULT: 'hsl(var(--info))',
+					foreground: 'hsl(var(--info-foreground))'
+				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -111,16 +132,41 @@ export default {
 						transform: 'scale(1)',
 						opacity: '1'
 					}
+				},
+				'slide-in-right': {
+					'0%': { transform: 'translateX(100%)' },
+					'100%': { transform: 'translateX(0)' }
+				},
+				'slide-out-right': {
+					'0%': { transform: 'translateX(0)' },
+					'100%': { transform: 'translateX(100%)' }
+				},
+				'shimmer': {
+					'0%': { backgroundPosition: '200% 0' },
+					'100%': { backgroundPosition: '-200% 0' }
+				},
+				'pulse-gentle': {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0.8' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.3s ease-out',
-				'scale-in': 'scale-in 0.2s ease-out'
+				'scale-in': 'scale-in 0.2s ease-out',
+				'slide-in-right': 'slide-in-right 0.3s ease-out',
+				'slide-out-right': 'slide-out-right 0.3s ease-out',
+				'shimmer': 'shimmer 1.5s infinite',
+				'pulse-gentle': 'pulse-gentle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
 			},
 			boxShadow: {
 				'colored': '0 4px 20px -4px hsl(var(--primary) / 0.3)',
+				'lift': '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+			},
+			transitionDuration: {
+				'250': '250ms',
+				'350': '350ms'
 			}
 		}
 	},

@@ -10,15 +10,15 @@ const TextPreviewCard = ({ textPreview }: TextPreviewCardProps) => {
   if (!textPreview) return null;
 
   return (
-    <Card>
+    <Card className="hover-lift transition-all duration-250">
       <CardHeader>
-        <CardTitle className="text-lg text-slate-700 flex items-center gap-2">
+        <CardTitle className="text-subtitle flex items-center gap-2 text-secondary">
           <FileText className="h-5 w-5" />
           Prévia do Texto
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-gray-600 leading-relaxed">
+        <p className="text-body">
           {textPreview}
         </p>
       </CardContent>

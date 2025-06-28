@@ -1,4 +1,6 @@
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -53,6 +55,14 @@
     --whatsapp-green: 142 71% 45%;
     --accent-purple: 250 84% 68%;
     --bg-light: 210 40% 98%;
+
+    /* Estados de feedback */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 221 83% 53%;
+    --info-foreground: 0 0% 100%;
   }
 
   .dark {
@@ -96,6 +106,14 @@
     --whatsapp-green: 142 71% 45%;
     --accent-purple: 250 84% 68%;
     --bg-light: 217.2 32.6% 17.5%;
+
+    /* Estados de feedback modo escuro */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 221 83% 53%;
+    --info-foreground: 0 0% 100%;
   }
 }
 
@@ -107,6 +125,57 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'cv01', 'cv02', 'cv03', 'cv04';
+  }
+
+  /* Hierarquia tipográfica */
+  h1 {
+    @apply text-3xl font-bold tracking-tight text-foreground;
+  }
+
+  h2 {
+    @apply text-2xl font-semibold tracking-tight text-foreground;
+  }
+
+  h3 {
+    @apply text-xl font-semibold text-foreground;
+  }
+
+  h4 {
+    @apply text-lg font-medium text-foreground;
+  }
+
+  h5 {
+    @apply text-base font-medium text-foreground;
+  }
+
+  h6 {
+    @apply text-sm font-medium text-foreground;
+  }
+
+  p {
+    @apply text-base text-muted-foreground leading-relaxed;
+  }
+
+  small {
+    @apply text-sm text-muted-foreground;
+  }
+
+  /* Estados de feedback */
+  .feedback-success {
+    @apply bg-green-50 border-green-200 text-green-800;
+  }
+
+  .feedback-error {
+    @apply bg-red-50 border-red-200 text-red-800;
+  }
+
+  .feedback-warning {
+    @apply bg-yellow-50 border-yellow-200 text-yellow-800;
+  }
+
+  .feedback-info {
+    @apply bg-blue-50 border-blue-200 text-blue-800;
   }
 }
 
@@ -126,5 +195,74 @@
   
   .transition-all {
     transition: all 200ms ease-in-out;
+  }
+
+  /* Estados interativos */
+  .hover-scale {
+    @apply transition-transform duration-200 hover:scale-105;
+  }
+
+  .hover-lift {
+    @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5;
+  }
+
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+
+  /* Hierarquia visual */
+  .text-title {
+    @apply text-2xl font-bold text-foreground;
+  }
+
+  .text-subtitle {
+    @apply text-lg font-medium text-secondary;
+  }
+
+  .text-body {
+    @apply text-base text-muted-foreground leading-relaxed;
+  }
+
+  .text-label {
+    @apply text-sm font-medium text-muted-foreground;
+  }
+
+  .text-caption {
+    @apply text-xs text-muted-foreground;
+  }
+}
+
+/* Animações de feedback */
+@layer components {
+  .feedback-animate {
+    @apply animate-fade-in;
+  }
+
+  .loading-shimmer {
+    background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  .pulse-gentle {
+    animation: pulse-gentle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-gentle {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.8;
+    }
   }
 }
