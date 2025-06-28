@@ -23,22 +23,30 @@ const AddContractModal = ({ isOpen, onClose, onAddContracts }: AddContractModalP
   const [error, setError] = useState<string | null>(null);
 
   const validateFile = (file: File): string | null => {
+    console.log("Validando arquivo:", file.name, "Tipo:", file.type, "Tamanho:", file.size);
+    
     if (file.type !== "application/pdf") {
       return `${file.name}: Por favor, selecione apenas arquivos PDF.`;
     }
     if (file.size > 10 * 1024 * 1024) { // 10MB
       return `${file.name}: O arquivo deve ter no máximo 10MB.`;
     }
+    if (file.size === 0) {
+      return `${file.name}: Arquivo vazio não é permitido.`;
+    }
     return null;
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    console.log("Arquivos selecionados:", files.length);
+    
     if (files.length > 0) {
       const validFiles: File[] = [];
       const errors: string[] = [];
 
       files.forEach(file => {
+        console.log("Processando arquivo:", file.name);
         const validationError = validateFile(file);
         if (validationError) {
           errors.push(validationError);
@@ -54,8 +62,19 @@ const AddContractModal = ({ isOpen, onClose, onAddContracts }: AddContractModalP
         setError(null);
       }
 
-      setSelectedFiles(prev => [...prev, ...validFiles]);
+      setSelectedFiles(prev => {
+        // Evitar duplicatas
+        const newFiles = validFiles.filter(newFile => 
+          !prev.some(existingFile => 
+            existingFile.name === newFile.name && existingFile.size === newFile.size
+          )
+        );
+        return [...prev, ...newFiles];
+      });
     }
+    
+    // Limpar o input para permitir reselecionar o mesmo arquivo
+    e.target.value = '';
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -65,6 +84,8 @@ const AddContractModal = ({ isOpen, onClose, onAddContracts }: AddContractModalP
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const files = Array.from(e.dataTransfer.files);
+    console.log("Arquivos arrastados:", files.length);
+    
     if (files.length > 0) {
       const validFiles: File[] = [];
       const errors: string[] = [];
@@ -85,7 +106,15 @@ const AddContractModal = ({ isOpen, onClose, onAddContracts }: AddContractModalP
         setError(null);
       }
 
-      setSelectedFiles(prev => [...prev, ...validFiles]);
+      setSelectedFiles(prev => {
+        // Evitar duplicatas
+        const newFiles = validFiles.filter(newFile => 
+          !prev.some(existingFile => 
+            existingFile.name === newFile.name && existingFile.size === newFile.size
+          )
+        );
+        return [...prev, ...newFiles];
+      });
     }
   };
 
@@ -95,20 +124,27 @@ const AddContractModal = ({ isOpen, onClose, onAddContracts }: AddContractModalP
   };
 
   const handleUpload = async () => {
-    if (selectedFiles.length === 0) return;
+    if (selectedFiles.length === 0) {
+      toast.error("Selecione pelo menos um arquivo");
+      return;
+    }
 
+    console.log("Iniciando upload de", selectedFiles.length, "arquivos");
     setIsUploading(true);
+    setError(null);
     
     try {
       const result = await onAddContracts(selectedFiles);
+      console.log("Resultado do upload:", result);
       
       if (result.successCount > 0) {
         setSelectedFiles([]);
         setError(null);
         onClose();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro no upload:", error);
+      setError(`Erro inesperado no upload: ${error.message || 'Erro desconhecido'}`);
       toast.error("Erro inesperado no upload");
     } finally {
       setIsUploading(false);
@@ -116,9 +152,11 @@ const AddContractModal = ({ isOpen, onClose, onAddContracts }: AddContractModalP
   };
 
   const handleClose = () => {
-    setSelectedFiles([]);
-    setError(null);
-    onClose();
+    if (!isUploading) {
+      setSelectedFiles([]);
+      setError(null);
+      onClose();
+    }
   };
 
   return (
@@ -132,23 +170,36 @@ const AddContractModal = ({ isOpen, onClose, onAddContracts }: AddContractModalP
           {/* Área de Upload */}
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
-              error 
-                ? "border-red-300 bg-red-50" 
-                : selectedFiles.length > 0
-                  ? "border-green-300 bg-green-50" 
-                  : "border-gray-300 hover:border-slate-400"
+              isUploading
+                ? "border-blue-300 bg-blue-50 cursor-not-allowed"
+                : error 
+                  ? "border-red-300 bg-red-50" 
+                  : selectedFiles.length > 0
+                    ? "border-green-300 bg-green-50" 
+                    : "border-gray-300 hover:border-slate-400"
             }`}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
-            onClick={() => document.getElementById('contract-file-input')?.click()}
+            onClick={() => !isUploading && document.getElementById('contract-file-input')?.click()}
           >
-            <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-600 text-sm mb-1">
-              Arraste PDFs aqui ou clique para selecionar
-            </p>
-            <p className="text-xs text-gray-500">
-              Selecione múltiplos PDFs (até 10MB cada)
-            </p>
+            {isUploading ? (
+              <>
+                <Loader2 className="h-8 w-8 text-blue-500 mx-auto mb-2 animate-spin" />
+                <p className="text-blue-600 text-sm mb-1">
+                  Enviando arquivos...
+                </p>
+              </>
+            ) : (
+              <>
+                <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-600 text-sm mb-1">
+                  Arraste PDFs aqui ou clique para selecionar
+                </p>
+                <p className="text-xs text-gray-500">
+                  Selecione múltiplos PDFs (até 10MB cada)
+                </p>
+              </>
+            )}
             
             <input
               id="contract-file-input"
@@ -157,6 +208,7 @@ const AddContractModal = ({ isOpen, onClose, onAddContracts }: AddContractModalP
               onChange={handleFileSelect}
               className="hidden"
               multiple
+              disabled={isUploading}
             />
           </div>
 
@@ -169,13 +221,16 @@ const AddContractModal = ({ isOpen, onClose, onAddContracts }: AddContractModalP
               <div className="max-h-32 overflow-y-auto space-y-2">
                 {selectedFiles.map((file, index) => (
                   <div
-                    key={index}
+                    key={`${file.name}-${file.size}-${index}`}
                     className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded-lg"
                   >
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span className="text-sm text-gray-700 truncate">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                      <span className="text-sm text-gray-700 truncate" title={file.name}>
                         {file.name}
+                      </span>
+                      <span className="text-xs text-gray-500 flex-shrink-0">
+                        ({Math.round(file.size / 1024)}KB)
                       </span>
                     </div>
                     <Button
@@ -185,7 +240,8 @@ const AddContractModal = ({ isOpen, onClose, onAddContracts }: AddContractModalP
                         e.stopPropagation();
                         removeFile(index);
                       }}
-                      className="h-6 w-6 p-0 hover:bg-red-100"
+                      className="h-6 w-6 p-0 hover:bg-red-100 flex-shrink-0"
+                      disabled={isUploading}
                     >
                       <X className="h-3 w-3" />
                     </Button>
@@ -221,7 +277,7 @@ const AddContractModal = ({ isOpen, onClose, onAddContracts }: AddContractModalP
               {isUploading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Salvando no banco...
+                  Enviando...
                 </>
               ) : (
                 `Adicionar ${selectedFiles.length > 0 ? `(${selectedFiles.length})` : ''}`

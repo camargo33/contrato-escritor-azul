@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { extractTextFromPDF } from "./pdfProcessor";
 
@@ -36,49 +35,93 @@ export const contractService = {
     plan_name?: string;
   }): Promise<{ success: boolean; contractId?: string; error?: string }> {
     try {
+      console.log("Iniciando upload do contrato:", file.name);
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
+        console.error("Usuário não autenticado");
         return { success: false, error: "Usuário não autenticado" };
       }
 
-      // 1. Upload do arquivo para o storage
+      console.log("Usuário autenticado:", user.id);
+
+      // 1. Verificar se o bucket existe, se não, criar
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      
+      if (bucketsError) {
+        console.error("Erro ao listar buckets:", bucketsError);
+      }
+
+      const bucketExists = buckets?.some(bucket => bucket.name === 'base-contracts');
+      
+      if (!bucketExists) {
+        console.log("Bucket não existe, criando bucket base-contracts");
+        const { error: createBucketError } = await supabase.storage.createBucket('base-contracts', {
+          public: true,
+          allowedMimeTypes: ['application/pdf'],
+          fileSizeLimit: 10485760 // 10MB
+        });
+        
+        if (createBucketError) {
+          console.error("Erro ao criar bucket:", createBucketError);
+          return { success: false, error: "Erro ao criar bucket de armazenamento" };
+        }
+      }
+
+      // 2. Upload do arquivo para o storage
       const fileName = `${user.id}/${Date.now()}_${file.name}`;
+      console.log("Fazendo upload do arquivo:", fileName);
+      
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('base-contracts')
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (uploadError) {
         console.error("Erro no upload:", uploadError);
-        return { success: false, error: "Erro ao fazer upload do arquivo" };
+        return { success: false, error: `Erro ao fazer upload do arquivo: ${uploadError.message}` };
       }
 
-      // 2. Salvar registro do contrato no banco
-      const { data: contractRecord, error: dbError } = await supabase
+      console.log("Upload realizado com sucesso:", uploadData);
+
+      // 3. Salvar registro do contrato no banco
+      const contractRecord = {
+        user_id: user.id,
+        name: contractData.name,
+        original_filename: file.name,
+        file_path: uploadData.path,
+        contract_type: contractData.contract_type || 'auto_detected',
+        plan_name: contractData.plan_name,
+        is_processed: false,
+        upload_date: new Date().toISOString()
+      };
+
+      console.log("Salvando registro no banco:", contractRecord);
+
+      const { data: savedContract, error: dbError } = await supabase
         .from('base_contracts')
-        .insert({
-          user_id: user.id,
-          name: contractData.name,
-          original_filename: file.name,
-          file_path: uploadData.path,
-          contract_type: contractData.contract_type,
-          plan_name: contractData.plan_name,
-          is_processed: false
-        })
+        .insert(contractRecord)
         .select()
         .single();
 
       if (dbError) {
         console.error("Erro ao salvar no banco:", dbError);
-        return { success: false, error: "Erro ao salvar contrato no banco de dados" };
+        // Se erro no banco, tentar limpar o arquivo do storage
+        await supabase.storage.from('base-contracts').remove([fileName]);
+        return { success: false, error: `Erro ao salvar contrato no banco de dados: ${dbError.message}` };
       }
 
-      // 3. Processar PDF em background (extrair texto e analisar estrutura)
-      this.processContractInBackground(contractRecord.id, file);
+      console.log("Contrato salvo com sucesso:", savedContract);
 
-      return { success: true, contractId: contractRecord.id };
-    } catch (error) {
+      // 4. Processar PDF em background (extrair texto e analisar estrutura)
+      this.processContractInBackground(savedContract.id, file);
+
+      return { success: true, contractId: savedContract.id };
+    } catch (error: any) {
       console.error("Erro geral no upload:", error);
-      return { success: false, error: "Erro inesperado no upload" };
+      return { success: false, error: `Erro inesperado no upload: ${error.message || 'Erro desconhecido'}` };
     }
   },
 
