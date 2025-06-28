@@ -45,30 +45,7 @@ export const contractService = {
 
       console.log("Usuário autenticado:", user.id);
 
-      // 1. Verificar se o bucket existe, se não, criar
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-      
-      if (bucketsError) {
-        console.error("Erro ao listar buckets:", bucketsError);
-      }
-
-      const bucketExists = buckets?.some(bucket => bucket.name === 'base-contracts');
-      
-      if (!bucketExists) {
-        console.log("Bucket não existe, criando bucket base-contracts");
-        const { error: createBucketError } = await supabase.storage.createBucket('base-contracts', {
-          public: true,
-          allowedMimeTypes: ['application/pdf'],
-          fileSizeLimit: 10485760 // 10MB
-        });
-        
-        if (createBucketError) {
-          console.error("Erro ao criar bucket:", createBucketError);
-          return { success: false, error: "Erro ao criar bucket de armazenamento" };
-        }
-      }
-
-      // 2. Upload do arquivo para o storage
+      // 1. Upload do arquivo para o storage (assumindo que o bucket já existe)
       const fileName = `${user.id}/${Date.now()}_${file.name}`;
       console.log("Fazendo upload do arquivo:", fileName);
       
@@ -81,12 +58,21 @@ export const contractService = {
 
       if (uploadError) {
         console.error("Erro no upload:", uploadError);
+        
+        // Se o erro for sobre bucket não existir, retornar erro específico
+        if (uploadError.message?.includes('Bucket not found')) {
+          return { 
+            success: false, 
+            error: "Bucket de armazenamento não configurado. Entre em contato com o administrador." 
+          };
+        }
+        
         return { success: false, error: `Erro ao fazer upload do arquivo: ${uploadError.message}` };
       }
 
       console.log("Upload realizado com sucesso:", uploadData);
 
-      // 3. Salvar registro do contrato no banco
+      // 2. Salvar registro do contrato no banco
       const contractRecord = {
         user_id: user.id,
         name: contractData.name,
@@ -109,13 +95,17 @@ export const contractService = {
       if (dbError) {
         console.error("Erro ao salvar no banco:", dbError);
         // Se erro no banco, tentar limpar o arquivo do storage
-        await supabase.storage.from('base-contracts').remove([fileName]);
+        try {
+          await supabase.storage.from('base-contracts').remove([fileName]);
+        } catch (cleanupError) {
+          console.error("Erro ao limpar arquivo após falha no banco:", cleanupError);
+        }
         return { success: false, error: `Erro ao salvar contrato no banco de dados: ${dbError.message}` };
       }
 
       console.log("Contrato salvo com sucesso:", savedContract);
 
-      // 4. Processar PDF em background (extrair texto e analisar estrutura)
+      // 3. Processar PDF em background (extrair texto e analisar estrutura)
       this.processContractInBackground(savedContract.id, file);
 
       return { success: true, contractId: savedContract.id };

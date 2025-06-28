@@ -142,9 +142,17 @@ const AddContractModal = ({ isOpen, onClose, onAddContracts }: AddContractModalP
         setError(null);
         onClose();
       }
+      
+      // Se todos falharam, mostrar erro específico
+      if (result.successCount === 0 && result.errorCount > 0) {
+        setError("Nenhum arquivo foi enviado com sucesso. Verifique se o bucket de armazenamento está configurado corretamente.");
+      }
     } catch (error: any) {
       console.error("Erro no upload:", error);
-      setError(`Erro inesperado no upload: ${error.message || 'Erro desconhecido'}`);
+      const errorMessage = error.message?.includes('Bucket not found') 
+        ? "Bucket de armazenamento não configurado. Entre em contato com o administrador."
+        : `Erro inesperado no upload: ${error.message || 'Erro desconhecido'}`;
+      setError(errorMessage);
       toast.error("Erro inesperado no upload");
     } finally {
       setIsUploading(false);
