@@ -25,7 +25,7 @@ export const openaiService = {
         }
       });
 
-      console.log("Status da resposta OpenAI:", response.status);
+      console.log("Resposta da função:", response);
       
       if (response.error) {
         console.error("Erro na função:", response.error);
