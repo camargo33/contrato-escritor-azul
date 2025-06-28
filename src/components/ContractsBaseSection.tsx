@@ -14,7 +14,7 @@ import { useBaseContracts } from '@/hooks/useBaseContracts';
 const ContractsBaseSection = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [previewContract, setPreviewContract] = useState<any>(null);
-  const { contracts, isLoading, error, refetch } = useBaseContracts();
+  const { contracts, isLoading, error, refetch, addMultipleContracts } = useBaseContracts();
 
   const handleContractAdded = () => {
     refetch();
@@ -88,7 +88,7 @@ const ContractsBaseSection = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-medium text-card-foreground group-hover:text-primary transition-colors duration-200">
-                          {contract.name || contract.filename || 'Contrato sem nome'}
+                          {contract.name || contract.original_filename || 'Contrato sem nome'}
                         </h3>
                         <Badge 
                           variant="secondary" 
@@ -141,11 +141,13 @@ const ContractsBaseSection = () => {
       <AddContractModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
+        onAddContracts={addMultipleContracts}
       />
 
       <ContractPreviewModal
         isOpen={!!previewContract}
         onClose={() => setPreviewContract(null)}
+        contractName={previewContract?.name || previewContract?.original_filename || 'Contrato'}
       />
     </>
   );
