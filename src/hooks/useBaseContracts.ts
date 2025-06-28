@@ -23,6 +23,8 @@ export const useBaseContracts = () => {
     }
   };
 
+  const refetch = loadContracts;
+
   const addContract = async (file: File, contractData: {
     name: string;
     contract_type?: string;
@@ -80,6 +82,7 @@ export const useBaseContracts = () => {
     contracts,
     isLoading,
     error,
+    refetch,
     loadContracts,
     addContract,
     addMultipleContracts

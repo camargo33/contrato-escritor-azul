@@ -62,10 +62,10 @@ const ContractAnalysisSection = () => {
       className="h-fit shadow-sm border-border bg-card hover:shadow-lift transition-all duration-300"
       hoverEffect="lift"
     >
-      <div className="bg-secondary text-secondary-foreground rounded-t-lg p-6 -m-6 mb-6 shadow-sm">
+      <div className="bg-primary text-primary-foreground rounded-t-lg p-6 -m-6 mb-6 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-secondary-foreground/10 rounded-lg">
+            <div className="p-2 bg-primary-foreground/20 rounded-lg">
               <Zap className="h-5 w-5" />
             </div>
             <div>

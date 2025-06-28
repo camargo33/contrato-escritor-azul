@@ -41,10 +41,10 @@ const ContractsBaseSection = () => {
         className="h-fit shadow-sm border-border bg-card hover:shadow-lift transition-all duration-300"
         hoverEffect="lift"
       >
-        <div className="bg-secondary text-secondary-foreground rounded-t-lg p-6 -m-6 mb-6 shadow-sm">
+        <div className="bg-primary text-primary-foreground rounded-t-lg p-6 -m-6 mb-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-secondary-foreground/10 rounded-lg">
+              <div className="p-2 bg-primary-foreground/20 rounded-lg">
                 <FileText className="h-5 w-5" />
               </div>
               <div>
@@ -88,7 +88,7 @@ const ContractsBaseSection = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-medium text-card-foreground group-hover:text-primary transition-colors duration-200">
-                          {contract.title}
+                          {contract.name || contract.filename || 'Contrato sem nome'}
                         </h3>
                         <Badge 
                           variant="secondary" 
@@ -141,11 +141,9 @@ const ContractsBaseSection = () => {
       <AddContractModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onContractAdded={handleContractAdded}
       />
 
       <ContractPreviewModal
-        contract={previewContract}
         isOpen={!!previewContract}
         onClose={() => setPreviewContract(null)}
       />
