@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +9,8 @@ import AnalysisReport from './AnalysisReport';
 import FileUploadArea from './FileUploadArea';
 import TextPreviewCard from './TextPreviewCard';
 import AnalyzeButton from './AnalyzeButton';
+import AnimatedCard from './AnimatedCard';
+import FeedbackMessage from './FeedbackMessage';
 import { useContractUpload } from '@/hooks/useContractUpload';
 
 const ContractAnalysisSection = () => {
@@ -56,53 +57,70 @@ const ContractAnalysisSection = () => {
   };
 
   return (
-    <Card className="h-fit">
-      <CardHeader className="bg-slate-700 text-white">
-        <CardTitle className="text-xl flex items-center justify-between">
-          Análise de Contrato
+    <AnimatedCard 
+      className="h-fit"
+      hoverEffect="lift"
+    >
+      <div className="bg-secondary text-secondary-foreground rounded-t-lg p-6 -m-6 mb-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Análise de Contrato</h2>
           <div className="flex items-center gap-2">
-            <div className="text-xs bg-green-600 px-2 py-1 rounded">
+            <div className="text-xs bg-whatsapp px-2 py-1 rounded text-white">
               API Configurada ✓
             </div>
           </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-6 space-y-6">
+        </div>
+      </div>
+
+      <div className="space-y-6">
         {/* Área de Upload */}
-        <FileUploadArea
-          uploadState={uploadState}
-          setUploadState={setUploadState}
-          onReset={resetUpload}
-        />
+        <div className="stagger-item">
+          <FileUploadArea
+            uploadState={uploadState}
+            setUploadState={setUploadState}
+            onReset={resetUpload}
+          />
+        </div>
 
         {/* Erro */}
         {uploadState.error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{uploadState.error}</AlertDescription>
-          </Alert>
+          <div className="stagger-item">
+            <FeedbackMessage
+              type="error"
+              title="Erro na Análise"
+              message={uploadState.error}
+            />
+          </div>
         )}
 
         {/* Preview do Texto */}
-        <TextPreviewCard textPreview={uploadState.textPreview} />
+        {uploadState.textPreview && (
+          <div className="stagger-item">
+            <TextPreviewCard textPreview={uploadState.textPreview} />
+          </div>
+        )}
 
         {/* Botão de Análise */}
-        <AnalyzeButton
-          uploadState={uploadState}
-          onClick={handleAnalyze}
-        />
+        <div className="stagger-item">
+          <AnalyzeButton
+            uploadState={uploadState}
+            onClick={handleAnalyze}
+          />
+        </div>
 
         {/* Resultado da Análise */}
         {uploadState.analysisResult && uploadState.analysisResult.success && (
-          <AnalysisReport
-            content={uploadState.analysisResult.content}
-            timestamp={uploadState.analysisResult.timestamp}
-            filename={uploadState.analysisResult.filename}
-            onNewAnalysis={handleNewAnalysis}
-          />
+          <div className="stagger-item">
+            <AnalysisReport
+              content={uploadState.analysisResult.content}
+              timestamp={uploadState.analysisResult.timestamp}
+              filename={uploadState.analysisResult.filename}
+              onNewAnalysis={handleNewAnalysis}
+            />
+          </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </AnimatedCard>
   );
 };
 

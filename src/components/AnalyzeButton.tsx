@@ -1,8 +1,7 @@
 
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
 import { UploadState } from "@/hooks/useContractUpload";
 import LoadingSpinner from "./LoadingSpinner";
+import InteractiveButton from "./InteractiveButton";
 
 interface AnalyzeButtonProps {
   uploadState: UploadState;
@@ -11,17 +10,18 @@ interface AnalyzeButtonProps {
 
 const AnalyzeButton = ({ uploadState, onClick }: AnalyzeButtonProps) => {
   return (
-    <Button
+    <InteractiveButton
       onClick={onClick}
       disabled={!uploadState.file || uploadState.isLoading || uploadState.isAnalyzing || !uploadState.fullText}
-      className="w-full bg-secondary hover:bg-secondary/90 disabled:bg-gray-300 transition-all duration-200 hover-scale active:scale-95 focus-ring"
+      className="w-full bg-secondary hover:bg-secondary/90 disabled:bg-gray-300"
+      loading={uploadState.isAnalyzing}
+      loadingText="Analisando com IA..."
+      glowEffect={true}
+      bounceOnClick={true}
+      variant="default"
     >
-      {uploadState.isAnalyzing ? (
-        <LoadingSpinner size="sm" text="Analisando com IA..." />
-      ) : (
-        "Analisar Contrato"
-      )}
-    </Button>
+      {!uploadState.isAnalyzing && "Analisar Contrato"}
+    </InteractiveButton>
   );
 };
 

@@ -123,6 +123,16 @@ export default {
 						transform: 'translateY(0)'
 					}
 				},
+				'fade-out': {
+					'0%': {
+						opacity: '1',
+						transform: 'translateY(0)'
+					},
+					'100%': {
+						opacity: '0',
+						transform: 'translateY(10px)'
+					}
+				},
 				'scale-in': {
 					'0%': {
 						transform: 'scale(0.95)',
@@ -133,6 +143,16 @@ export default {
 						opacity: '1'
 					}
 				},
+				'scale-out': {
+					'0%': {
+						transform: 'scale(1)',
+						opacity: '1'
+					},
+					'100%': {
+						transform: 'scale(0.95)',
+						opacity: '0'
+					}
+				},
 				'slide-in-right': {
 					'0%': { transform: 'translateX(100%)' },
 					'100%': { transform: 'translateX(0)' }
@@ -141,6 +161,22 @@ export default {
 					'0%': { transform: 'translateX(0)' },
 					'100%': { transform: 'translateX(100%)' }
 				},
+				'slide-in-left': {
+					'0%': { transform: 'translateX(-100%)' },
+					'100%': { transform: 'translateX(0)' }
+				},
+				'slide-out-left': {
+					'0%': { transform: 'translateX(0)' },
+					'100%': { transform: 'translateX(-100%)' }
+				},
+				'slide-in-up': {
+					'0%': { transform: 'translateY(100%)' },
+					'100%': { transform: 'translateY(0)' }
+				},
+				'slide-out-down': {
+					'0%': { transform: 'translateY(0)' },
+					'100%': { transform: 'translateY(100%)' }
+				},
 				'shimmer': {
 					'0%': { backgroundPosition: '200% 0' },
 					'100%': { backgroundPosition: '-200% 0' }
@@ -148,25 +184,83 @@ export default {
 				'pulse-gentle': {
 					'0%, 100%': { opacity: '1' },
 					'50%': { opacity: '0.8' }
+				},
+				'bounce-subtle': {
+					'0%, 20%, 53%, 80%, 100%': {
+						transform: 'translate3d(0, 0, 0)'
+					},
+					'40%, 43%': {
+						transform: 'translate3d(0, -8px, 0)'
+					},
+					'70%': {
+						transform: 'translate3d(0, -4px, 0)'
+					},
+					'90%': {
+						transform: 'translate3d(0, -2px, 0)'
+					}
+				},
+				'float': {
+					'0%, 100%': {
+						transform: 'translateY(0px)'
+					},
+					'50%': {
+						transform: 'translateY(-6px)'
+					}
+				},
+				'pulse-glow': {
+					'0%, 100%': {
+						boxShadow: '0 0 5px hsl(var(--primary) / 0.5)'
+					},
+					'50%': {
+						boxShadow: '0 0 20px hsl(var(--primary) / 0.8), 0 0 30px hsl(var(--primary) / 0.4)'
+					}
+				},
+				'stagger-fade-in': {
+					'0%': {
+						opacity: '0',
+						transform: 'translateY(16px)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'translateY(0)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.3s ease-out',
+				'fade-out': 'fade-out 0.3s ease-out',
 				'scale-in': 'scale-in 0.2s ease-out',
+				'scale-out': 'scale-out 0.2s ease-out',
 				'slide-in-right': 'slide-in-right 0.3s ease-out',
 				'slide-out-right': 'slide-out-right 0.3s ease-out',
+				'slide-in-left': 'slide-in-left 0.3s ease-out',
+				'slide-out-left': 'slide-out-left 0.3s ease-out',
+				'slide-in-up': 'slide-in-up 0.3s ease-out',
+				'slide-out-down': 'slide-out-down 0.3s ease-out',
 				'shimmer': 'shimmer 1.5s infinite',
-				'pulse-gentle': 'pulse-gentle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+				'pulse-gentle': 'pulse-gentle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+				'bounce-subtle': 'bounce-subtle 0.6s ease-in-out',
+				'float': 'float 3s ease-in-out infinite',
+				'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
+				'stagger-fade-in': 'stagger-fade-in 0.4s ease-out forwards'
 			},
 			boxShadow: {
 				'colored': '0 4px 20px -4px hsl(var(--primary) / 0.3)',
-				'lift': '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+				'lift': '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+				'glow': '0 0 20px hsl(var(--primary) / 0.3)',
+				'inner-glow': 'inset 0 1px 0 hsl(var(--primary) / 0.1)'
 			},
 			transitionDuration: {
+				'75': '75ms',
 				'250': '250ms',
-				'350': '350ms'
+				'350': '350ms',
+				'400': '400ms'
+			},
+			transitionTimingFunction: {
+				'bounce-in': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+				'smooth': 'cubic-bezier(0.4, 0, 0.2, 1)'
 			}
 		}
 	},

@@ -199,11 +199,19 @@
 
   /* Estados interativos */
   .hover-scale {
-    @apply transition-transform duration-200 hover:scale-105;
+    @apply transition-transform duration-200 hover:scale-105 cursor-pointer;
   }
 
   .hover-lift {
-    @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5;
+    @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer;
+  }
+
+  .hover-glow {
+    @apply transition-all duration-300 hover:shadow-colored hover:shadow-lg;
+  }
+
+  .press-effect {
+    @apply active:scale-95 transition-transform duration-75;
   }
 
   .focus-ring {
@@ -230,6 +238,35 @@
   .text-caption {
     @apply text-xs text-muted-foreground;
   }
+
+  /* Page transitions */
+  .page-enter {
+    @apply opacity-0 translate-y-4;
+  }
+
+  .page-enter-active {
+    @apply opacity-100 translate-y-0 transition-all duration-300 ease-out;
+  }
+
+  .page-exit {
+    @apply opacity-100 translate-y-0;
+  }
+
+  .page-exit-active {
+    @apply opacity-0 -translate-y-4 transition-all duration-200 ease-in;
+  }
+
+  /* Stagger animations */
+  .stagger-item {
+    @apply opacity-0 translate-y-4;
+    animation: stagger-fade-in 0.4s ease-out forwards;
+  }
+
+  .stagger-item:nth-child(1) { animation-delay: 0.1s; }
+  .stagger-item:nth-child(2) { animation-delay: 0.2s; }
+  .stagger-item:nth-child(3) { animation-delay: 0.3s; }
+  .stagger-item:nth-child(4) { animation-delay: 0.4s; }
+  .stagger-item:nth-child(5) { animation-delay: 0.5s; }
 }
 
 /* Animações de feedback */
@@ -244,6 +281,21 @@
     animation: shimmer 1.5s infinite;
   }
 
+  /* Bounce effect for interactive elements */
+  .bounce-subtle {
+    animation: bounce-subtle 0.6s ease-in-out;
+  }
+
+  /* Floating animation for special elements */
+  .float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  /* Pulse effect for notifications */
+  .pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
   @keyframes shimmer {
     0% {
       background-position: 200% 0;
@@ -253,16 +305,56 @@
     }
   }
 
-  .pulse-gentle {
-    animation: pulse-gentle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
   @keyframes pulse-gentle {
     0%, 100% {
       opacity: 1;
     }
     50% {
       opacity: 0.8;
+    }
+  }
+
+  @keyframes stagger-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes bounce-subtle {
+    0%, 20%, 53%, 80%, 100% {
+      transform: translate3d(0, 0, 0);
+    }
+    40%, 43% {
+      transform: translate3d(0, -8px, 0);
+    }
+    70% {
+      transform: translate3d(0, -4px, 0);
+    }
+    90% {
+      transform: translate3d(0, -2px, 0);
+    }
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 5px hsl(var(--primary) / 0.5);
+    }
+    50% {
+      box-shadow: 0 0 20px hsl(var(--primary) / 0.8), 0 0 30px hsl(var(--primary) / 0.4);
     }
   }
 }
