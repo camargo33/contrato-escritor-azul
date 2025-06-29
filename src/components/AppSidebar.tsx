@@ -69,7 +69,7 @@ export function AppSidebar() {
       return `${baseClasses} bg-gradient-to-r from-primary to-primary text-white shadow-colored`;
     }
     
-    return `${baseClasses} text-sidebar-foreground hover:bg-primary/20 hover:text-white hover:shadow-[0_0_0_1px_rgba(255,255,255,0.1)] [&>*]:hover:drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]`;
+    return `${baseClasses} text-sidebar-foreground hover:bg-primary/10 hover:text-primary`;
   };
 
   return (
