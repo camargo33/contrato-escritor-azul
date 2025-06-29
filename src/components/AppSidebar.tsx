@@ -66,10 +66,10 @@ export function AppSidebar() {
     const baseClasses = "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 hover:scale-[1.02]";
     
     if (isActive(path)) {
-      return `${baseClasses} bg-gradient-to-r from-primary to-primary text-primary-foreground shadow-colored`;
+      return `${baseClasses} bg-gradient-to-r from-primary to-primary text-white shadow-colored`;
     }
     
-    return `${baseClasses} text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground`;
+    return `${baseClasses} text-sidebar-foreground hover:bg-primary/10 hover:text-primary`;
   };
 
   return (
