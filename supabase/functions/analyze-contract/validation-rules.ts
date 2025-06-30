@@ -59,7 +59,26 @@ ${VALIDATION_FIELDS.map(field =>
   - "Variável": Todos os residenciais (cobrança de R$ 50,00 se fixo marcado)
 - **Cláusulas**: TODOS os contratos devem ter cláusulas de 1 a 11
 
-### 3. VALIDAÇÕES CRÍTICAS BASEADAS NO MODELO:
+### 3. INSTRUÇÕES CRÍTICAS PARA VALIDAÇÃO:
+
+**IMPORTANTE: APENAS REPORTE COMO ERRO SE HOUVER DIFERENÇA REAL**
+
+- **NÃO REPORTE COMO ERRO** se o valor encontrado é EXATAMENTE igual ao valor esperado
+- **SÓ INCLUA NO ARRAY DE ERROS** campos que realmente apresentam inconsistências
+- **VALORES CORRETOS** devem ser ignorados na lista de erros
+- **SE TUDO ESTIVER CORRETO**, o array "erros" deve estar vazio: []
+
+**Exemplos de quando NÃO reportar erro:**
+- Encontrado: "R$ 129,99" / Esperado: "R$ 129,99" → NÃO É ERRO
+- Encontrado: "12 meses" / Esperado: "12 meses" → NÃO É ERRO  
+- Encontrado: "R$ 200,00" / Esperado: "R$ 200,00" → NÃO É ERRO
+
+**Exemplos de quando SIM reportar erro:**
+- Encontrado: "R$ 120,00" / Esperado: "R$ 129,99" → É ERRO
+- Encontrado: "24 meses" / Esperado: "12 meses" → É ERRO
+- Encontrado: "GRATUITA" / Esperado: "R$ 200,00" → É ERRO
+
+### 4. VALIDAÇÕES CRÍTICAS BASEADAS NO MODELO:
 
 **Erros de Identificação de Plano:**
 - Plano não corresponde aos 6 tipos cadastrados

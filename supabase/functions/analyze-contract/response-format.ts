@@ -20,6 +20,8 @@ Para cada análise, retorne OBRIGATORIAMENTE:
     }
   },
   "erros": [
+    // APENAS INCLUIR SE HOUVER DIFERENÇA REAL ENTRE ENCONTRADO E ESPERADO
+    // SE TODOS OS VALORES ESTIVEREM CORRETOS, DEIXAR ESTE ARRAY VAZIO: []
     {
       "severidade": "critico|alto|medio|baixo",
       "campo": "nome_do_campo",
@@ -32,51 +34,98 @@ Para cada análise, retorne OBRIGATORIAMENTE:
     }
   ],
   "resumo": {
-    "total_erros": 5,
-    "criticos": 1,
-    "altos": 2,
-    "medios": 1,
-    "baixos": 1,
+    "total_erros": 0,
+    "criticos": 0,
+    "altos": 0,
+    "medios": 0,
+    "baixos": 0,
     "plano_identificado": "nome do plano"
   },
   "status_geral": "aprovado|aprovado_com_restricoes|reprovado"
 }
 \`\`\`
 
-### 5. EXEMPLOS DE IDENTIFICAÇÃO E ANÁLISE:
+### 5. REGRAS IMPORTANTES PARA O ARRAY DE ERROS:
 
-**Exemplo de Identificação Bem-Sucedida:**
+**CRÍTICO:** Apenas inclua erros quando há DIFERENÇA REAL entre encontrado e esperado.
+
+**EXEMPLOS DE QUANDO NÃO INCLUIR NO ARRAY DE ERROS:**
+- ✅ Encontrado: "R$ 129,99" / Esperado: "R$ 129,99" → Valor correto, não incluir
+- ✅ Encontrado: "12 meses" / Esperado: "12 meses" → Valor correto, não incluir
+- ✅ Encontrado: "RESIDENCIAL" / Esperado: "RESIDENCIAL" → Valor correto, não incluir
+
+**EXEMPLOS DE QUANDO INCLUIR NO ARRAY DE ERROS:**
+- ❌ Encontrado: "R$ 120,00" / Esperado: "R$ 129,99" → Diferença real, incluir
+- ❌ Encontrado: "24 meses" / Esperado: "12 meses" → Diferença real, incluir
+- ❌ Encontrado: "CORPORATIVO" / Esperado: "RESIDENCIAL" → Diferença real, incluir
+
+### 6. EXEMPLOS DE RESPOSTA:
+
+**Exemplo de Contrato SEM ERROS:**
 \`\`\`json
 {
   "modelo_identificado": {
-    "nome": "2024 Combo Giga",
+    "nome": "2024 Combo 600Mbps",
     "confianca": 95,
-    "criterios_identificacao": ["Texto contém 'Combo Giga'", "Valor R$ 209,99 encontrado"],
+    "criterios_identificacao": ["Valor R$ 129,99 encontrado", "Menção a 600Mbps"],
     "caracteristicas_esperadas": {
-      "valor": "R$ 209,99",
-      "tipo": "RESIDENCIAL", 
+      "valor": "R$ 129,99",
+      "tipo": "RESIDENCIAL",
       "vigencia": "12 meses",
-      "taxa_instalacao": "GRATUITA",
-      "rescisao": "R$ 700,00"
+      "taxa_instalacao": "R$ 200,00",
+      "rescisao": "R$ 500,00"
     }
-  }
+  },
+  "erros": [],
+  "resumo": {
+    "total_erros": 0,
+    "criticos": 0,
+    "altos": 0,
+    "medios": 0,
+    "baixos": 0,
+    "plano_identificado": "2024 Combo 600Mbps"
+  },
+  "status_geral": "aprovado"
 }
 \`\`\`
 
-**Exemplo de Erro Baseado no Modelo Identificado:**
+**Exemplo de Contrato COM ERROS:**
 \`\`\`json
 {
-  "severidade": "critico",
-  "campo": "Valor do Plano",
-  "valor_encontrado": "R$ 200,00",
-  "valor_esperado": "R$ 209,99",
-  "sugestao_correcao": "Corrigir valor para R$ 209,99 conforme padrão do modelo '2024 Combo Giga' identificado",
-  "plano_identificado": "2024 Combo Giga",
-  "confianca": 100
+  "modelo_identificado": {
+    "nome": "2024 Combo 600Mbps",
+    "confianca": 95,
+    "criterios_identificacao": ["Menção a 600Mbps encontrada"],
+    "caracteristicas_esperadas": {
+      "valor": "R$ 129,99",
+      "tipo": "RESIDENCIAL",
+      "vigencia": "12 meses"
+    }
+  },
+  "erros": [
+    {
+      "severidade": "critico",
+      "campo": "Valor do Plano",
+      "valor_encontrado": "R$ 120,00",
+      "valor_esperado": "R$ 129,99",
+      "sugestao_correcao": "Corrigir valor para R$ 129,99 conforme padrão do plano",
+      "plano_identificado": "2024 Combo 600Mbps",
+      "confianca": 100
+    }
+  ],
+  "resumo": {
+    "total_erros": 1,
+    "criticos": 1,
+    "altos": 0,
+    "medios": 0,
+    "baixos": 0,
+    "plano_identificado": "2024 Combo 600Mbps"
+  },
+  "status_geral": "reprovado"
 }
 \`\`\`
 
-### 6. CASOS DE IDENTIFICAÇÃO INCERTA:
+### 7. CASOS DE IDENTIFICAÇÃO INCERTA:
 
 Quando a confiança for menor que 80%:
 \`\`\`json
