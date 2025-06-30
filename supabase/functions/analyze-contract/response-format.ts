@@ -20,8 +20,10 @@ Para cada análise, retorne OBRIGATORIAMENTE:
     }
   },
   "erros": [
-    // APENAS INCLUIR SE HOUVER DIFERENÇA REAL ENTRE ENCONTRADO E ESPERADO
-    // SE TODOS OS VALORES ESTIVEREM CORRETOS, DEIXAR ESTE ARRAY VAZIO: []
+    // ⚠️ REGRA CRÍTICA: SÓ INCLUA ERROS SE HOUVER DIFERENÇA REAL
+    // SE valor_encontrado === valor_esperado → NÃO É ERRO, NÃO INCLUIR
+    // EXEMPLO: Encontrado "12 meses" e Esperado "12 meses" → NÃO INCLUIR
+    // EXEMPLO: Encontrado "R$ 200,00" e Esperado "R$ 200,00" → NÃO INCLUIR
     {
       "severidade": "critico|alto|medio|baixo",
       "campo": "nome_do_campo",
@@ -45,23 +47,42 @@ Para cada análise, retorne OBRIGATORIAMENTE:
 }
 \`\`\`
 
-### 5. REGRAS IMPORTANTES PARA O ARRAY DE ERROS:
+### 5. ⚠️ REGRAS CRÍTICAS PARA VALIDAÇÃO:
 
-**CRÍTICO:** Apenas inclua erros quando há DIFERENÇA REAL entre encontrado e esperado.
+**ANTES DE INCLUIR QUALQUER ITEM NO ARRAY "erros", FAÇA ESTA VERIFICAÇÃO:**
 
-**EXEMPLOS DE QUANDO NÃO INCLUIR NO ARRAY DE ERROS:**
-- ✅ Encontrado: "R$ 129,99" / Esperado: "R$ 129,99" → Valor correto, não incluir
-- ✅ Encontrado: "12 meses" / Esperado: "12 meses" → Valor correto, não incluir
-- ✅ Encontrado: "RESIDENCIAL" / Esperado: "RESIDENCIAL" → Valor correto, não incluir
+1. **Compare EXATAMENTE** o valor encontrado com o valor esperado
+2. **SE SÃO IDÊNTICOS** → NÃO É ERRO → NÃO INCLUIR no array
+3. **SÓ INCLUA** se houver diferença real entre os valores
 
-**EXEMPLOS DE QUANDO INCLUIR NO ARRAY DE ERROS:**
-- ❌ Encontrado: "R$ 120,00" / Esperado: "R$ 129,99" → Diferença real, incluir
-- ❌ Encontrado: "24 meses" / Esperado: "12 meses" → Diferença real, incluir
-- ❌ Encontrado: "CORPORATIVO" / Esperado: "RESIDENCIAL" → Diferença real, incluir
+**EXEMPLOS PRÁTICOS:**
 
-### 6. EXEMPLOS DE RESPOSTA:
+❌ **NÃO REPORTAR COMO ERRO (valores iguais):**
+- Encontrado: "12 meses" / Esperado: "12 meses" → **SÃO IGUAIS → NÃO É ERRO**
+- Encontrado: "R$ 200,00" / Esperado: "R$ 200,00" → **SÃO IGUAIS → NÃO É ERRO**
+- Encontrado: "RESIDENCIAL" / Esperado: "RESIDENCIAL" → **SÃO IGUAIS → NÃO É ERRO**
+- Encontrado: "R$ 129,99" / Esperado: "R$ 129,99" → **SÃO IGUAIS → NÃO É ERRO**
 
-**Exemplo de Contrato SEM ERROS:**
+✅ **SIM, REPORTAR COMO ERRO (valores diferentes):**
+- Encontrado: "24 meses" / Esperado: "12 meses" → **DIFERENTES → É ERRO**
+- Encontrado: "R$ 150,00" / Esperado: "R$ 200,00" → **DIFERENTES → É ERRO**
+- Encontrado: "CORPORATIVO" / Esperado: "RESIDENCIAL" → **DIFERENTES → É ERRO**
+
+### 6. ALGORITMO DE DECISÃO:
+
+```
+Para cada campo validado:
+  SE (valor_encontrado == valor_esperado):
+    → NÃO incluir no array "erros"
+    → Campo está correto
+  SENÃO:
+    → Incluir no array "erros"
+    → Definir severidade apropriada
+```
+
+### 7. EXEMPLOS DE RESPOSTA:
+
+**Exemplo de Contrato CORRETO (sem erros reais):**
 \`\`\`json
 {
   "modelo_identificado": {
@@ -89,7 +110,7 @@ Para cada análise, retorne OBRIGATORIAMENTE:
 }
 \`\`\`
 
-**Exemplo de Contrato COM ERROS:**
+**Exemplo com ERRO REAL (valores diferentes):**
 \`\`\`json
 {
   "modelo_identificado": {
@@ -98,7 +119,6 @@ Para cada análise, retorne OBRIGATORIAMENTE:
     "criterios_identificacao": ["Menção a 600Mbps encontrada"],
     "caracteristicas_esperadas": {
       "valor": "R$ 129,99",
-      "tipo": "RESIDENCIAL",
       "vigencia": "12 meses"
     }
   },
@@ -108,8 +128,7 @@ Para cada análise, retorne OBRIGATORIAMENTE:
       "campo": "Valor do Plano",
       "valor_encontrado": "R$ 120,00",
       "valor_esperado": "R$ 129,99",
-      "sugestao_correcao": "Corrigir valor para R$ 129,99 conforme padrão do plano",
-      "plano_identificado": "2024 Combo 600Mbps",
+      "sugestao_correcao": "Corrigir valor para R$ 129,99",
       "confianca": 100
     }
   ],
@@ -118,25 +137,16 @@ Para cada análise, retorne OBRIGATORIAMENTE:
     "criticos": 1,
     "altos": 0,
     "medios": 0,
-    "baixos": 0,
-    "plano_identificado": "2024 Combo 600Mbps"
+    "baixos": 0
   },
   "status_geral": "reprovado"
 }
 \`\`\`
 
-### 7. CASOS DE IDENTIFICAÇÃO INCERTA:
+### 8. ⚠️ INSTRUÇÃO FINAL CRÍTICA:
 
-Quando a confiança for menor que 80%:
-\`\`\`json
-{
-  "modelo_identificado": {
-    "nome": "Incerto - Possível 2024 Combo 300Mbps",
-    "confianca": 65,
-    "criterios_identificacao": ["Valor próximo a R$ 109,99"],
-    "observacao": "Identificação incerta. Recomenda-se revisão manual do contrato."
-  }
-}
-\`\`\`
+**NUNCA inclua no array "erros" um campo onde valor_encontrado = valor_esperado**
+**Se todos os valores estão corretos, o array "erros" deve estar vazio: []**
+**Status deve ser "aprovado" quando não há erros reais**
 `;
 };

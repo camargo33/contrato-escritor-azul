@@ -59,43 +59,44 @@ ${VALIDATION_FIELDS.map(field =>
   - "Variável": Todos os residenciais (cobrança de R$ 50,00 se fixo marcado)
 - **Cláusulas**: TODOS os contratos devem ter cláusulas de 1 a 11
 
-### 3. INSTRUÇÕES CRÍTICAS PARA VALIDAÇÃO:
+### 3. ⚠️ REGRA CRÍTICA DE VALIDAÇÃO:
 
-**IMPORTANTE: APENAS REPORTE COMO ERRO SE HOUVER DIFERENÇA REAL**
+**ANTES DE REPORTAR QUALQUER ERRO, FAÇA ESTA VERIFICAÇÃO:**
 
-- **NÃO REPORTE COMO ERRO** se o valor encontrado é EXATAMENTE igual ao valor esperado
-- **SÓ INCLUA NO ARRAY DE ERROS** campos que realmente apresentam inconsistências
-- **VALORES CORRETOS** devem ser ignorados na lista de erros
-- **SE TUDO ESTIVER CORRETO**, o array "erros" deve estar vazio: []
+```
+Para cada campo analisado:
+  valor_encontrado = [extrair do contrato]
+  valor_esperado = [buscar na tabela de referência]
+  
+  SE (valor_encontrado === valor_esperado):
+    → Campo está CORRETO
+    → NÃO incluir no array "erros"
+  SENÃO:
+    → Campo tem ERRO
+    → Incluir no array "erros" com severidade apropriada
+```
 
-**Exemplos de quando NÃO reportar erro:**
-- Encontrado: "R$ 129,99" / Esperado: "R$ 129,99" → NÃO É ERRO
-- Encontrado: "12 meses" / Esperado: "12 meses" → NÃO É ERRO  
-- Encontrado: "R$ 200,00" / Esperado: "R$ 200,00" → NÃO É ERRO
+### 4. EXEMPLOS PRÁTICOS DE VALIDAÇÃO:
 
-**Exemplos de quando SIM reportar erro:**
-- Encontrado: "R$ 120,00" / Esperado: "R$ 129,99" → É ERRO
-- Encontrado: "24 meses" / Esperado: "12 meses" → É ERRO
-- Encontrado: "GRATUITA" / Esperado: "R$ 200,00" → É ERRO
+**✅ CENÁRIO: Valores CORRETOS (não reportar como erro)**
+- Contrato: "Prazo: 12 meses" / Tabela: "12 meses" → **NÃO É ERRO**
+- Contrato: "Taxa: R$ 200,00" / Tabela: "R$ 200,00" → **NÃO É ERRO**
+- Contrato: "Valor: R$ 129,99" / Tabela: "R$ 129,99" → **NÃO É ERRO**
 
-### 4. VALIDAÇÕES CRÍTICAS BASEADAS NO MODELO:
+**❌ CENÁRIO: Valores INCORRETOS (reportar como erro)**
+- Contrato: "Prazo: 24 meses" / Tabela: "12 meses" → **É ERRO - incluir**
+- Contrato: "Taxa: GRATUITA" / Tabela: "R$ 200,00" → **É ERRO - incluir**
+- Contrato: "Valor: R$ 120,00" / Tabela: "R$ 129,99" → **É ERRO - incluir**
 
-**Erros de Identificação de Plano:**
-- Plano não corresponde aos 6 tipos cadastrados
-- Valor incorreto para o tipo de plano identificado
-- Tipo de plano (residencial/corporativo) incorreto
+### 5. INSTRUÇÕES FINAIS:
 
-**Inconsistências de Configuração:**
-- Prazo de vigência incorreto para o tipo de plano
-- Taxa de instalação incorreta para o plano específico
-- Valores de equipamentos diferentes dos padrões
-- IP fixo configurado incorretamente
+1. **COMPARE EXATAMENTE** cada valor encontrado com o valor esperado da tabela
+2. **SÓ REPORTE COMO ERRO** quando houver diferença real entre os valores
+3. **VALORES IGUAIS** nunca devem ser incluídos no array de erros
+4. **STATUS "aprovado"** quando não há diferenças reais encontradas
+5. **ARRAY VAZIO** [] quando todos os valores estão corretos
 
-**Validações Cruzadas:**
-- Se corporativo, deve ser 24 meses e IP fixo incluso
-- Se residencial, deve ser 12 meses e IP variável
-- Taxa de instalação deve corresponder ao plano específico
-- Valor de rescisão deve corresponder ao padrão do plano
+**LEMBRE-SE: O objetivo é encontrar ERROS REAIS, não confirmar valores corretos.**
 `;
 };
 
