@@ -36,8 +36,7 @@ export const VALIDATION_FIELDS: ValidationField[] = [
 ];
 
 export const createValidationInstructions = (): string => {
-  return `
-## ETAPA 2: CAMPOS ESPECÍFICOS PARA ANALISAR (APÓS IDENTIFICAÇÃO):
+  return `## ETAPA 2: CAMPOS ESPECÍFICOS PARA ANALISAR (APÓS IDENTIFICAÇÃO):
 
 ### 1. DADOS DO ASSINANTE:
 ${VALIDATION_FIELDS.map(field => 
@@ -59,53 +58,58 @@ ${VALIDATION_FIELDS.map(field =>
   - "Variável": Todos os residenciais (cobrança de R$ 50,00 se fixo marcado)
 - **Cláusulas**: TODOS os contratos devem ter cláusulas de 1 a 11
 
-### 3. ⚠️ REGRA CRÍTICA DE VALIDAÇÃO:
+### 3. 🚨 REGRA CRÍTICA - APENAS DIVERGÊNCIAS SÃO ERROS:
 
-**ANTES DE REPORTAR QUALQUER ERRO, FAÇA ESTA VERIFICAÇÃO:**
+**ATENÇÃO: SÓ REPORTE COMO ERRO SE HOUVER DIFERENÇA REAL ENTRE OS VALORES**
 
 \`\`\`
-Para cada campo analisado:
-  valor_encontrado = [extrair do contrato]
-  valor_esperado = [buscar na tabela de referência]
-  
-  SE (valor_encontrado === valor_esperado):
-    → Campo está CORRETO
-    → NÃO incluir no array "erros"
-  SENÃO:
-    → Campo tem ERRO
-    → Incluir no array "erros" com severidade apropriada
+ALGORITMO DE VALIDAÇÃO:
+1. valor_contrato = [extrair valor do contrato]
+2. valor_tabela = [buscar valor na tabela de referência]
+3. SE (valor_contrato == valor_tabela):
+     → IGNORAR COMPLETAMENTE (não é erro)
+     → NÃO incluir no resultado
+   SENÃO:
+     → É UM ERRO REAL
+     → Incluir no array de erros
 \`\`\`
 
-### 4. EXEMPLOS PRÁTICOS DE VALIDAÇÃO:
+**REGRA ABSOLUTA**: 
+- ✅ Valores IGUAIS = NÃO É ERRO = NÃO REPORTAR
+- ❌ Valores DIFERENTES = É ERRO = REPORTAR
 
-**✅ CENÁRIO: Valores CORRETOS (não reportar como erro)**
-- Contrato: "Prazo: 12 meses" / Tabela: "12 meses" → **NÃO É ERRO**
-- Contrato: "Taxa: R$ 200,00" / Tabela: "R$ 200,00" → **NÃO É ERRO**
-- Contrato: "Valor: R$ 129,99" / Tabela: "R$ 129,99" → **NÃO É ERRO**
+### 4. EXEMPLOS PRÁTICOS - O QUE NÃO REPORTAR:
 
-**❌ CENÁRIO: Valores INCORRETOS (reportar como erro)**
-- Contrato: "Prazo: 24 meses" / Tabela: "12 meses" → **É ERRO - incluir**
-- Contrato: "Taxa: GRATUITA" / Tabela: "R$ 200,00" → **É ERRO - incluir**
-- Contrato: "Valor: R$ 120,00" / Tabela: "R$ 129,99" → **É ERRO - incluir**
+**🚫 NUNCA REPORTE ESTES COMO ERRO (valores iguais):**
+- Contrato: "R$ 109,99" | Tabela: "R$ 109,99" → **NÃO É ERRO - IGNORAR**
+- Contrato: "12 meses" | Tabela: "12 meses" → **NÃO É ERRO - IGNORAR**  
+- Contrato: "RESIDENCIAL" | Tabela: "RESIDENCIAL" → **NÃO É ERRO - IGNORAR**
+- Contrato: "R$ 200,00" | Tabela: "R$ 200,00" → **NÃO É ERRO - IGNORAR**
+- Contrato: "Variável (R$ 50,00 se fixo)" | Tabela: "Variável (R$ 50,00 se fixo)" → **NÃO É ERRO - IGNORAR**
 
-### 5. INSTRUÇÕES FINAIS:
+**✅ APENAS REPORTE ESTES COMO ERRO (valores diferentes):**
+- Contrato: "R$ 120,00" | Tabela: "R$ 109,99" → **É ERRO - REPORTAR**
+- Contrato: "24 meses" | Tabela: "12 meses" → **É ERRO - REPORTAR**
+- Contrato: "CORPORATIVO" | Tabela: "RESIDENCIAL" → **É ERRO - REPORTAR**
 
-1. **COMPARE EXATAMENTE** cada valor encontrado com o valor esperado da tabela
-2. **SÓ REPORTE COMO ERRO** quando houver diferença real entre os valores
-3. **VALORES IGUAIS** nunca devem ser incluídos no array de erros
-4. **STATUS "aprovado"** quando não há diferenças reais encontradas
-5. **ARRAY VAZIO** [] quando todos os valores estão corretos
+### 5. INSTRUÇÕES OBRIGATÓRIAS:
 
-**LEMBRE-SE: O objetivo é encontrar ERROS REAIS, não confirmar valores corretos.**
-`;
+**REGRA FUNDAMENTAL**: Só inclua no array de erros campos com DIVERGÊNCIA REAL
+
+1. **COMPARE EXATAMENTE** os valores: contrato vs tabela
+2. **SE FOREM IGUAIS**: NÃO inclua no resultado (não é erro)
+3. **SE FOREM DIFERENTES**: Inclua no array de erros
+4. **RESULTADO VAZIO []**: Quando TODOS os valores estão corretos
+5. **STATUS "aprovado"**: Quando não há divergências reais
+
+**IMPORTANTE**: O sistema está reportando valores corretos como erro. Isso está ERRADO. 
+Apenas divergências devem ser reportadas.`;
 };
 
 export const createContractReferenceTable = (): string => {
-  return `
-## TABELA DE REFERÊNCIA DOS CONTRATOS CIABRASNET
+  return `## TABELA DE REFERÊNCIA DOS CONTRATOS CIABRASNET
 
-${CONTRACT_MODELS.map((model, index) => `
-### CONTRATO ${index + 1} - ${model.name}
+${CONTRACT_MODELS.map((model, index) => `### CONTRATO ${index + 1} - ${model.name}
 - **PLANO**: ${model.name}
 - **VALOR**: ${model.value} (VALOR FIXO)
 - **PRAZO VIGÊNCIA**: ${model.validity_period}
@@ -114,7 +118,5 @@ ${CONTRACT_MODELS.map((model, index) => `
 - **EQUIPAMENTOS**: ${model.equipment}
 - **RESCISÃO**: ${model.cancellation_fee}
 - **IP FIXO**: ${model.fixed_ip}
-- **CLÁUSULAS**: ${model.clauses}
-`).join('\n')}
-`;
+- **CLÁUSULAS**: ${model.clauses}`).join('\n\n')}`;
 };
