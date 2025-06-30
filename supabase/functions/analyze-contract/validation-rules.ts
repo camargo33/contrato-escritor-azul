@@ -1,4 +1,3 @@
-
 import { CONTRACT_MODELS } from './contract-models.ts';
 
 export interface ValidationField {
@@ -36,8 +35,7 @@ export const VALIDATION_FIELDS: ValidationField[] = [
 ];
 
 export const createValidationInstructions = (): string => {
-  return `
-## ETAPA 2: CAMPOS ESPECÍFICOS PARA ANALISAR (APÓS IDENTIFICAÇÃO):
+  return `## ETAPA 2: CAMPOS ESPECÍFICOS PARA ANALISAR (APÓS IDENTIFICAÇÃO):
 
 ### 1. DADOS DO ASSINANTE:
 ${VALIDATION_FIELDS.map(field => 
@@ -96,16 +94,13 @@ Para cada campo analisado:
 4. **STATUS "aprovado"** quando não há diferenças reais encontradas
 5. **ARRAY VAZIO** [] quando todos os valores estão corretos
 
-**LEMBRE-SE: O objetivo é encontrar ERROS REAIS, não confirmar valores corretos.**
-`;
+**LEMBRE-SE: O objetivo é encontrar ERROS REAIS, não confirmar valores corretos.**`;
 };
 
 export const createContractReferenceTable = (): string => {
-  return `
-## TABELA DE REFERÊNCIA DOS CONTRATOS CIABRASNET
+  return `## TABELA DE REFERÊNCIA DOS CONTRATOS CIABRASNET
 
-${CONTRACT_MODELS.map((model, index) => `
-### CONTRATO ${index + 1} - ${model.name}
+${CONTRACT_MODELS.map((model, index) => `### CONTRATO ${index + 1} - ${model.name}
 - **PLANO**: ${model.name}
 - **VALOR**: ${model.value} (VALOR FIXO)
 - **PRAZO VIGÊNCIA**: ${model.validity_period}
@@ -114,7 +109,5 @@ ${CONTRACT_MODELS.map((model, index) => `
 - **EQUIPAMENTOS**: ${model.equipment}
 - **RESCISÃO**: ${model.cancellation_fee}
 - **IP FIXO**: ${model.fixed_ip}
-- **CLÁUSULAS**: ${model.clauses}
-`).join('\n')}
-`;
+- **CLÁUSULAS**: ${model.clauses}`).join('\n\n')}`;
 };
