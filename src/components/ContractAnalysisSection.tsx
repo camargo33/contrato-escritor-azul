@@ -13,6 +13,7 @@ import TextPreviewCard from './TextPreviewCard';
 import AnalyzeButton from './AnalyzeButton';
 import AnimatedCard from './AnimatedCard';
 import FeedbackMessage from './FeedbackMessage';
+import ApiKeyStatus from './ApiKeyStatus';
 import { useContractUpload } from '@/hooks/useContractUpload';
 
 const ContractAnalysisSection = () => {
@@ -86,15 +87,11 @@ const ContractAnalysisSection = () => {
             <div>
               <h2 className="text-xl font-semibold">Análise de Contrato</h2>
               <p className="text-sm opacity-90">
-                Análise inteligente com IA
+                Análise inteligente com IA - Modelo GPT-4o-mini
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="text-xs bg-success px-3 py-1.5 rounded-full text-success-foreground font-medium shadow-sm">
-              API Configurada ✓
-            </div>
-          </div>
+          <ApiKeyStatus />
         </div>
       </div>
 
