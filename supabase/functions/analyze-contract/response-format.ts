@@ -1,4 +1,5 @@
 
+
 export const createResponseFormatInstructions = (): string => {
   return `
 ### 4. FORMATO DE RESPOSTA:
@@ -20,10 +21,17 @@ Para cada análise, retorne OBRIGATORIAMENTE:
     }
   },
   "erros": [
-    // ⚠️ REGRA CRÍTICA: SÓ INCLUA ERROS SE HOUVER DIFERENÇA REAL
-    // SE valor_encontrado === valor_esperado → NÃO É ERRO, NÃO INCLUIR
-    // EXEMPLO: Encontrado "12 meses" e Esperado "12 meses" → NÃO INCLUIR
-    // EXEMPLO: Encontrado "R$ 200,00" e Esperado "R$ 200,00" → NÃO INCLUIR
+    // ⚠️ REGRA CRÍTICA ABSOLUTA: 
+    // NUNCA INCLUA CAMPOS ONDE OS VALORES SÃO IDÊNTICOS
+    // APENAS INCLUA SE HOUVER DIFERENÇA REAL
+    // 
+    // ❌ NUNCA FAÇA ISSO:
+    // - Encontrado: "12 meses" / Esperado: "12 meses" → NÃO INCLUIR
+    // - Encontrado: "R$ 200,00" / Esperado: "R$ 200,00" → NÃO INCLUIR
+    // 
+    // ✅ APENAS FAÇA ISSO:
+    // - Encontrado: "24 meses" / Esperado: "12 meses" → INCLUIR COMO ERRO
+    // - Encontrado: "R$ 150,00" / Esperado: "R$ 200,00" → INCLUIR COMO ERRO
     {
       "severidade": "critico|alto|medio|baixo",
       "campo": "nome_do_campo",
@@ -47,40 +55,48 @@ Para cada análise, retorne OBRIGATORIAMENTE:
 }
 \`\`\`
 
-### 5. ⚠️ REGRAS CRÍTICAS PARA VALIDAÇÃO:
+### 5. ⚠️ REGRA CRÍTICA PARA VALIDAÇÃO - ALGORITMO OBRIGATÓRIO:
 
-**ANTES DE INCLUIR QUALQUER ITEM NO ARRAY "erros", FAÇA ESTA VERIFICAÇÃO:**
+**PARA CADA CAMPO ANALISADO, EXECUTE ESTE ALGORITMO:**
 
-1. **Compare EXATAMENTE** o valor encontrado com o valor esperado
-2. **SE SÃO IDÊNTICOS** → NÃO É ERRO → NÃO INCLUIR no array
-3. **SÓ INCLUA** se houver diferença real entre os valores
+\`\`\`
+1. EXTRAIR valor_encontrado_no_contrato
+2. OBTER valor_esperado_da_tabela_referencia  
+3. COMPARAR EXATAMENTE os dois valores
+4. SE (valor_encontrado_no_contrato === valor_esperado_da_tabela_referencia):
+     → É UM ACERTO ✅
+     → NÃO incluir no array "erros"
+     → PULAR para o próximo campo
+   SENÃO:
+     → É UM ERRO REAL ❌  
+     → Incluir no array "erros"
+     → Definir severidade apropriada
+\`\`\`
 
-**EXEMPLOS PRÁTICOS:**
+### 6. EXEMPLOS PRÁTICOS OBRIGATÓRIOS:
 
-❌ **NÃO REPORTAR COMO ERRO (valores iguais):**
-- Encontrado: "12 meses" / Esperado: "12 meses" → **SÃO IGUAIS → NÃO É ERRO**
-- Encontrado: "R$ 200,00" / Esperado: "R$ 200,00" → **SÃO IGUAIS → NÃO É ERRO**
-- Encontrado: "RESIDENCIAL" / Esperado: "RESIDENCIAL" → **SÃO IGUAIS → NÃO É ERRO**
-- Encontrado: "R$ 129,99" / Esperado: "R$ 129,99" → **SÃO IGUAIS → NÃO É ERRO**
+**❌ NUNCA REPORTAR COMO ERRO (são acertos):**
+- Encontrado: "12 meses" | Esperado: "12 meses" → **ACERTO - NÃO INCLUIR**
+- Encontrado: "R$ 200,00" | Esperado: "R$ 200,00" → **ACERTO - NÃO INCLUIR**  
+- Encontrado: "RESIDENCIAL" | Esperado: "RESIDENCIAL" → **ACERTO - NÃO INCLUIR**
+- Encontrado: "R$ 129,99" | Esperado: "R$ 129,99" → **ACERTO - NÃO INCLUIR**
+- Encontrado: "Variável (R$ 50,00 se fixo)" | Esperado: "Variável (R$ 50,00 se fixo)" → **ACERTO - NÃO INCLUIR**
 
-✅ **SIM, REPORTAR COMO ERRO (valores diferentes):**
-- Encontrado: "24 meses" / Esperado: "12 meses" → **DIFERENTES → É ERRO**
-- Encontrado: "R$ 150,00" / Esperado: "R$ 200,00" → **DIFERENTES → É ERRO**
-- Encontrado: "CORPORATIVO" / Esperado: "RESIDENCIAL" → **DIFERENTES → É ERRO**
+**✅ APENAS REPORTAR COMO ERRO (são divergências reais):**
+- Encontrado: "24 meses" | Esperado: "12 meses" → **ERRO REAL - INCLUIR**
+- Encontrado: "R$ 150,00" | Esperado: "R$ 200,00" → **ERRO REAL - INCLUIR**
+- Encontrado: "CORPORATIVO" | Esperado: "RESIDENCIAL" → **ERRO REAL - INCLUIR**
 
-### 6. ALGORITMO DE DECISÃO:
+### 7. INSTRUÇÕES FINAIS CRÍTICAS:
 
-Para cada campo validado:
-  SE (valor_encontrado == valor_esperado):
-    → NÃO incluir no array "erros"
-    → Campo está correto
-  SENÃO:
-    → Incluir no array "erros"
-    → Definir severidade apropriada
+1. **VALORES IDÊNTICOS = ACERTO = IGNORAR COMPLETAMENTE**
+2. **VALORES DIFERENTES = ERRO = INCLUIR NO ARRAY**  
+3. **SE TODOS OS VALORES ESTÃO CORRETOS**: array "erros" deve ser vazio []
+4. **SE NÃO HÁ ERROS REAIS**: status_geral deve ser "aprovado"
+5. **NUNCA inclua no array "erros" campos onde valor_encontrado = valor_esperado**
 
-### 7. EXEMPLOS DE RESPOSTA:
+### 8. EXEMPLO DE CONTRATO CORRETO (sem erros reais):
 
-**Exemplo de Contrato CORRETO (sem erros reais):**
 \`\`\`json
 {
   "modelo_identificado": {
@@ -89,7 +105,7 @@ Para cada campo validado:
     "criterios_identificacao": ["Valor R$ 129,99 encontrado", "Menção a 600Mbps"],
     "caracteristicas_esperadas": {
       "valor": "R$ 129,99",
-      "tipo": "RESIDENCIAL",
+      "tipo": "RESIDENCIAL", 
       "vigencia": "12 meses",
       "taxa_instalacao": "R$ 200,00",
       "rescisao": "R$ 500,00"
@@ -108,7 +124,8 @@ Para cada campo validado:
 }
 \`\`\`
 
-**Exemplo com ERRO REAL (valores diferentes):**
+### 9. EXEMPLO COM ERRO REAL (valores diferentes):
+
 \`\`\`json
 {
   "modelo_identificado": {
@@ -125,7 +142,7 @@ Para cada campo validado:
       "severidade": "critico",
       "campo": "Valor do Plano",
       "valor_encontrado": "R$ 120,00",
-      "valor_esperado": "R$ 129,99",
+      "valor_esperado": "R$ 129,99", 
       "sugestao_correcao": "Corrigir valor para R$ 129,99",
       "confianca": 100
     }
@@ -141,10 +158,12 @@ Para cada campo validado:
 }
 \`\`\`
 
-### 8. ⚠️ INSTRUÇÃO FINAL CRÍTICA:
+### 10. ⚠️ INSTRUÇÃO FINAL ABSOLUTA:
 
-**NUNCA inclua no array "erros" um campo onde valor_encontrado = valor_esperado**
-**Se todos os valores estão corretos, o array "erros" deve estar vazio: []**
-**Status deve ser "aprovado" quando não há erros reais**
+**JAMAIS inclua no array "erros" um campo onde valor_encontrado = valor_esperado**
+**Valores iguais significam que o campo está CORRETO**
+**Array "erros" vazio [] quando todos os valores estão corretos**
+**Status "aprovado" quando não há divergências reais**
 `;
 };
+
