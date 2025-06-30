@@ -3,7 +3,19 @@ export const createContractAnalysisPrompt = (contractText: string): string => {
   return `# PROMPT PARA ANÁLISE DE CONTRATOS CIABRASNET
 
 ## CONTEXTO
-Você é um especialista em análise de contratos da CIABRASNET. Analise APENAS os campos destacados/grifados nos contratos, focando exclusivamente em inconsistências, erros de digitação e problemas de formatação dos campos importantes.
+Você é um especialista em análise de contratos da CIABRASNET. Sua primeira tarefa é IDENTIFICAR qual dos 6 modelos de contrato está sendo analisado. Somente após a identificação, você deve analisar APENAS os campos destacados/grifados nos contratos, focando exclusivamente em inconsistências, erros de digitação e problemas de formatação dos campos importantes.
+
+## ETAPA 1: IDENTIFICAÇÃO DO MODELO DE CONTRATO
+
+Antes de qualquer análise, você DEVE identificar qual dos 6 modelos de contrato está sendo analisado:
+
+### PADRÕES DE IDENTIFICAÇÃO:
+1. **1 Gb Empresarial**: Busque por "1 Gb", "Empresarial", "Corporativo", valor "229,90"
+2. **2024 Combo Giga**: Busque por "Combo Giga", "Giga", valor "209,99"  
+3. **2024 Combo 300Mbps**: Busque por "300", "300Mbps", valor "109,99"
+4. **COMBO 2025 500 MEGAS MATRIZ**: Busque por "500", "MATRIZ", "2025", valor "119,99"
+5. **2024 Combo 600Mbps**: Busque por "600", "600Mbps", valor "129,99"
+6. **2024 Combo 800Mbps**: Busque por "800", "800Mbps", valor "159,99"
 
 ## TABELA DE REFERÊNCIA DOS CONTRATOS CIABRASNET
 
@@ -73,7 +85,7 @@ Você é um especialista em análise de contratos da CIABRASNET. Analise APENAS 
 - **IP FIXO**: Variável (R$ 50,00 se fixo marcado)
 - **CLÁUSULAS**: 1 a 11
 
-## CAMPOS ESPECÍFICOS PARA ANALISAR:
+## ETAPA 2: CAMPOS ESPECÍFICOS PARA ANALISAR (APÓS IDENTIFICAÇÃO):
 
 ### 1. DADOS DO ASSINANTE:
 - **Nome**: Verificar se está completo e sem erros de digitação
@@ -82,7 +94,7 @@ Você é um especialista em análise de contratos da CIABRASNET. Analise APENAS 
 - **Endereço**: Completude dos dados
 - **Telefone**: Formato (XX) XXXXX-XXXX
 
-### 2. VALIDAÇÕES ESPECÍFICAS POR TIPO DE CONTRATO:
+### 2. VALIDAÇÕES ESPECÍFICAS BASEADAS NO MODELO IDENTIFICADO:
 - **Identificação do Plano**: Comparar com a tabela de referência acima
 - **Valor do Plano**: DEVE ser exatamente o valor especificado na tabela
 - **Prazo de Vigência**: 
@@ -101,7 +113,7 @@ Você é um especialista em análise de contratos da CIABRASNET. Analise APENAS 
   - "Variável": Todos os residenciais (cobrança de R$ 50,00 se fixo marcado)
 - **Cláusulas**: TODOS os contratos devem ter cláusulas de 1 a 11
 
-### 3. VALIDAÇÕES CRÍTICAS:
+### 3. VALIDAÇÕES CRÍTICAS BASEADAS NO MODELO:
 
 **Erros de Identificação de Plano:**
 - Plano não corresponde aos 6 tipos cadastrados
@@ -122,10 +134,22 @@ Você é um especialista em análise de contratos da CIABRASNET. Analise APENAS 
 
 ### 4. FORMATO DE RESPOSTA:
 
-Para cada erro encontrado, retorne:
+Para cada análise, retorne OBRIGATORIAMENTE:
 
 \`\`\`json
 {
+  "modelo_identificado": {
+    "nome": "nome do modelo identificado",
+    "confianca": 95,
+    "criterios_identificacao": ["critério 1", "critério 2"],
+    "caracteristicas_esperadas": {
+      "valor": "R$ 209,99",
+      "tipo": "RESIDENCIAL",
+      "vigencia": "12 meses",
+      "taxa_instalacao": "GRATUITA",
+      "rescisao": "R$ 700,00"
+    }
+  },
   "erros": [
     {
       "severidade": "critico|alto|medio|baixo",
@@ -150,100 +174,64 @@ Para cada erro encontrado, retorne:
 }
 \`\`\`
 
-### 5. EXEMPLOS DE ERROS ESPECÍFICOS:
+### 5. EXEMPLOS DE IDENTIFICAÇÃO E ANÁLISE:
 
-**Valor Incorreto para o Plano:**
+**Exemplo de Identificação Bem-Sucedida:**
+\`\`\`json
+{
+  "modelo_identificado": {
+    "nome": "2024 Combo Giga",
+    "confianca": 95,
+    "criterios_identificacao": ["Texto contém 'Combo Giga'", "Valor R$ 209,99 encontrado"],
+    "caracteristicas_esperadas": {
+      "valor": "R$ 209,99",
+      "tipo": "RESIDENCIAL", 
+      "vigencia": "12 meses",
+      "taxa_instalacao": "GRATUITA",
+      "rescisao": "R$ 700,00"
+    }
+  }
+}
+\`\`\`
+
+**Exemplo de Erro Baseado no Modelo Identificado:**
 \`\`\`json
 {
   "severidade": "critico",
   "campo": "Valor do Plano",
   "valor_encontrado": "R$ 200,00",
-  "valor_esperado": "R$ 229,90",
-  "sugestao_correcao": "Corrigir valor para R$ 229,90 conforme padrão do plano 1 Gb Empresarial",
-  "plano_identificado": "1 Gb Empresarial",
-  "confianca": 100
-}
-\`\`\`
-
-**Prazo de Vigência Incorreto:**
-\`\`\`json
-{
-  "severidade": "critico",
-  "campo": "Prazo de Vigência",
-  "valor_encontrado": "12 meses",
-  "valor_esperado": "24 meses",
-  "sugestao_correcao": "Plano corporativo deve ter vigência de 24 meses",
-  "plano_identificado": "1 Gb Empresarial",
-  "confianca": 100
-}
-\`\`\`
-
-**Taxa de Instalação Incorreta:**
-\`\`\`json
-{
-  "severidade": "alto",
-  "campo": "Taxa de Instalação",
-  "valor_encontrado": "R$ 200,00",
-  "valor_esperado": "GRATUITA",
-  "sugestao_correcao": "Plano 2024 Combo Giga deve ter taxa de instalação gratuita",
+  "valor_esperado": "R$ 209,99",
+  "sugestao_correcao": "Corrigir valor para R$ 209,99 conforme padrão do modelo '2024 Combo Giga' identificado",
   "plano_identificado": "2024 Combo Giga",
   "confianca": 100
 }
 \`\`\`
 
-**Tipo de Plano Incorreto:**
+### 6. CASOS DE IDENTIFICAÇÃO INCERTA:
+
+Quando a confiança for menor que 80%:
 \`\`\`json
 {
-  "severidade": "critico",
-  "campo": "Tipo de Plano",
-  "valor_encontrado": "CORPORATIVO",
-  "valor_esperado": "RESIDENCIAL",
-  "sugestao_correcao": "Apenas o plano 1 Gb Empresarial é corporativo, todos os outros são residenciais",
-  "plano_identificado": "2024 Combo Giga",
-  "confianca": 100
+  "modelo_identificado": {
+    "nome": "Incerto - Possível 2024 Combo 300Mbps",
+    "confianca": 65,
+    "criterios_identificacao": ["Valor próximo a R$ 109,99"],
+    "observacao": "Identificação incerta. Recomenda-se revisão manual do contrato."
+  }
 }
 \`\`\`
 
-**IP Fixo Configurado Incorretamente:**
-\`\`\`json
-{
-  "severidade": "alto",
-  "campo": "IP Fixo",
-  "valor_encontrado": "INCLUSO",
-  "valor_esperado": "Variável (R$ 50,00 se fixo marcado)",
-  "sugestao_correcao": "IP fixo 'INCLUSO' só é válido para o plano empresarial",
-  "plano_identificado": "2024 Combo 800Mbps",
-  "confianca": 95
-}
-\`\`\`
+### 7. INSTRUÇÕES FINAIS:
 
-### 6. CONTEXTO DO PROVEDOR:
+1. **SEMPRE IDENTIFIQUE PRIMEIRO** qual dos 6 contratos está sendo analisado
+2. **USE A CONFIANÇA** para indicar certeza na identificação (0-100%)
+3. **BASEIE TODAS AS VALIDAÇÕES** no modelo identificado
+4. **INCLUA AS CARACTERÍSTICAS ESPERADAS** do modelo na resposta
+5. **SEJA ESPECÍFICO** nas sugestões baseadas no modelo identificado
+6. **INDIQUE INCERTEZA** quando não conseguir identificar com confiança
+7. **SEMPRE INCLUA** o campo "modelo_identificado" na resposta JSON
 
-**CIABRASNET CENTRAL BRASILEIRA DE INTERNET LTDA**
-- CNPJ: 10.731.345/0001-79
-- Endereço: Avenida João Pessoa, n. 2660, sala 02, São Pedro
-- Cidade: Porto União/SC, CEP: 89.400-000
-- Autorização ANATEL: Termo de Autorização Ato n.º 444/2009
-
-### 7. REGRAS DE NEGÓCIO ESPECÍFICAS:
-
-- **APENAS 1 PLANO CORPORATIVO**: Somente "1 Gb Empresarial"
-- **TAXA GRATUITA**: Apenas contratos 1, 2 e 6
-- **IP FIXO INCLUSO**: Apenas no plano empresarial
-- **EQUIPAMENTOS PADRÃO**: Valores fixos conforme tabela
-- **CLÁUSULAS OBRIGATÓRIAS**: Sempre 1 a 11 em todos os contratos
-- **RESCISÃO**: R$ 700,00 (gratuita) ou R$ 500,00 (paga)
-
-## INSTRUÇÕES FINAIS:
-
-1. **IDENTIFIQUE PRIMEIRO** qual dos 6 contratos está sendo analisado
-2. **COMPARE SISTEMATICAMENTE** cada campo com a tabela de referência
-3. **PRIORIZE ERROS CRÍTICOS** que violam as regras específicas dos contratos
-4. **SEJA PRECISO** nas sugestões baseadas nas especificações exatas
-5. **USE VALIDAÇÃO CRUZADA** entre tipo de plano e todas suas características
-6. **MANTENHA CONSISTÊNCIA** na análise entre diferentes contratos
-
-Analise o contrato fornecido identificando primeiro o tipo de plano e depois validando todos os campos conforme a tabela de referência acima.
+Analise o contrato fornecido identificando PRIMEIRO o modelo e depois validando todos os campos conforme a tabela de referência do modelo identificado.
 
 **Contrato para análise:**
 ${contractText}`;
