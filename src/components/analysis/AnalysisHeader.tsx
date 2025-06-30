@@ -9,14 +9,14 @@ interface AnalysisHeaderProps {
 
 const AnalysisHeader = ({ timestamp, filename }: AnalysisHeaderProps) => {
   return (
-    <CardHeader className="bg-slate-700 text-white">
-      <CardTitle className="text-xl flex items-center gap-2">
-        <FileText className="h-6 w-6" />
+    <CardHeader className="bg-white text-slate-800 border-b border-slate-200">
+      <CardTitle className="text-xl flex items-center gap-2 text-slate-700">
+        <FileText className="h-6 w-6 text-primary" />
         Relatório de Revisão Contratual - CIABRASNET
       </CardTitle>
-      <div className="text-sm text-slate-200 space-y-1">
+      <div className="text-sm text-slate-600 space-y-1">
         <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4" />
+          <Clock className="h-4 w-4 text-slate-500" />
           Análise realizada em: {timestamp}
         </div>
         <div>Arquivo: {filename}</div>
