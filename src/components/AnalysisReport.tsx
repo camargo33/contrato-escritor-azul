@@ -1,9 +1,7 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import AnalysisHeader from "./analysis/AnalysisHeader";
 import ModelIdentificationCard from "./analysis/ModelIdentificationCard";
 import StatusBadge from "./analysis/StatusBadge";
-import ErrorSummaryGrid from "./analysis/ErrorSummaryGrid";
 import ErrorListCard from "./analysis/ErrorListCard";
 import FallbackAnalysisView from "./analysis/FallbackAnalysisView";
 import AnalysisFooter from "./analysis/AnalysisFooter";
@@ -16,13 +14,13 @@ interface AnalysisReportProps {
 }
 
 interface ErrorAnalysis {
-  severidade: 'critico' | 'alto' | 'medio' | 'baixo';
+  severidade?: string;
   campo: string;
   valor_encontrado: string;
   valor_esperado: string;
   sugestao_correcao: string;
   localizacao?: string;
-  confianca: number;
+  confianca?: number;
 }
 
 interface ModeloIdentificado {
@@ -44,10 +42,6 @@ interface AnalysisData {
   erros: ErrorAnalysis[];
   resumo: {
     total_erros: number;
-    criticos: number;
-    altos: number;
-    medios: number;
-    baixos: number;
     plano_identificado?: string;
   };
   status_geral: 'aprovado' | 'aprovado_com_restricoes' | 'reprovado';
@@ -102,20 +96,14 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
         const resumoAtualizado = {
           ...analysisData.resumo,
           total_erros: errosReais.length,
-          criticos: errosReais.filter(e => e.severidade === 'critico').length,
-          altos: errosReais.filter(e => e.severidade === 'alto').length,
-          medios: errosReais.filter(e => e.severidade === 'medio').length,
-          baixos: errosReais.filter(e => e.severidade === 'baixo').length,
         };
 
         // Atualizar status baseado nos erros reais
         let statusAtualizado = analysisData.status_geral;
         if (errosReais.length === 0) {
           statusAtualizado = 'aprovado';
-        } else if (errosReais.some(e => e.severidade === 'critico')) {
-          statusAtualizado = 'reprovado';
         } else {
-          statusAtualizado = 'aprovado_com_restricoes';
+          statusAtualizado = 'reprovado';
         }
         
         return {
@@ -176,9 +164,14 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
             {/* Status Geral */}
             <StatusBadge status={analysisData.status_geral} />
 
-            {/* Resumo de Erros */}
-            {analysisData.resumo && (
-              <ErrorSummaryGrid resumo={analysisData.resumo} />
+            {/* Resumo Simplificado de Erros */}
+            {analysisData.resumo && analysisData.resumo.total_erros > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-red-700">{analysisData.resumo.total_erros}</div>
+                  <div className="text-sm text-red-600">Erros Encontrados</div>
+                </div>
+              </div>
             )}
 
             {/* Lista de Erros - agora só mostra erros reais */}

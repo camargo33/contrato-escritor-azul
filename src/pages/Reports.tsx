@@ -10,7 +10,7 @@ import { BarChart3, Download, Filter, Search, Calendar, FileText, TrendingUp } f
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const Reports = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -62,54 +62,37 @@ const Reports = () => {
     }
   }) || [];
 
-  // Estatísticas para gráficos
+  // Estatísticas simplificadas
   const totalAnalyses = filteredData.length;
   const totalErrors = filteredData.reduce((sum, item) => sum + (item.errors_found || 0), 0);
   const avgErrors = totalAnalyses > 0 ? (totalErrors / totalAnalyses).toFixed(1) : 0;
 
-  // Dados melhorados para gráfico de barras (agrupados por dia com diferentes tipos de erro)
-  const dailyErrorData = filteredData.reduce((acc, item) => {
+  // Dados simplificados para gráfico de barras (análises e erros por dia)
+  const dailyData = filteredData.reduce((acc, item) => {
     const date = new Date(item.created_at).toLocaleDateString('pt-BR');
     const existing = acc.find(d => d.date === date);
     
-    // Simular distribuição de erros por severidade baseado no total
-    const totalErrors = item.errors_found || 0;
-    const criticos = Math.floor(totalErrors * 0.2);
-    const altos = Math.floor(totalErrors * 0.3);
-    const medios = Math.floor(totalErrors * 0.3);
-    const baixos = totalErrors - criticos - altos - medios;
-    
     if (existing) {
       existing.analyses += 1;
-      existing.criticos += criticos;
-      existing.altos += altos;
-      existing.medios += medios;
-      existing.baixos += baixos;
+      existing.errors += item.errors_found || 0;
     } else {
       acc.push({ 
         date, 
-        analyses: 1, 
-        criticos,
-        altos,
-        medios,
-        baixos
+        analyses: 1,
+        errors: item.errors_found || 0
       });
     }
     return acc;
   }, [] as Array<{ 
     date: string; 
-    analyses: number; 
-    criticos: number;
-    altos: number;
-    medios: number;
-    baixos: number;
+    analyses: number;
+    errors: number;
   }>).sort((a, b) => new Date(a.date.split('/').reverse().join('-')).getTime() - new Date(b.date.split('/').reverse().join('-')).getTime());
 
   // Dados para gráfico de pizza (distribuição de erros)
   const errorDistribution = [
     { name: 'Sem erros', value: filteredData.filter(item => (item.errors_found || 0) === 0).length, color: '#10b981' },
-    { name: '1-3 erros', value: filteredData.filter(item => (item.errors_found || 0) >= 1 && (item.errors_found || 0) <= 3).length, color: '#f59e0b' },
-    { name: '4+ erros', value: filteredData.filter(item => (item.errors_found || 0) > 3).length, color: '#ef4444' }
+    { name: 'Com erros', value: filteredData.filter(item => (item.errors_found || 0) > 0).length, color: '#ef4444' }
   ].filter(item => item.value > 0);
 
   return (
@@ -159,11 +142,11 @@ const Reports = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Erros por Dia e Severidade</CardTitle>
+              <CardTitle>Análises e Erros por Dia</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={dailyErrorData}>
+                <BarChart data={dailyData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
                     dataKey="date" 
@@ -174,11 +157,8 @@ const Reports = () => {
                   />
                   <YAxis />
                   <Tooltip />
-                  <Legend />
-                  <Bar dataKey="criticos" stackId="a" fill="#ef4444" name="Críticos" />
-                  <Bar dataKey="altos" stackId="a" fill="#f97316" name="Altos" />
-                  <Bar dataKey="medios" stackId="a" fill="#eab308" name="Médios" />
-                  <Bar dataKey="baixos" stackId="a" fill="#3b82f6" name="Baixos" />
+                  <Bar dataKey="analyses" fill="#3b82f6" name="Análises" />
+                  <Bar dataKey="errors" fill="#ef4444" name="Erros" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -186,7 +166,7 @@ const Reports = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Distribuição de Erros</CardTitle>
+              <CardTitle>Distribuição de Análises</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -205,7 +185,6 @@ const Reports = () => {
                     ))}
                   </Pie>
                   <Tooltip />
-                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>
@@ -265,7 +244,7 @@ const Reports = () => {
                       {new Date(item.created_at).toLocaleDateString('pt-BR')}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={item.errors_found === 0 ? "default" : item.errors_found <= 3 ? "secondary" : "destructive"}>
+                      <Badge variant={item.errors_found === 0 ? "default" : "destructive"}>
                         {item.errors_found || 0} erros
                       </Badge>
                     </TableCell>
