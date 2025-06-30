@@ -70,7 +70,6 @@ Para cada análise, retorne OBRIGATORIAMENTE:
 
 ### 6. ALGORITMO DE DECISÃO:
 
-```
 Para cada campo validado:
   SE (valor_encontrado == valor_esperado):
     → NÃO incluir no array "erros"
@@ -78,7 +77,6 @@ Para cada campo validado:
   SENÃO:
     → Incluir no array "erros"
     → Definir severidade apropriada
-```
 
 ### 7. EXEMPLOS DE RESPOSTA:
 
