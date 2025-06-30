@@ -16,6 +16,45 @@ interface ErrorListCardProps {
 }
 
 const ErrorListCard = ({ erros }: ErrorListCardProps) => {
+  // Função para verificar se é um erro real (valores diferentes)
+  const isRealError = (erro: ErrorAnalysis): boolean => {
+    const encontrado = erro.valor_encontrado?.toString().trim() || '';
+    const esperado = erro.valor_esperado?.toString().trim() || '';
+    
+    // Se os valores são idênticos, não é um erro real
+    if (encontrado === esperado) {
+      return false;
+    }
+    
+    // Normalizar valores monetários para comparação
+    const normalizeMoney = (value: string) => {
+      return value.replace(/[R$\s]/g, '').replace(',', '.');
+    };
+    
+    // Se ambos parecem ser valores monetários, comparar numericamente
+    if (encontrado.includes('R$') && esperado.includes('R$')) {
+      const encontradoNum = normalizeMoney(encontrado);
+      const esperadoNum = normalizeMoney(esperado);
+      if (encontradoNum === esperadoNum) {
+        return false;
+      }
+    }
+    
+    // Normalizar texto (maiúsculas, espaços)
+    const normalizeText = (text: string) => {
+      return text.toLowerCase().replace(/\s+/g, ' ').trim();
+    };
+    
+    if (normalizeText(encontrado) === normalizeText(esperado)) {
+      return false;
+    }
+    
+    return true;
+  };
+
+  // Filtrar apenas erros reais
+  const errosReais = erros.filter(isRealError);
+
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
       case 'critico':
@@ -61,17 +100,18 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
     }
   };
 
-  if (!erros || erros.length === 0) {
+  // Se não há erros reais, não mostrar a seção
+  if (!errosReais || errosReais.length === 0) {
     return null;
   }
 
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-slate-700 border-b pb-2">
-        Erros Detectados:
+        Erros Detectados ({errosReais.length}):
       </h3>
       
-      {erros.map((erro, index) => (
+      {errosReais.map((erro, index) => (
         <div key={index} className={`border-l-4 p-4 rounded-r-lg ${getSeverityColor(erro.severidade)}`}>
           <div className="flex items-start gap-3">
             {getSeverityIcon(erro.severidade)}

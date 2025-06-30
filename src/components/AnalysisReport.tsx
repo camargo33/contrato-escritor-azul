@@ -54,6 +54,38 @@ interface AnalysisData {
 }
 
 const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: AnalysisReportProps) => {
+  // Função para verificar se é um erro real (mesma lógica do ErrorListCard)
+  const isRealError = (erro: ErrorAnalysis): boolean => {
+    const encontrado = erro.valor_encontrado?.toString().trim() || '';
+    const esperado = erro.valor_esperado?.toString().trim() || '';
+    
+    if (encontrado === esperado) {
+      return false;
+    }
+    
+    const normalizeMoney = (value: string) => {
+      return value.replace(/[R$\s]/g, '').replace(',', '.');
+    };
+    
+    if (encontrado.includes('R$') && esperado.includes('R$')) {
+      const encontradoNum = normalizeMoney(encontrado);
+      const esperadoNum = normalizeMoney(esperado);
+      if (encontradoNum === esperadoNum) {
+        return false;
+      }
+    }
+    
+    const normalizeText = (text: string) => {
+      return text.toLowerCase().replace(/\s+/g, ' ').trim();
+    };
+    
+    if (normalizeText(encontrado) === normalizeText(esperado)) {
+      return false;
+    }
+    
+    return true;
+  };
+
   const parseAnalysisContent = (content: string): { analysisData: AnalysisData | null; errorCount: number; fullContent: string } => {
     try {
       // Tenta extrair JSON da resposta
@@ -62,9 +94,38 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
       if (jsonMatch) {
         const jsonStr = jsonMatch[1] || jsonMatch[0];
         const analysisData = JSON.parse(jsonStr) as AnalysisData;
+        
+        // Filtrar apenas erros reais
+        const errosReais = analysisData.erros.filter(isRealError);
+        
+        // Recalcular estatísticas baseadas nos erros reais
+        const resumoAtualizado = {
+          ...analysisData.resumo,
+          total_erros: errosReais.length,
+          criticos: errosReais.filter(e => e.severidade === 'critico').length,
+          altos: errosReais.filter(e => e.severidade === 'alto').length,
+          medios: errosReais.filter(e => e.severidade === 'medio').length,
+          baixos: errosReais.filter(e => e.severidade === 'baixo').length,
+        };
+
+        // Atualizar status baseado nos erros reais
+        let statusAtualizado = analysisData.status_geral;
+        if (errosReais.length === 0) {
+          statusAtualizado = 'aprovado';
+        } else if (errosReais.some(e => e.severidade === 'critico')) {
+          statusAtualizado = 'reprovado';
+        } else {
+          statusAtualizado = 'aprovado_com_restricoes';
+        }
+        
         return {
-          analysisData,
-          errorCount: analysisData.resumo?.total_erros || 0,
+          analysisData: {
+            ...analysisData,
+            erros: errosReais,
+            resumo: resumoAtualizado,
+            status_geral: statusAtualizado
+          },
+          errorCount: errosReais.length,
           fullContent: content
         };
       }
@@ -120,8 +181,23 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
               <ErrorSummaryGrid resumo={analysisData.resumo} />
             )}
 
-            {/* Lista de Erros */}
+            {/* Lista de Erros - agora só mostra erros reais */}
             <ErrorListCard erros={analysisData.erros} />
+
+            {/* Mensagem quando não há erros reais */}
+            {analysisData.erros.length === 0 && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-green-700">
+                  <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                    <span className="text-white text-xs">✓</span>
+                  </div>
+                  <span className="font-medium">Contrato Aprovado</span>
+                </div>
+                <p className="text-green-600 text-sm mt-1">
+                  Todos os campos estão corretos conforme esperado. Nenhuma correção é necessária.
+                </p>
+              </div>
+            )}
           </div>
         ) : (
           // Fallback para análises não estruturadas
