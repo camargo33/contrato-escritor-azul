@@ -63,7 +63,7 @@ ${VALIDATION_FIELDS.map(field =>
 
 **ANTES DE REPORTAR QUALQUER ERRO, FAÇA ESTA VERIFICAÇÃO:**
 
-```
+\`\`\`
 Para cada campo analisado:
   valor_encontrado = [extrair do contrato]
   valor_esperado = [buscar na tabela de referência]
@@ -74,7 +74,7 @@ Para cada campo analisado:
   SENÃO:
     → Campo tem ERRO
     → Incluir no array "erros" com severidade apropriada
-```
+\`\`\`
 
 ### 4. EXEMPLOS PRÁTICOS DE VALIDAÇÃO:
 
