@@ -46,7 +46,10 @@ const Dashboard = () => {
     return created > weekAgo;
   }).length || 0;
 
-  // Dados para gráficos
+  // Calcular total de erros das análises
+  const totalErros = analysisHistory?.reduce((sum, analysis) => sum + (analysis.errors_found || 0), 0) || 0;
+
+  // Dados para gráfico - últimas 7 análises
   const chartData = analysisHistory?.slice(0, 7).reverse().map((analysis, index) => ({
     name: `Análise ${index + 1}`,
     erros: analysis.errors_found || 0,
@@ -93,15 +96,13 @@ const Dashboard = () => {
 
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Contratos Processados</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Total de Erros</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-info">
-                {baseContracts?.filter(c => c.is_processed).length || 0}
-              </div>
+              <div className="text-2xl font-bold text-destructive">{totalErros}</div>
               <p className="text-xs text-muted-foreground">
-                Prontos para análise
+                Erros detectados
               </p>
             </CardContent>
           </Card>
@@ -141,7 +142,7 @@ const Dashboard = () => {
                     <XAxis dataKey="data" />
                     <YAxis />
                     <Tooltip />
-                    <Bar dataKey="erros" fill="hsl(var(--primary))" />
+                    <Bar dataKey="erros" fill="hsl(var(--destructive))" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -164,13 +165,15 @@ const Dashboard = () => {
               <div className="space-y-3">
                 {analysisHistory?.slice(0, 5).map((analysis) => (
                   <div key={analysis.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
-                    <div className="h-2 w-2 rounded-full bg-primary" />
+                    <div className={`h-2 w-2 rounded-full ${
+                      (analysis.errors_found || 0) === 0 ? 'bg-success' : 'bg-destructive'
+                    }`} />
                     <div className="flex-1">
                       <p className="text-sm font-medium">
                         Análise de {analysis.analyzed_filename}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {analysis.errors_found} erros encontrados • {' '}
+                        {analysis.errors_found || 0} erros encontrados • {' '}
                         {new Date(analysis.created_at).toLocaleDateString('pt-BR')}
                       </p>
                     </div>
