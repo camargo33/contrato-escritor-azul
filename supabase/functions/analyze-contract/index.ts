@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -230,8 +231,8 @@ serve(async (req) => {
     console.log("Iniciando análise para arquivo:", filename);
     console.log("Tamanho do texto:", contractText.length, "caracteres");
 
-    // Testar conectividade com OpenAI
-    console.log("🔄 Testando conectividade com OpenAI...");
+    // Testar conectividade com OpenAI usando o modelo mais econômico
+    console.log("🔄 Testando conectividade com OpenAI usando GPT-4o-mini...");
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -309,7 +310,7 @@ serve(async (req) => {
       });
     }
 
-    console.log("✅ Análise concluída com sucesso!");
+    console.log("✅ Análise concluída com sucesso usando GPT-4o-mini!");
 
     const result = {
       success: true,
