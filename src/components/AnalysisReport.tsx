@@ -53,6 +53,7 @@ interface CalculoTaxaRescisao {
   fidelidade_marcada: boolean;
   taxa_instalacao_encontrada: string;
   taxa_instalacao_correta?: string;
+  calculo_incorreto?: string;
   calculo_correto: string;
   observacao: string;
 }
@@ -272,11 +273,17 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
                       <span className="font-medium text-blue-700">Taxa de Instalação Correta:</span>
                       <span className="text-blue-600">{analysisData.calculo_taxa_rescisao.taxa_instalacao_correta}</span>
                     </div>
-                  )}
-                  <div className="flex justify-between border-t pt-2">
-                    <span className="font-medium text-blue-700">Cálculo:</span>
-                    <span className="text-blue-600 font-mono">{analysisData.calculo_taxa_rescisao.calculo_correto}</span>
-                  </div>
+                   )}
+                   {analysisData.calculo_taxa_rescisao.calculo_incorreto && (
+                     <div className="flex justify-between text-red-600">
+                       <span className="font-medium">Cálculo Incorreto:</span>
+                       <span className="font-mono">{analysisData.calculo_taxa_rescisao.calculo_incorreto}</span>
+                     </div>
+                   )}
+                   <div className="flex justify-between border-t pt-2">
+                     <span className="font-medium text-blue-700">Cálculo Correto:</span>
+                     <span className="text-blue-600 font-mono">{analysisData.calculo_taxa_rescisao.calculo_correto}</span>
+                   </div>
                   <div className="text-blue-600 text-xs mt-2 italic">
                     {analysisData.calculo_taxa_rescisao.observacao}
                   </div>
