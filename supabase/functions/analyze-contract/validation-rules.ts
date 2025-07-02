@@ -57,7 +57,19 @@ ${fieldsText}
 
 ### 2.1. VALIDAÇÃO DA TAXA DE RESCISÃO - LÓGICA CORRIGIDA COM FIDELIDADE:
 
-**REGRA ABSOLUTA**: A taxa de rescisão SEMPRE é R$ 700,00 menos o desconto da taxa de instalação quando fidelidade está marcada.
+**TABELA DE REFERÊNCIA OBRIGATÓRIA:**
+```
+| Valor Taxa de Instalação | Fidelidade | Taxa de Rescisão Calculada |
+|-------------------------|-----------|---------------------------|
+| R$ 0,00 (gratuita)     | Sim       | R$ 700,00                |
+| R$ 120,00              | Sim       | R$ 580,00                |
+| R$ 150,00              | Sim       | R$ 550,00                |
+| R$ 200,00              | Sim       | R$ 500,00                |
+| R$ 300,00              | Sim       | R$ 400,00                |
+| Qualquer valor         | Não       | R$ 700,00                |
+```
+
+**REGRA ABSOLUTA**: A taxa de rescisão SEMPRE é R$ 700,00 menos o valor da taxa de instalação quando fidelidade está marcada.
 
 **ETAPA 1 - DETECTAR FIDELIDADE:**
 1. Procurar na seção "DA OPÇÃO DE FIDELIDADE" por "SIM (X)" marcado

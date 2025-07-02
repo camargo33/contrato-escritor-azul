@@ -4,7 +4,18 @@
 
 export const createFidelityValidationExamples = (): string => {
   return `
-### EXEMPLOS DETALHADOS DA NOVA LÓGICA DE FIDELIDADE:
+### TABELA DE REFERÊNCIA OFICIAL PARA VALIDAÇÃO:
+
+| Valor Taxa de Instalação | Fidelidade | Taxa de Rescisão Calculada |
+|-------------------------|-----------|---------------------------|
+| R$ 0,00 (gratuita)     | Sim       | R$ 700,00                |
+| R$ 120,00              | Sim       | R$ 580,00                |
+| R$ 150,00              | Sim       | R$ 550,00                |
+| R$ 200,00              | Sim       | R$ 500,00                |
+| R$ 300,00              | Sim       | R$ 400,00                |
+| Qualquer valor         | Não       | R$ 700,00                |
+
+### EXEMPLOS DETALHADOS DA LÓGICA DE FIDELIDADE:
 
 #### CENÁRIO A - FIDELIDADE MARCADA + TAXA LINHA FIDELIDADE R$ 120,00:
 **Texto do contrato:** "DA OPÇÃO DE FIDELIDADE: SIM (X) NÃO ( )"
@@ -20,6 +31,18 @@ export const createFidelityValidationExamples = (): string => {
 **Cálculo:** 700 - 200 = 500
 **Taxa rescisão esperada:** R$ 500,00
 **Status:** Se contrato mostra R$ 500,00 → CORRETO (não reportar erro)
+
+#### CENÁRIO A3 - FIDELIDADE MARCADA + TAXA LINHA FIDELIDADE R$ 150,00:
+**Texto do contrato:** "DA OPÇÃO DE FIDELIDADE: SIM (X) NÃO ( )"
+**Linha específica:** "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: R$ 150,00"
+**Cálculo:** 700 - 150 = 550
+**Taxa rescisão esperada:** R$ 550,00
+
+#### CENÁRIO A4 - FIDELIDADE MARCADA + TAXA LINHA FIDELIDADE R$ 300,00:
+**Texto do contrato:** "DA OPÇÃO DE FIDELIDADE: SIM (X) NÃO ( )"
+**Linha específica:** "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: R$ 300,00"
+**Cálculo:** 700 - 300 = 400
+**Taxa rescisão esperada:** R$ 400,00
 
 #### CENÁRIO B - FIDELIDADE MARCADA + TAXA GRATUITA:
 **Texto do contrato:** "DA OPÇÃO DE FIDELIDADE: SIM (X) NÃO ( )"
