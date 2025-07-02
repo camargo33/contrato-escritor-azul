@@ -1,193 +1,116 @@
 export const buildContractAnalysisPrompt = (contractText: string): string => {
-  return `# ANÁLISE DE CONTRATOS CIABRASNET
+  return `# VALIDADOR DE CONTRATOS CIABRASNET
 
-## INSTRUÇÃO PRINCIPAL
-Você é um especialista em análise de contratos da CIABRASNET. Analise o contrato fornecido e identifique erros seguindo EXATAMENTE o formato JSON especificado.
+## OBJETIVO
+Analisar contratos OCR da CIABRASNET, identificar o modelo e validar apenas campos com DIVERGÊNCIAS REAIS.
 
-## TABELA DE REFERÊNCIA OFICIAL DOS CONTRATOS
+## ETAPA 1: IDENTIFICAÇÃO DO MODELO
 
-### CONTRATO 1 - 1 Gb Empresarial
-- **VALOR**: R$ 229,90
-- **TIPO**: CORPORATIVO
-- **VIGÊNCIA**: 24 meses
-- **TAXA INSTALAÇÃO**: GRATUITA
-- **IP FIXO**: INCLUSO
-- **RESCISÃO**: R$ 700,00
+### Modelos Disponíveis:
+1. **2024 Combo 600Mbps** - R$ 129,99 - RESIDENCIAL - 12 meses - Taxa: R$ 200,00
+2. **1 Gb Empresarial** - R$ 229,90 - CORPORATIVO - 24 meses - Taxa: GRATUITA - IP: INCLUSO
+3. **2024 Combo Giga** - R$ 209,99 - RESIDENCIAL - 12 meses - Taxa: GRATUITA  
+4. **2024 Combo 300Mbps** - R$ 109,99 - RESIDENCIAL - 12 meses - Taxa: R$ 200,00
+5. **2024 Combo 800Mbps** - R$ 159,99 - RESIDENCIAL - 12 meses - Taxa: GRATUITA
 
-### CONTRATO 2 - 2024 Combo Giga
-- **VALOR**: R$ 209,99
-- **TIPO**: RESIDENCIAL
-- **VIGÊNCIA**: 12 meses
-- **TAXA INSTALAÇÃO**: R$ 200,00
-- **IP FIXO**: Variável (R$ 50,00 se fixo)
-- **RESCISÃO**: R$ 500,00
+### Critérios de Identificação:
+- **Valor do plano** (mais confiável)
+- **Nome do plano** no texto
+- **Velocidade mencionada**
 
-### CONTRATO 3 - 2024 Combo 300Mbps
-- **VALOR**: R$ 109,99
-- **TIPO**: RESIDENCIAL
-- **VIGÊNCIA**: 12 meses
-- **TAXA INSTALAÇÃO**: R$ 200,00
-- **IP FIXO**: Variável (R$ 50,00 se fixo)
-- **RESCISÃO**: R$ 500,00
+## ETAPA 2: VALIDAÇÃO DE CAMPOS
 
-### CONTRATO 4 - 2025 Combo 500 Megas (MATRIZ)
-- **VALOR**: R$ 119,99
-- **TIPO**: RESIDENCIAL
-- **VIGÊNCIA**: 12 meses
-- **TAXA INSTALAÇÃO**: R$ 200,00
-- **IP FIXO**: Variável (R$ 50,00 se fixo)
-- **RESCISÃO**: R$ 500,00
+### Campos Obrigatórios (Alertas se vazios):
+- Nome completo
+- CPF/CNPJ (consistência PF=CPF, PJ=CNPJ)
+- Email (verificar erros de digitação)
+- Endereço completo
+- Telefone (formato XX) XXXXX-XXXX)
 
-### CONTRATO 5 - 2024 Combo 600Mbps
-- **VALOR**: R$ 129,99
-- **TIPO**: RESIDENCIAL
-- **VIGÊNCIA**: 12 meses
-- **TAXA INSTALAÇÃO**: R$ 200,00
-- **IP FIXO**: Variável (R$ 50,00 se fixo)
-- **RESCISÃO**: R$ 500,00
+### Campos de Validação (Erros se diferentes):
+- **Valor do plano** (deve ser exato da tabela)
+- **Prazo vigência** (CORPORATIVO=24 meses, RESIDENCIAL=12 meses)
+- **Tipo do plano** (apenas "1 Gb Empresarial" é CORPORATIVO)
+- **Taxa instalação** (conforme tabela)
+- **Taxa rescisão** (usar cálculo de fidelidade)
+- **IP Fixo** (INCLUSO só no empresarial, outros=Variável R$ 50,00)
 
-### CONTRATO 6 - 2024 Combo 800Mbps
-- **VALOR**: R$ 159,99
-- **TIPO**: RESIDENCIAL
-- **VIGÊNCIA**: 12 meses
-- **TAXA INSTALAÇÃO**: R$ 200,00
-- **IP FIXO**: Variável (R$ 50,00 se fixo)
-- **RESCISÃO**: R$ 500,00
+## ETAPA 3: CÁLCULO TAXA DE RESCISÃO
 
-## TAXA DE RESCISÃO - REGRA ESPECIAL
+### Regra Simples:
+\`\`\`
+1. Procurar "DA OPÇÃO DE FIDELIDADE" com "SIM (X)"
+2. SE fidelidade marcada:
+   - Extrair valor da linha: "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: R$ X,XX"
+   - Taxa rescisão ESPERADA = 700 - valor_extraído_da_linha_fidelidade
+3. SE fidelidade NÃO marcada:
+   - Taxa rescisão ESPERADA = R$ 700,00
+4. COMPARAR taxa encontrada no contrato com taxa ESPERADA calculada
+5. SÓ reportar erro se valores forem diferentes
+\`\`\`
 
-┌─────────────────────────┬───────────┬─────────────────────────────┐
-│ Valor Taxa de Instalação│ Fidelidade│ Taxa de Rescisão Calculada  │
-├─────────────────────────┼───────────┼─────────────────────────────┤
-│ R$ 0,00 (gratuita)     │ Sim       │ R$ 700,00                   │
-│ R$ 120,00              │ Sim       │ R$ 580,00                   │
-│ R$ 150,00              │ Sim       │ R$ 550,00                   │
-│ R$ 200,00              │ Sim       │ R$ 500,00                   │
-│ R$ 300,00              │ Sim       │ R$ 400,00                   │
-│ Qualquer valor         │ Não       │ R$ 700,00                   │
-└─────────────────────────┴───────────┴─────────────────────────────┘
+### Exemplos:
+- Fidelidade SIM + Linha fidelidade R$ 120,00 → Rescisão ESPERADA = R$ 580,00
+- Se contrato mostra R$ 580,00 → ✅ CORRETO (não reportar)
+- Se contrato mostra R$ 500,00 → ❌ ERRO (reportar)
 
-**FÓRMULA**: Taxa de Rescisão = R$ 700,00 - Valor da Taxa de Instalação (se fidelidade marcada)
+- Fidelidade SIM + Linha fidelidade R$ 200,00 → Rescisão ESPERADA = R$ 500,00  
+- Se contrato mostra R$ 500,00 → ✅ CORRETO (não reportar)
 
-## VALIDAÇÕES ADICIONAIS OBRIGATÓRIAS
+- Fidelidade SIM + GRATUITA → Rescisão ESPERADA = R$ 700,00
+- Fidelidade NÃO → Rescisão ESPERADA = R$ 700,00
 
-### 1. ALERTAS DE DIGITAÇÃO E FORMATO (NÃO SÃO ERROS CRÍTICOS)
-- **Erros de Digitação Específicos**: Apenas palavras com erros óbvios e inequívocos
-  - SOOLTEIRO → SOLTEIRO
-  - Camarrgo → Camargo
-- **Valores Extremamente Suspeitos**: Apenas valores claramente absurdos
-  - Taxa de instalação acima de R$ 1000,00
-  - Mensalidades acima de R$ 1000,00 para planos residenciais
+## ETAPA 4: REGRA CRÍTICA
 
-### 2. DETECÇÃO DE ERROS CRÍTICOS vs ALERTAS
-- **ERROS**: Apenas diferenças nos valores oficiais dos planos (valor, tipo, vigência, taxa instalação)
-- **ALERTAS**: Erros de digitação, CPF inválido, nomes com grafia suspeita
-- **Taxa de Rescisão**: NÃO deve ser erro se for consequência de taxa de instalação incorreta
+**⚠️ SÓ REPORTAR COMO ERRO SE VALORES FOREM DIFERENTES**
 
-## FORMATO DE RESPOSTA OBRIGATÓRIO
+\`\`\`javascript
+// ALGORITMO DE VALIDAÇÃO
+valor_contrato = extrair_do_contrato()
+valor_esperado = buscar_na_tabela()
 
-Retorne EXATAMENTE este formato JSON:
+if (valor_contrato === valor_esperado) {
+    // NÃO É ERRO - NÃO INCLUIR NO RESULTADO
+} else {
+    // É ERRO REAL - INCLUIR NO ARRAY DE ERROS
+}
+\`\`\`
+
+## FORMATO DE RESPOSTA
 
 \`\`\`json
 {
   "modelo_identificado": {
-    "nome": "Nome do plano identificado",
-    "confianca": 100,
-    "criterios_identificacao": [
-      "Critério 1 usado para identificação",
-      "Critério 2 usado para identificação"
-    ],
-    "caracteristicas_esperadas": {
-      "valor": "R$ XXX,XX",
-      "tipo": "CORPORATIVO|RESIDENCIAL",
-      "vigencia": "XX meses",
-      "taxa_instalacao": "GRATUITA|R$ XXX,XX",
-      "ip_fixo": "INCLUSO|Variável (R$ 50,00 se fixo)",
-      "rescisao": "R$ XXX,XX"
-    }
+    "nome": "2024 Combo 600Mbps",
+    "confianca": 95
   },
   "erros": [
+    // APENAS divergências reais aqui
     {
-      "campo": "Nome do campo com erro",
-      "valor_encontrado": "Valor atual no contrato",
-      "valor_esperado": "Valor correto esperado",
-      "sugestao_correcao": "Como corrigir o erro",
-      "localizacao": "Seção onde o erro foi encontrado",
-      "severidade": "critico|alto|medio|baixo",
-      "impacto": "Descrição do impacto do erro (opcional)"
+      "campo": "Valor do Plano",
+      "valor_encontrado": "R$ 120,00",
+      "valor_esperado": "R$ 129,99",
+      "sugestao_correcao": "Corrigir valor para R$ 129,99"
     }
   ],
   "alertas": [
-    {
-      "tipo": "erro_digitacao|formato_invalido|campo_suspeito",
-      "campo": "Nome do campo",
-      "valor_encontrado": "Valor encontrado",
-      "sugestao": "Sugestão de correção"
-    }
+    // Campos em branco aqui
+    "Campo 'Nome' está em branco"
   ],
-  "validacoes_corretas": [
-    {
-      "campo": "Nome do campo correto",
-      "valor": "Valor encontrado",
-      "status": "✅ Correto conforme tabela"
-    }
-  ],
-  "calculo_taxa_rescisao": {
-    "fidelidade_marcada": true,
-    "taxa_instalacao_encontrada": "R$ XXX,XX",
-    "taxa_instalacao_correta": "R$ XXX,XX",
-    "calculo_incorreto": "700 - XXXX = negativo (impossível)",
-    "calculo_correto": "700 - XXX = R$ XXX,XX",
-    "observacao": "Explicação do cálculo e problemas detectados"
-  },
-  "resumo": {
-    "total_erros": 0,
-    "total_alertas": 0,
-    "criticos": 0,
-    "altos": 0,
-    "medios": 0,
-    "baixos": 0,
-    "plano_identificado": "Nome do plano",
-    "principais_problemas": [
-      "Problema 1",
-      "Problema 2"
-    ]
-  },
-  "status_geral": "aprovado|reprovado",
-  "observacoes": [
-    "Observação 1 sobre a análise",
-    "Observação 2 sobre a análise"
-  ]
+  "status": "aprovado|reprovado"
 }
 \`\`\`
 
-## REGRAS CRÍTICAS
+## INSTRUÇÕES FINAIS
 
-1. **IDENTIFICAÇÃO**: Primeiro identifique qual dos 6 contratos está sendo analisado
-2. **DIFERENCIAÇÃO ERROS vs ALERTAS**:
-   - **ERROS**: Apenas valores oficiais dos planos incorretos (valor, tipo, vigência, taxa instalação)
-   - **ALERTAS**: Erros de digitação (SOOLTEIRO), CPF inválido, nomes suspeitos
-3. **TAXA DE RESCISÃO**: NÃO deve ser erro separado se é consequência de taxa de instalação incorreta
-4. **COMPARAÇÃO**: Compare APENAS valores que são DIFERENTES - valores iguais vão para "validacoes_corretas"
-5. **CÁLCULO RESCISÃO**: Sempre incluir seção detalhada com cálculo incorreto E correto
-6. **SEVERIDADE**: 
-   - critico: Valor do plano, tipo, vigência, taxa instalação muito incorreta
-   - alto: IP fixo incorreto  
-   - medio: Campos secundários dos planos
-   - baixo: Formatação menor
-7. **STATUS**: "aprovado" se erros = 0, "reprovado" se erros > 0
+1. **IDENTIFIQUE primeiro** o modelo baseado no valor
+2. **COMPARE exatamente** valores encontrados vs esperados
+3. **NÃO reporte** valores iguais como erro
+4. **INCLUA alertas** para campos em branco
+5. **USE cálculo simples** para taxa de rescisão
+6. **ARRAY VAZIO []** quando todos valores corretos
 
-## PROCESSO DE ANÁLISE
-
-1. Leia o contrato completo
-2. Identifique qual dos 6 modelos é baseado em valor/nome/características
-3. Compare cada campo oficial do plano com a tabela de referência
-4. Campos corretos → adicione em "validacoes_corretas"
-5. Campos oficiais incorretos → adicione em "erros"
-6. Erros de digitação/formato → adicione em "alertas" (NÃO em erros)
-7. Calcule taxa de rescisão: se taxa instalação incorreta, mostre cálculo incorreto E correto
-8. Gere resumo com principais problemas (incluindo alertas)
-9. Adicione observações finais
+**LEMBRE-SE**: Valores idênticos = ACERTO = Não reportar
 
 **Contrato para análise:**
 ${contractText}`;
