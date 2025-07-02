@@ -68,21 +68,26 @@ ${fieldsText}
    - "[X] SIM" em opções de fidelidade
    - "FIDELIDADE: SIM" com marcação
 
-**ETAPA 2 - CALCULAR TAXA ESPERADA:**
+**ETAPA 2 - EXTRAIR TAXA REAL DE INSTALAÇÃO:**
+⚠️ **CRÍTICO**: Use a taxa de instalação REAL do contrato, NÃO da tabela de referência!
+
+Procurar por padrões como:
+- "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: R$ X,XX"
+- "Taxa de Instalação: R$ X,XX"
+- Valores em seções específicas de taxa de instalação
+- Se encontrar "GRATUITA" ou "R$ 0,00", usar valor 0
+
+**ETAPA 3 - CALCULAR TAXA ESPERADA (USANDO VALOR REAL):**
 
 **SE FIDELIDADE = SIM (marcada):**
-- SE Taxa Instalação > R$ 0: Taxa Rescisão = R$ 700,00 - Taxa Instalação
-  - Exemplo: Taxa R$ 200,00 → Rescisão = R$ 500,00 (700 - 200)
-- SE Taxa Instalação = R$ 0 (gratuita): Taxa Rescisão = R$ 700,00
+- SE Taxa Instalação Real > R$ 0: Taxa Rescisão = R$ 700,00 - Taxa Instalação Real
+  - Exemplo: Taxa Real R$ 120,00 → Rescisão = R$ 580,00 (700 - 120)
+  - Exemplo: Taxa Real R$ 200,00 → Rescisão = R$ 500,00 (700 - 200)
+- SE Taxa Instalação Real = R$ 0 (gratuita): Taxa Rescisão = R$ 700,00
 
 **SE FIDELIDADE = NÃO (não marcada) OU não encontrada:**
 - Taxa Rescisão = SEMPRE R$ 700,00 (valor fixo padrão)
 - Independente da taxa de instalação
-
-**EXEMPLOS PRÁTICOS:**
-1. **COM fidelidade + Taxa R$ 200,00**: Rescisão esperada = R$ 500,00
-2. **COM fidelidade + Taxa gratuita**: Rescisão esperada = R$ 700,00  
-3. **SEM fidelidade + Qualquer taxa**: Rescisão esperada = R$ 700,00
 
 - **IP Fixo**: 
   - "INCLUSO": Apenas no contrato empresarial (Contrato 1)
