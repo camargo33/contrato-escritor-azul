@@ -30,14 +30,16 @@ ${createResponseFormatInstructions()}
 
 ### 8. TABELA DE REFERÊNCIA OFICIAL PARA TAXA DE RESCISÃO:
 
-| Valor Taxa de Instalação | Fidelidade | Taxa de Rescisão Calculada |
-|-------------------------|-----------|---------------------------|
-| R$ 0,00 (gratuita)     | Sim       | R$ 700,00                |
-| R$ 120,00              | Sim       | R$ 580,00                |
-| R$ 150,00              | Sim       | R$ 550,00                |
-| R$ 200,00              | Sim       | R$ 500,00                |
-| R$ 300,00              | Sim       | R$ 400,00                |
-| Qualquer valor         | Não       | R$ 700,00                |
+┌─────────────────────────┬───────────┬─────────────────────────────┐
+│ Valor Taxa de Instalação│ Fidelidade│ Taxa de Rescisão Calculada  │
+├─────────────────────────┼───────────┼─────────────────────────────┤
+│ R$ 0,00 (gratuita)     │ Sim       │ R$ 700,00                   │
+│ R$ 120,00              │ Sim       │ R$ 580,00                   │
+│ R$ 150,00              │ Sim       │ R$ 550,00                   │
+│ R$ 200,00              │ Sim       │ R$ 500,00                   │
+│ R$ 300,00              │ Sim       │ R$ 400,00                   │
+│ Qualquer valor         │ Não       │ R$ 700,00                   │
+└─────────────────────────┴───────────┴─────────────────────────────┘
 
 ### 9. INSTRUÇÕES CRÍTICAS PARA TAXA DE RESCISÃO:
 

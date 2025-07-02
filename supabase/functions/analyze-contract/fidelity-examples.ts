@@ -6,14 +6,16 @@ export const createFidelityValidationExamples = (): string => {
   return `
 ### TABELA DE REFERÊNCIA OFICIAL PARA VALIDAÇÃO:
 
-| Valor Taxa de Instalação | Fidelidade | Taxa de Rescisão Calculada |
-|-------------------------|-----------|---------------------------|
-| R$ 0,00 (gratuita)     | Sim       | R$ 700,00                |
-| R$ 120,00              | Sim       | R$ 580,00                |
-| R$ 150,00              | Sim       | R$ 550,00                |
-| R$ 200,00              | Sim       | R$ 500,00                |
-| R$ 300,00              | Sim       | R$ 400,00                |
-| Qualquer valor         | Não       | R$ 700,00                |
+┌─────────────────────────┬───────────┬─────────────────────────────┐
+│ Valor Taxa de Instalação│ Fidelidade│ Taxa de Rescisão Calculada  │
+├─────────────────────────┼───────────┼─────────────────────────────┤
+│ R$ 0,00 (gratuita)     │ Sim       │ R$ 700,00                   │
+│ R$ 120,00              │ Sim       │ R$ 580,00                   │
+│ R$ 150,00              │ Sim       │ R$ 550,00                   │
+│ R$ 200,00              │ Sim       │ R$ 500,00                   │
+│ R$ 300,00              │ Sim       │ R$ 400,00                   │
+│ Qualquer valor         │ Não       │ R$ 700,00                   │
+└─────────────────────────┴───────────┴─────────────────────────────┘
 
 ### EXEMPLOS DETALHADOS DA LÓGICA DE FIDELIDADE:
 
