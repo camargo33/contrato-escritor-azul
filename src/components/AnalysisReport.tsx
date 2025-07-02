@@ -246,16 +246,16 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
                   {analysisData.alertas.map((alerta, index) => (
                     <div key={index} className="border-l-4 border-yellow-400 pl-4">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-yellow-800">{alerta.campo}</span>
+                        <span className="font-medium text-yellow-800">{alerta.campo || 'Campo não identificado'}</span>
                         <span className="text-xs bg-yellow-200 text-yellow-700 px-2 py-1 rounded">
-                          {alerta.tipo.replace('_', ' ')}
+                          {alerta.tipo ? alerta.tipo.replace('_', ' ') : 'Alerta'}
                         </span>
                       </div>
                       <div className="text-sm text-yellow-700 mb-1">
-                        <span className="font-medium">Encontrado:</span> {alerta.valor_encontrado}
+                        <span className="font-medium">Encontrado:</span> {alerta.valor_encontrado || 'Não informado'}
                       </div>
                       <div className="text-sm text-yellow-600">
-                        <span className="font-medium">Sugestão:</span> {alerta.sugestao}
+                        <span className="font-medium">Sugestão:</span> {alerta.sugestao || 'Verificar campo'}
                       </div>
                     </div>
                   ))}
