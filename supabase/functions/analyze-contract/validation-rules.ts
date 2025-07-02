@@ -100,7 +100,7 @@ Procurar ESPECIFICAMENTE por:
 
 **VALIDAÇÃO FINAL:**
 - SÓ reportar erro se: Valor no contrato ≠ Valor calculado pela lógica acima
-- Se Fidelidade SIM + Taxa R$ 120,00: Esperar R$ 580,00 no contrato
+- Se Fidelidade SIM + Taxa R$ 120,00: Esperar R$ 580,00 de desconto na instalação
 - Se no contrato mostra R$ 580,00 → NÃO É ERRO
 
 - **IP Fixo**: 
