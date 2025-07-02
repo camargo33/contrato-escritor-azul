@@ -42,18 +42,36 @@ interface ModeloIdentificado {
   };
 }
 
+interface AlertaAnalysis {
+  tipo: 'erro_digitacao' | 'formato_invalido' | 'campo_suspeito';
+  campo: string;
+  valor_encontrado: string;
+  sugestao: string;
+}
+
+interface CalculoTaxaRescisao {
+  fidelidade_marcada: boolean;
+  taxa_instalacao_encontrada: string;
+  taxa_instalacao_correta?: string;
+  calculo_correto: string;
+  observacao: string;
+}
+
 interface AnalysisData {
   modelo_identificado: ModeloIdentificado;
   erros: ErrorAnalysis[];
-  alertas: any[];
+  alertas: AlertaAnalysis[];
   validacoes_corretas: ValidacaoCorreta[];
+  calculo_taxa_rescisao?: CalculoTaxaRescisao;
   resumo: {
     total_erros: number;
+    total_alertas?: number;
     criticos: number;
     altos: number;
     medios: number;
     baixos: number;
     plano_identificado: string;
+    principais_problemas?: string[];
   };
   status_geral: 'aprovado' | 'reprovado';
   observacoes: string[];
@@ -207,6 +225,75 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
             {/* Lista de Erros */}
             {analysisData.erros.length > 0 && (
               <ErrorListCard erros={analysisData.erros} />
+            )}
+
+            {/* Alertas */}
+            {analysisData.alertas && analysisData.alertas.length > 0 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h4 className="font-semibold text-yellow-800 mb-3">⚠️ Alertas Detectados ({analysisData.alertas.length})</h4>
+                <div className="space-y-3">
+                  {analysisData.alertas.map((alerta, index) => (
+                    <div key={index} className="border-l-4 border-yellow-400 pl-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-yellow-800">{alerta.campo}</span>
+                        <span className="text-xs bg-yellow-200 text-yellow-700 px-2 py-1 rounded">
+                          {alerta.tipo.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <div className="text-sm text-yellow-700 mb-1">
+                        <span className="font-medium">Encontrado:</span> {alerta.valor_encontrado}
+                      </div>
+                      <div className="text-sm text-yellow-600">
+                        <span className="font-medium">Sugestão:</span> {alerta.sugestao}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Cálculo Taxa de Rescisão */}
+            {analysisData.calculo_taxa_rescisao && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-800 mb-3">🧮 Cálculo da Taxa de Rescisão</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="font-medium text-blue-700">Fidelidade Marcada:</span>
+                    <span className="text-blue-600">
+                      {analysisData.calculo_taxa_rescisao.fidelidade_marcada ? "✅ Sim" : "❌ Não"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium text-blue-700">Taxa de Instalação Encontrada:</span>
+                    <span className="text-blue-600">{analysisData.calculo_taxa_rescisao.taxa_instalacao_encontrada}</span>
+                  </div>
+                  {analysisData.calculo_taxa_rescisao.taxa_instalacao_correta && (
+                    <div className="flex justify-between">
+                      <span className="font-medium text-blue-700">Taxa de Instalação Correta:</span>
+                      <span className="text-blue-600">{analysisData.calculo_taxa_rescisao.taxa_instalacao_correta}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between border-t pt-2">
+                    <span className="font-medium text-blue-700">Cálculo:</span>
+                    <span className="text-blue-600 font-mono">{analysisData.calculo_taxa_rescisao.calculo_correto}</span>
+                  </div>
+                  <div className="text-blue-600 text-xs mt-2 italic">
+                    {analysisData.calculo_taxa_rescisao.observacao}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Principais Problemas */}
+            {analysisData.resumo.principais_problemas && analysisData.resumo.principais_problemas.length > 0 && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <h4 className="font-semibold text-orange-800 mb-3">🚨 Principais Problemas Detectados</h4>
+                <ul className="list-disc list-inside space-y-1 text-sm text-orange-700">
+                  {analysisData.resumo.principais_problemas.map((problema, index) => (
+                    <li key={index}>{problema}</li>
+                  ))}
+                </ul>
+              </div>
             )}
 
             {/* Validações Corretas */}

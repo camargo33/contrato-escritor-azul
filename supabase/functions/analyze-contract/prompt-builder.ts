@@ -69,6 +69,20 @@ Você é um especialista em análise de contratos da CIABRASNET. Analise o contr
 
 **FÓRMULA**: Taxa de Rescisão = R$ 700,00 - Valor da Taxa de Instalação (se fidelidade marcada)
 
+## VALIDAÇÕES ADICIONAIS OBRIGATÓRIAS
+
+### 1. ALERTAS DE DIGITAÇÃO E FORMATO
+- **CPF**: Verificar formato XXX.XXX.XXX-XX (11 dígitos)
+- **Erros de Digitação**: Procurar por palavras com erros óbvios
+  - SOOLTEIRO → SOLTEIRO
+  - Camarrgo → Camargo
+  - Outros erros similares
+- **Campos Suspeitos**: Valores claramente incorretos (ex: R$ 2000,00 vs R$ 200,00)
+
+### 2. DETECÇÃO DE ERROS CRÍTICOS
+- **Taxa de Instalação**: Se encontrar R$ 2000,00, verificar se deveria ser R$ 200,00
+- **Valores Impossíveis**: Taxa de rescisão negativa indica erro na taxa de instalação
+
 ## FORMATO DE RESPOSTA OBRIGATÓRIO
 
 Retorne EXATAMENTE este formato JSON:
@@ -98,24 +112,44 @@ Retorne EXATAMENTE este formato JSON:
       "valor_esperado": "Valor correto esperado",
       "sugestao_correcao": "Como corrigir o erro",
       "localizacao": "Seção onde o erro foi encontrado",
-      "severidade": "critico|alto|medio|baixo"
+      "severidade": "critico|alto|medio|baixo",
+      "impacto": "Descrição do impacto do erro (opcional)"
     }
   ],
-  "alertas": [],
+  "alertas": [
+    {
+      "tipo": "erro_digitacao|formato_invalido|campo_suspeito",
+      "campo": "Nome do campo",
+      "valor_encontrado": "Valor encontrado",
+      "sugestao": "Sugestão de correção"
+    }
+  ],
   "validacoes_corretas": [
     {
       "campo": "Nome do campo correto",
       "valor": "Valor encontrado",
-      "status": "✅ Correto"
+      "status": "✅ Correto conforme tabela"
     }
   ],
+  "calculo_taxa_rescisao": {
+    "fidelidade_marcada": true,
+    "taxa_instalacao_encontrada": "R$ XXX,XX",
+    "taxa_instalacao_correta": "R$ XXX,XX",
+    "calculo_correto": "700 - XXX = R$ XXX,XX",
+    "observacao": "Explicação do cálculo"
+  },
   "resumo": {
     "total_erros": 0,
+    "total_alertas": 0,
     "criticos": 0,
     "altos": 0,
     "medios": 0,
     "baixos": 0,
-    "plano_identificado": "Nome do plano"
+    "plano_identificado": "Nome do plano",
+    "principais_problemas": [
+      "Problema 1",
+      "Problema 2"
+    ]
   },
   "status_geral": "aprovado|reprovado",
   "observacoes": [
@@ -130,12 +164,14 @@ Retorne EXATAMENTE este formato JSON:
 1. **IDENTIFICAÇÃO**: Primeiro identifique qual dos 6 contratos está sendo analisado
 2. **COMPARAÇÃO**: Compare APENAS valores que são DIFERENTES - valores iguais vão para "validacoes_corretas"
 3. **ERROS**: Só inclua no array "erros" campos onde valor_encontrado ≠ valor_esperado
-4. **SEVERIDADE**: 
-   - critico: Valor do plano, tipo, vigência incorretos
+4. **ALERTAS**: Sempre verificar CPF, erros de digitação e valores suspeitos
+5. **CÁLCULO RESCISÃO**: Sempre incluir seção detalhada do cálculo
+6. **SEVERIDADE**: 
+   - critico: Valor do plano, tipo, vigência, taxa instalação muito incorreta
    - alto: IP fixo, taxa instalação incorretos  
    - medio: Campos secundários
    - baixo: Formatação menor
-5. **STATUS**: "aprovado" se erros = 0, "reprovado" se erros > 0
+7. **STATUS**: "aprovado" se erros = 0, "reprovado" se erros > 0
 
 ## PROCESSO DE ANÁLISE
 
@@ -144,8 +180,10 @@ Retorne EXATAMENTE este formato JSON:
 3. Compare cada campo com a tabela de referência
 4. Campos corretos → adicione em "validacoes_corretas"
 5. Campos incorretos → adicione em "erros"
-6. Calcule taxa de rescisão conforme tabela especial
-7. Gere resumo e observações
+6. Procure por erros de digitação e formate como "alertas"
+7. Calcule taxa de rescisão conforme tabela especial
+8. Gere resumo com principais problemas
+9. Adicione observações finais
 
 **Contrato para análise:**
 ${contractText}`;
