@@ -28,34 +28,33 @@ ${createResponseFormatInstructions()}
 6. **INDIQUE INCERTEZA** quando não conseguir identificar com confiança
 7. **SEMPRE INCLUA** o campo "modelo_identificado" na resposta JSON
 
-### 8. INSTRUÇÕES ESPECIAIS PARA TAXA DE RESCISÃO:
+### 8. INSTRUÇÕES CRÍTICAS PARA TAXA DE RESCISÃO:
 
-**REGRA ABSOLUTA**: A validação da taxa de rescisão DEVE seguir esta lógica obrigatória:
+**REGRA ABSOLUTA**: Taxa de rescisão SEMPRE = R$ 700,00 menos o desconto da taxa de instalação (quando fidelidade marcada).
 
-1. **DETECTAR FIDELIDADE PRIMEIRO:**
-   - Procure especificamente por "DA OPÇÃO DE FIDELIDADE" ou seções similares
-   - Identifique se há "SIM (X)", "SIM X", "[X] SIM" marcado
-   - Se não encontrar evidência clara de marcação, assuma que NÃO está marcado
+1. **DETECTAR FIDELIDADE:**
+   - Procure por "DA OPÇÃO DE FIDELIDADE" com "SIM (X)" marcado
+   - Se SIM está marcado com (X) → Fidelidade = TRUE
+   - Se NÃO está marcado ou não encontrado → Fidelidade = FALSE
 
-2. **EXTRAIR TAXA REAL DE INSTALAÇÃO:**
-   - **CRÍTICO**: Use a taxa de instalação REAL do contrato, NÃO da tabela de referência
-   - Procure por "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: R$ X,XX"
-   - Padrões: "Taxa de Instalação: R$ X,XX", "GRATUITA", "R$ 0,00"
+2. **EXTRAIR TAXA DE INSTALAÇÃO DA LINHA DE FIDELIDADE:**
+   - **OBRIGATÓRIO**: Use APENAS a linha específica: "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: R$ X,XX"
+   - Ignore sufixos como "Av" após o valor (ex: "R$ 120,00 Av" = R$ 120,00)
+   - NÃO use valores de outras linhas ou tabelas
 
-3. **CALCULAR TAXA ESPERADA (com valor REAL):**
-   - **COM fidelidade marcada**: 
-     - Taxa instalação REAL > 0: Taxa rescisão = 700 - valor_real_instalação
-     - Taxa gratuita: Taxa rescisão = R$ 700,00
-   - **SEM fidelidade marcada**: Taxa rescisão = SEMPRE R$ 700,00
+3. **CALCULAR TAXA ESPERADA:**
+   - **SE Fidelidade = TRUE**: Taxa rescisão = 700 - taxa_instalação_linha_fidelidade
+   - **SE Fidelidade = FALSE**: Taxa rescisão = R$ 700,00 (fixo)
 
-4. **VALIDAR CONTRA O CALCULADO:**
-   - Compare o valor encontrado no contrato com o valor CALCULADO usando taxa REAL
-   - Só reporte erro se o valor do contrato ≠ valor calculado baseado na fidelidade e taxa real
+4. **VALIDAR:**
+   - SÓ reporte erro se valor no contrato ≠ valor calculado
+   - Exemplo: Fidelidade SIM + Linha R$ 120,00 → Esperado R$ 580,00
+   - Se contrato mostra R$ 580,00 → NÃO É ERRO
 
-**EXEMPLO REAL (CORREÇÃO):**
-- Fidelidade: SIM (X) + Taxa REAL: R$ 120,00 → Rescisão esperada: R$ 580,00 (700-120)
-- Fidelidade: SIM (X) + Taxa REAL: R$ 200,00 → Rescisão esperada: R$ 500,00 (700-200)
-- Fidelidade: NÃO + Qualquer taxa → Rescisão esperada: R$ 700,00
+**CASOS ESPECÍFICOS:**
+- Fidelidade: SIM (X) + Linha Fidelidade: R$ 120,00 → Rescisão esperada: R$ 580,00
+- Fidelidade: SIM (X) + Linha Fidelidade: R$ 200,00 → Rescisão esperada: R$ 500,00  
+- Fidelidade: NÃO ou ausente → Rescisão esperada: R$ 700,00
 
 ${createFidelityValidationExamples()}
 

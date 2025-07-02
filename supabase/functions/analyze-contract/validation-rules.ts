@@ -55,39 +55,40 @@ ${fieldsText}
 - **Taxa de Instalação**: Verificar conforme tabela de referência
 - **Equipamentos**: Verificar valores exatos conforme tabela
 
-### 2.1. VALIDAÇÃO DA TAXA DE RESCISÃO - NOVA LÓGICA COM FIDELIDADE:
+### 2.1. VALIDAÇÃO DA TAXA DE RESCISÃO - LÓGICA CORRIGIDA COM FIDELIDADE:
 
-**REGRA CRÍTICA**: A taxa de rescisão depende se a opção "Fidelidade" está marcada no contrato.
+**REGRA ABSOLUTA**: A taxa de rescisão SEMPRE é R$ 700,00 menos o desconto da taxa de instalação quando fidelidade está marcada.
 
 **ETAPA 1 - DETECTAR FIDELIDADE:**
-1. Procurar na seção "DA OPÇÃO DE FIDELIDADE" ou similar
-2. Verificar se há "SIM (X)", "SIM X", "[X] SIM" marcado
-3. Padrões a buscar:
+1. Procurar na seção "DA OPÇÃO DE FIDELIDADE" por "SIM (X)" marcado
+2. Padrões específicos:
+   - "DA OPÇÃO DE FIDELIDADE: SIM (X) NÃO ( )"
    - "SIM (X)" na seção de fidelidade
-   - "SIM X" próximo à palavra fidelidade
-   - "[X] SIM" em opções de fidelidade
-   - "FIDELIDADE: SIM" com marcação
+   - Qualquer marcação clara do SIM
 
-**ETAPA 2 - EXTRAIR TAXA REAL DE INSTALAÇÃO:**
-⚠️ **CRÍTICO**: Use a taxa de instalação REAL do contrato, NÃO da tabela de referência!
+**ETAPA 2 - EXTRAIR TAXA DE INSTALAÇÃO COM FIDELIDADE:**
+⚠️ **CRÍTICO**: Use APENAS a taxa específica da linha de fidelidade!
 
-Procurar por padrões como:
+Procurar ESPECIFICAMENTE por:
 - "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: R$ X,XX"
-- "Taxa de Instalação: R$ X,XX"
-- Valores em seções específicas de taxa de instalação
-- Se encontrar "GRATUITA" ou "R$ 0,00", usar valor 0
+- Ignorar sufixos como "Av" após o valor
+- Focar no valor exato desta linha específica
 
-**ETAPA 3 - CALCULAR TAXA ESPERADA (USANDO VALOR REAL):**
+**ETAPA 3 - APLICAR LÓGICA SIMPLES:**
 
 **SE FIDELIDADE = SIM (marcada):**
-- SE Taxa Instalação Real > R$ 0: Taxa Rescisão = R$ 700,00 - Taxa Instalação Real
-  - Exemplo: Taxa Real R$ 120,00 → Rescisão = R$ 580,00 (700 - 120)
-  - Exemplo: Taxa Real R$ 200,00 → Rescisão = R$ 500,00 (700 - 200)
-- SE Taxa Instalação Real = R$ 0 (gratuita): Taxa Rescisão = R$ 700,00
+- Taxa Rescisão = R$ 700,00 - Taxa Instalação da Linha de Fidelidade
+- Exemplo: Linha de Fidelidade R$ 120,00 → Rescisão = R$ 580,00 (700 - 120)
+- NUNCA usar valores de outras linhas ou tabelas de referência
 
-**SE FIDELIDADE = NÃO (não marcada) OU não encontrada:**
-- Taxa Rescisão = SEMPRE R$ 700,00 (valor fixo padrão)
-- Independente da taxa de instalação
+**SE FIDELIDADE = NÃO (não marcada):**
+- Taxa Rescisão = SEMPRE R$ 700,00
+- Não considerar nenhuma taxa de instalação
+
+**VALIDAÇÃO FINAL:**
+- SÓ reportar erro se: Valor no contrato ≠ Valor calculado pela lógica acima
+- Se Fidelidade SIM + Taxa R$ 120,00: Esperar R$ 580,00 no contrato
+- Se no contrato mostra R$ 580,00 → NÃO É ERRO
 
 - **IP Fixo**: 
   - "INCLUSO": Apenas no contrato empresarial (Contrato 1)

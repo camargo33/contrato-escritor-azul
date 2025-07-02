@@ -137,54 +137,52 @@ export const calculateExpectedCancellationFee = (
 };
 
 /**
- * Extrai o valor REAL da taxa de instalação do contrato (não da tabela de referência)
+ * Extrai o valor REAL da taxa de instalação para fidelidade do contrato
  */
 export const extractRealInstallationFeeFromContract = (contractText: string): number => {
-  // Padrões para encontrar taxa de instalação no contrato
-  const patterns = [
-    // Padrão específico da imagem: "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE"
-    /valor\s+total\s+da\s+taxa\s+de\s+instalação\s+caso\s+o\s+assinante\s+opte\s+pela\s+opção\s+de\s+fidelidade[^R]*R\$\s*(\d+(?:,\d{2})?)/i,
+  // Padrão específico para taxa de instalação com fidelidade (padrão principal)
+  const fidelityInstallationPatterns = [
+    // Padrão específico: "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: R$ X,XX"
+    /valor\s+total\s+da\s+taxa\s+de\s+instalação\s+caso\s+o\s+assinante\s+opte\s+pela\s+opção\s+de\s+fidelidade[:\s]*R\$\s*(\d+(?:,\d{2})?)(?:\s*\w+)?/i,
     
-    // Padrões mais gerais
-    /taxa\s+de\s+instalação[^R]*R\$\s*(\d+(?:,\d{2})?)/i,
-    /valor.*instalação[^R]*R\$\s*(\d+(?:,\d{2})?)/i,
-    /instalação[^R]*R\$\s*(\d+(?:,\d{2})?)/i,
+    // Variações do padrão principal
+    /taxa.*instalação.*fidelidade[:\s]*R\$\s*(\d+(?:,\d{2})?)(?:\s*\w+)?/i,
+    /fidelidade.*taxa.*instalação[:\s]*R\$\s*(\d+(?:,\d{2})?)(?:\s*\w+)?/i,
+    /opte.*fidelidade[:\s]*R\$\s*(\d+(?:,\d{2})?)(?:\s*\w+)?/i,
     
-    // Padrão para "com fidelidade"
-    /com\s+fidelidade[^R]*R\$\s*(\d+(?:,\d{2})?)/i,
-    /fidelidade[^R]*R\$\s*(\d+(?:,\d{2})?)/i,
-    
-    // Padrões em tabelas
-    /opte\s+pela\s+opção\s+de\s+fidelidade[^R]*R\$\s*(\d+(?:,\d{2})?)/i,
-    /caso.*fidelidade[^R]*R\$\s*(\d+(?:,\d{2})?)/i
+    // Padrão em tabelas com fidelidade
+    /com\s+fidelidade[:\s]*R\$\s*(\d+(?:,\d{2})?)(?:\s*\w+)?/i,
   ];
   
-  for (const pattern of patterns) {
+  // Primeiro, tentar encontrar o valor específico da taxa de instalação com fidelidade
+  for (const pattern of fidelityInstallationPatterns) {
     const match = contractText.match(pattern);
     if (match) {
-      const value = parseFloat(match[1].replace(',', '.'));
-      console.log(`Taxa de instalação real encontrada: R$ ${value} usando padrão: ${pattern}`);
+      // Extrair apenas os dígitos e vírgula, ignorando sufixos como "Av"
+      const cleanValue = match[1];
+      const value = parseFloat(cleanValue.replace(',', '.'));
+      console.log(`Taxa de instalação com fidelidade encontrada: R$ ${value} (${cleanValue}) usando padrão: ${pattern}`);
       return value;
     }
   }
   
-  // Se não encontrou valor específico, procurar por "gratuita"
+  // Se não encontrou valor específico, procurar por "gratuita" em contexto de fidelidade
   const gratuitaPatterns = [
-    /taxa\s+de\s+instalação[^R]*gratuita/i,
-    /instalação[^R]*gratuita/i,
-    /gratuita[^R]*instalação/i,
-    /sem\s+custo.*instalação/i,
-    /R\$\s*0[,.]?00.*instalação/i
+    /fidelidade.*gratuita/i,
+    /gratuita.*fidelidade/i,
+    /opte.*fidelidade.*gratuita/i,
+    /taxa.*instalação.*fidelidade.*gratuita/i,
+    /taxa.*instalação.*fidelidade.*R\$\s*0[,.]?00/i
   ];
   
   for (const pattern of gratuitaPatterns) {
     if (pattern.test(contractText)) {
-      console.log(`Taxa de instalação gratuita detectada usando padrão: ${pattern}`);
+      console.log(`Taxa de instalação com fidelidade gratuita detectada usando padrão: ${pattern}`);
       return 0;
     }
   }
   
-  console.log('Taxa de instalação não encontrada no contrato, assumindo valor 0');
+  console.log('Taxa de instalação com fidelidade não encontrada, assumindo valor 0');
   return 0;
 };
 
