@@ -42,27 +42,28 @@ Analisar contratos OCR da CIABRASNET, identificar o modelo e validar apenas camp
 
 ## ETAPA 3: CÁLCULO TAXA DE RESCISÃO
 
-### Regra Simples:
+### Regra Correta:
 \`\`\`
 1. Procurar "DA OPÇÃO DE FIDELIDADE" com "SIM (X)"
 2. SE fidelidade marcada:
-   - Extrair valor da linha: "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: R$ X,XX"
-   - Taxa rescisão ESPERADA = 700 - valor_extraído_da_linha_fidelidade
+   - Procurar o DESCONTO da fidelidade (ex: "R$ 580,00 da Taxa de Instalação")
+   - Taxa rescisão ESPERADA = R$ 700,00 - desconto_fidelidade
+   - Exemplo: R$ 700 - R$ 580 = R$ 120,00
 3. SE fidelidade NÃO marcada:
    - Taxa rescisão ESPERADA = R$ 700,00
 4. COMPARAR taxa encontrada no contrato com taxa ESPERADA calculada
 5. SÓ reportar erro se valores forem diferentes
 \`\`\`
 
-### Exemplos:
-- Fidelidade SIM + Linha fidelidade R$ 120,00 → Rescisão ESPERADA = R$ 580,00
-- Se contrato mostra R$ 580,00 → ✅ CORRETO (não reportar)
+### Exemplos Corretos:
+- Fidelidade SIM + Desconto R$ 580,00 → Rescisão ESPERADA = R$ 700 - R$ 580 = R$ 120,00
+- Se contrato mostra R$ 120,00 → ✅ CORRETO (não reportar)
 - Se contrato mostra R$ 500,00 → ❌ ERRO (reportar)
 
-- Fidelidade SIM + Linha fidelidade R$ 200,00 → Rescisão ESPERADA = R$ 500,00  
+- Fidelidade SIM + Desconto R$ 200,00 → Rescisão ESPERADA = R$ 700 - R$ 200 = R$ 500,00  
 - Se contrato mostra R$ 500,00 → ✅ CORRETO (não reportar)
 
-- Fidelidade SIM + GRATUITA → Rescisão ESPERADA = R$ 700,00
+- Fidelidade SIM + Desconto GRATUITO → Rescisão ESPERADA = R$ 700,00
 - Fidelidade NÃO → Rescisão ESPERADA = R$ 700,00
 
 ## ETAPA 4: EXEMPLOS DE ERROS CRÍTICOS QUE DEVEM SER DETECTADOS
