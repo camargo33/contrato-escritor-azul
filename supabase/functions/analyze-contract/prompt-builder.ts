@@ -72,12 +72,12 @@ Você é um especialista em análise de contratos da CIABRASNET. Analise o contr
 ## VALIDAÇÕES ADICIONAIS OBRIGATÓRIAS
 
 ### 1. ALERTAS DE DIGITAÇÃO E FORMATO (NÃO SÃO ERROS CRÍTICOS)
-- **CPF**: Verificar formato XXX.XXX.XXX-XX (11 dígitos)
-- **Erros de Digitação Simples**: Procurar por palavras com erros óbvios
+- **Erros de Digitação Específicos**: Apenas palavras com erros óbvios e inequívocos
   - SOOLTEIRO → SOLTEIRO
   - Camarrgo → Camargo
-  - Outros erros similares
-- **Campos Suspeitos**: Valores claramente incorretos (ex: R$ 2000,00 vs R$ 200,00)
+- **Valores Extremamente Suspeitos**: Apenas valores claramente absurdos
+  - Taxa de instalação acima de R$ 1000,00
+  - Mensalidades acima de R$ 1000,00 para planos residenciais
 
 ### 2. DETECÇÃO DE ERROS CRÍTICOS vs ALERTAS
 - **ERROS**: Apenas diferenças nos valores oficiais dos planos (valor, tipo, vigência, taxa instalação)
