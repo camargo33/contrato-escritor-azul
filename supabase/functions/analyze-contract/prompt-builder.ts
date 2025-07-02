@@ -3,6 +3,7 @@ import { createIdentificationInstructions } from './identification-patterns.ts';
 import { createValidationInstructions, createContractReferenceTable } from './validation-rules.ts';
 import { createResponseFormatInstructions } from './response-format.ts';
 import { createFidelityValidationExamples, createImplementationInstructions } from './fidelity-examples.ts';
+import { detectFidelityOption, calculateExpectedCancellationFee } from './fidelity-detection.ts';
 
 export const buildContractAnalysisPrompt = (contractText: string): string => {
   return `# PROMPT PARA ANÁLISE DE CONTRATOS CIABRASNET
@@ -75,6 +76,24 @@ ${createResponseFormatInstructions()}
 ${createFidelityValidationExamples()}
 
 ${createImplementationInstructions()}
+
+### ALGORITMO OBRIGATÓRIO PARA TAXA DE RESCISÃO:
+
+**PASSO A PASSO OBRIGATÓRIO - EXECUTE NA ORDEM:**
+
+1. **PRIMEIRO**: Encontre a seção "DA OPÇÃO DE FIDELIDADE" no contrato
+2. **SEGUNDO**: Verifique se tem "SIM (X)" marcado (fidelidade_ativa = true)
+3. **TERCEIRO**: Se fidelidade_ativa = true, procure EXATAMENTE por: "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: R$ X,XX"
+4. **QUARTO**: Extraia APENAS o valor numérico desta linha (ex: se "R$ 120,00 Av" → usar 120.00)
+5. **QUINTO**: Calcule taxa_rescisao_esperada = 700 - valor_extraido_linha_fidelidade
+6. **SEXTO**: Compare com valor encontrado no contrato
+7. **SÉTIMO**: SÓ reporte erro se valores forem diferentes
+
+**EXEMPLO PRÁTICO OBRIGATÓRIO:**
+- Se encontrar "SIM (X)" na fidelidade E "R$ 120,00" na linha de fidelidade
+- Então taxa_rescisao_esperada = 700 - 120 = R$ 580,00
+- Se contrato tem R$ 580,00 → NÃO É ERRO
+- Se contrato tem R$ 500,00 → É ERRO (reportar)
 
 Analise o contrato fornecido identificando PRIMEIRO o modelo e depois validando todos os campos conforme a tabela de referência do modelo identificado.
 
