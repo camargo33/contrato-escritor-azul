@@ -122,8 +122,16 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
         const jsonStr = jsonMatch[1] || jsonMatch[0];
         const analysisData = JSON.parse(jsonStr) as AnalysisData;
         
-        // Filtrar apenas erros reais
-        const errosReais = analysisData.erros.filter(isRealError);
+        // Garantir que erros é um array válido
+        const errosArray = Array.isArray(analysisData.erros) ? analysisData.erros : [];
+        
+        // Filtrar apenas erros reais com verificação de segurança
+        const errosReais = errosArray.filter(erro => {
+          // Verificar se o erro tem as propriedades necessárias
+          if (!erro || typeof erro !== 'object') return false;
+          if (!erro.hasOwnProperty('valor_encontrado') || !erro.hasOwnProperty('valor_esperado')) return false;
+          return isRealError(erro);
+        });
         
         // Recalcular estatísticas baseadas nos erros reais
         const resumoAtualizado = {
