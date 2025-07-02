@@ -4,47 +4,15 @@
 
 export const createFidelityValidationExamples = (): string => {
   return `
-### TABELA DE REFERÊNCIA OFICIAL PARA VALIDAÇÃO:
+### EXEMPLOS DETALHADOS DA NOVA LÓGICA DE FIDELIDADE:
 
-┌─────────────────────────┬───────────┬─────────────────────────────┐
-│ Valor Taxa de Instalação│ Fidelidade│ Taxa de Rescisão Calculada  │
-├─────────────────────────┼───────────┼─────────────────────────────┤
-│ R$ 0,00 (gratuita)     │ Sim       │ R$ 700,00                   │
-│ R$ 120,00              │ Sim       │ R$ 580,00                   │
-│ R$ 150,00              │ Sim       │ R$ 550,00                   │
-│ R$ 200,00              │ Sim       │ R$ 500,00                   │
-│ R$ 300,00              │ Sim       │ R$ 400,00                   │
-│ Qualquer valor         │ Não       │ R$ 700,00                   │
-└─────────────────────────┴───────────┴─────────────────────────────┘
-
-### EXEMPLOS DETALHADOS DA LÓGICA DE FIDELIDADE:
-
-#### CENÁRIO A - FIDELIDADE MARCADA + TAXA LINHA FIDELIDADE R$ 120,00:
+#### CENÁRIO A - FIDELIDADE MARCADA + TAXA R$ 200,00:
 **Texto do contrato:** "DA OPÇÃO DE FIDELIDADE: SIM (X) NÃO ( )"
-**Linha específica:** "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: R$ 120,00"
-**Cálculo:** 700 - 120 = 580
-**Taxa rescisão esperada:** R$ 580,00
-**Status:** Se contrato mostra R$ 580,00 → CORRETO (não reportar erro)
-**Status:** Se contrato mostra R$ 500,00 → ERRO (diferença real detectada)
-
-#### CENÁRIO A2 - FIDELIDADE MARCADA + TAXA LINHA FIDELIDADE R$ 200,00:
-**Texto do contrato:** "DA OPÇÃO DE FIDELIDADE: SIM (X) NÃO ( )"
-**Linha específica:** "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: R$ 200,00"
+**Taxa de instalação:** R$ 200,00
 **Cálculo:** 700 - 200 = 500
 **Taxa rescisão esperada:** R$ 500,00
 **Status:** Se contrato mostra R$ 500,00 → CORRETO (não reportar erro)
-
-#### CENÁRIO A3 - FIDELIDADE MARCADA + TAXA LINHA FIDELIDADE R$ 150,00:
-**Texto do contrato:** "DA OPÇÃO DE FIDELIDADE: SIM (X) NÃO ( )"
-**Linha específica:** "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: R$ 150,00"
-**Cálculo:** 700 - 150 = 550
-**Taxa rescisão esperada:** R$ 550,00
-
-#### CENÁRIO A4 - FIDELIDADE MARCADA + TAXA LINHA FIDELIDADE R$ 300,00:
-**Texto do contrato:** "DA OPÇÃO DE FIDELIDADE: SIM (X) NÃO ( )"
-**Linha específica:** "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: R$ 300,00"
-**Cálculo:** 700 - 300 = 400
-**Taxa rescisão esperada:** R$ 400,00
+**Status:** Se contrato mostra R$ 700,00 → ERRO (reportar divergência)
 
 #### CENÁRIO B - FIDELIDADE MARCADA + TAXA GRATUITA:
 **Texto do contrato:** "DA OPÇÃO DE FIDELIDADE: SIM (X) NÃO ( )"
@@ -72,11 +40,11 @@ export const createFidelityValidationExamples = (): string => {
 \`\`\`
 1. texto_fidelidade = extrair_secao_fidelidade(contrato)
 2. fidelidade_marcada = detectar_sim_marcado(texto_fidelidade)
-3. taxa_instalacao_real = extrair_taxa_instalacao_real_do_contrato(contrato) // ⚠️ MUDANÇA CRÍTICA
+3. taxa_instalacao = extrair_valor_instalacao(modelo_identificado)
 
 4. SE (fidelidade_marcada == TRUE):
-     SE (taxa_instalacao_real > 0):
-       taxa_esperada = 700 - taxa_instalacao_real // Usar valor REAL do contrato
+     SE (taxa_instalacao > 0):
+       taxa_esperada = 700 - taxa_instalacao
      SENÃO:
        taxa_esperada = 700
    SENÃO:
@@ -84,16 +52,8 @@ export const createFidelityValidationExamples = (): string => {
 
 5. taxa_contrato = extrair_taxa_rescisao_do_contrato()
 6. SE (taxa_contrato != taxa_esperada):
-     REPORTAR_ERRO("Taxa de rescisão", taxa_contrato, taxa_esperada, "Baseado em fidelidade e taxa real")
+     REPORTAR_ERRO("Taxa de rescisão", taxa_contrato, taxa_esperada)
 \`\`\`
-
-### ⚠️ PADRÕES PARA EXTRAIR TAXA REAL DE INSTALAÇÃO:
-
-**PROCURAR POR:**
-- "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: R$ X,XX"
-- "Taxa de Instalação: R$ X,XX"
-- "Valor da Taxa de Instalação: R$ X,XX"
-- "GRATUITA" ou "R$ 0,00" (valor = 0)
 
 ### PADRÕES DE DETECÇÃO DE FIDELIDADE:
 
