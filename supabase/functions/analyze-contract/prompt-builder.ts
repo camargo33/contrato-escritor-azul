@@ -22,10 +22,15 @@ Analisar contratos OCR da CIABRASNET, identificar o modelo e validar apenas camp
 
 ### Campos Obrigatórios (Alertas se vazios):
 - Nome completo
-- CPF/CNPJ (consistência PF=CPF, PJ=CNPJ)
+- CPF/CNPJ (consistência PF=CPF, PJ=CNPJ + **VALIDAR FORMATO**)
 - Email (verificar erros de digitação)
 - Endereço completo
 - Telefone (formato XX) XXXXX-XXXX)
+
+### Validações Críticas de Formato:
+- **CPF INVÁLIDO**: CPF deve ter EXATAMENTE 11 dígitos (XXX.XXX.XXX-XX)
+- **ERROS DE DIGITAÇÃO**: Verificar campos como "SOOLTEIRO" → "SOLTEIRO", "Camarrgo" → "Camargo"
+- **TAXA DE INSTALAÇÃO**: Verificar se valor está correto (ex: R$ 2000,00 quando deveria ser R$ 200,00)
 
 ### Campos de Validação (Erros se diferentes):
 - **Valor do plano** (deve ser exato da tabela)
@@ -60,7 +65,20 @@ Analisar contratos OCR da CIABRASNET, identificar o modelo e validar apenas camp
 - Fidelidade SIM + GRATUITA → Rescisão ESPERADA = R$ 700,00
 - Fidelidade NÃO → Rescisão ESPERADA = R$ 700,00
 
-## ETAPA 4: REGRA CRÍTICA
+## ETAPA 4: EXEMPLOS DE ERROS CRÍTICOS QUE DEVEM SER DETECTADOS
+
+### ⚠️ ERROS OBRIGATÓRIOS A DETECTAR:
+1. **CPF com formato inválido**: "137.158.269-677" (12 dígitos) → ERRO
+2. **Erros de digitação óbvios**: "SOOLTEIRO" → "SOLTEIRO", "Camarrgo" → "Camargo"
+3. **Taxa de instalação incorreta**: R$ 2000,00 quando deveria ser R$ 200,00
+4. **Campos obrigatórios em branco ou com erro**
+
+### ⚠️ IMPORTANTE - VALIDAÇÃO DE CPF:
+- CPF deve ter EXATAMENTE 11 dígitos: XXX.XXX.XXX-XX
+- Se encontrar CPF com mais ou menos dígitos, É ERRO CRÍTICO
+- Exemplo: "137.158.269-677" tem 12 dígitos → REPORTAR COMO ERRO
+
+## ETAPA 5: REGRA CRÍTICA
 
 **⚠️ SÓ REPORTAR COMO ERRO SE VALORES FOREM DIFERENTES**
 
@@ -104,13 +122,21 @@ if (valor_contrato === valor_esperado) {
 ## INSTRUÇÕES FINAIS
 
 1. **IDENTIFIQUE primeiro** o modelo baseado no valor
-2. **COMPARE exatamente** valores encontrados vs esperados
-3. **NÃO reporte** valores iguais como erro
-4. **INCLUA alertas** para campos em branco
-5. **USE cálculo simples** para taxa de rescisão
-6. **ARRAY VAZIO []** quando todos valores corretos
+2. **VALIDE OBRIGATORIAMENTE**:
+   - CPF deve ter 11 dígitos (se tiver 12 ou mais, É ERRO)
+   - Erros de digitação óbvios (SOOLTEIRO, Camarrgo, etc.)
+   - Taxa de instalação correta (R$ 2000,00 ≠ R$ 200,00)
+3. **COMPARE exatamente** valores encontrados vs esperados
+4. **NÃO reporte** valores iguais como erro
+5. **INCLUA alertas** para campos em branco
+6. **USE cálculo simples** para taxa de rescisão
+7. **SE ENCONTRAR QUALQUER ERRO** → status = "reprovado"
 
-**LEMBRE-SE**: Valores idênticos = ACERTO = Não reportar
+**CRÍTICO**: Antes de marcar como "aprovado", verifique se NÃO HÁ:
+- CPF com formato inválido
+- Erros de digitação
+- Valores incorretos de taxa
+- Se há QUALQUER erro → status = "reprovado"
 
 **Contrato para análise:**
 ${contractText}`;
