@@ -14,37 +14,49 @@ interface AnalysisReportProps {
 }
 
 interface ErrorAnalysis {
-  severidade?: string;
   campo: string;
   valor_encontrado: string;
   valor_esperado: string;
   sugestao_correcao: string;
-  localizacao?: string;
-  confianca?: number;
+  localizacao: string;
+  severidade: 'critico' | 'alto' | 'medio' | 'baixo';
+}
+
+interface ValidacaoCorreta {
+  campo: string;
+  valor: string;
+  status: string;
 }
 
 interface ModeloIdentificado {
   nome: string;
   confianca: number;
-  criterios_identificacao?: string[];
-  caracteristicas_esperadas?: {
-    valor?: string;
-    tipo?: string;
-    vigencia?: string;
-    taxa_instalacao?: string;
-    rescisao?: string;
+  criterios_identificacao: string[];
+  caracteristicas_esperadas: {
+    valor: string;
+    tipo: string;
+    vigencia: string;
+    taxa_instalacao: string;
+    ip_fixo: string;
+    rescisao: string;
   };
-  observacao?: string;
 }
 
 interface AnalysisData {
-  modelo_identificado?: ModeloIdentificado;
+  modelo_identificado: ModeloIdentificado;
   erros: ErrorAnalysis[];
+  alertas: any[];
+  validacoes_corretas: ValidacaoCorreta[];
   resumo: {
     total_erros: number;
-    plano_identificado?: string;
+    criticos: number;
+    altos: number;
+    medios: number;
+    baixos: number;
+    plano_identificado: string;
   };
-  status_geral: 'aprovado' | 'aprovado_com_restricoes' | 'reprovado';
+  status_geral: 'aprovado' | 'reprovado';
+  observacoes: string[];
 }
 
 const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: AnalysisReportProps) => {
@@ -164,20 +176,68 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
             {/* Status Geral */}
             <StatusBadge status={analysisData.status_geral} />
 
-            {/* Resumo Simplificado de Erros */}
+            {/* Resumo Detalhado de Erros */}
             {analysisData.resumo && analysisData.resumo.total_erros > 0 && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="text-center">
+                <div className="text-center mb-3">
                   <div className="text-3xl font-bold text-red-700">{analysisData.resumo.total_erros}</div>
                   <div className="text-sm text-red-600">Erros Encontrados</div>
+                </div>
+                <div className="grid grid-cols-4 gap-2 text-xs">
+                  <div className="text-center">
+                    <div className="font-bold text-red-600">{analysisData.resumo.criticos}</div>
+                    <div className="text-red-500">Críticos</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-bold text-orange-600">{analysisData.resumo.altos}</div>
+                    <div className="text-orange-500">Altos</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-bold text-yellow-600">{analysisData.resumo.medios}</div>
+                    <div className="text-yellow-500">Médios</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-bold text-blue-600">{analysisData.resumo.baixos}</div>
+                    <div className="text-blue-500">Baixos</div>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Lista de Erros - agora só mostra erros reais */}
-            <ErrorListCard erros={analysisData.erros} />
+            {/* Lista de Erros */}
+            {analysisData.erros.length > 0 && (
+              <ErrorListCard erros={analysisData.erros} />
+            )}
 
-            {/* Mensagem quando não há erros reais */}
+            {/* Validações Corretas */}
+            {analysisData.validacoes_corretas && analysisData.validacoes_corretas.length > 0 && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="font-semibold text-green-800 mb-3">✅ Campos Validados Corretamente</h4>
+                <div className="space-y-2">
+                  {analysisData.validacoes_corretas.map((validacao, index) => (
+                    <div key={index} className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-green-700">{validacao.campo}:</span>
+                      <span className="text-green-600">{validacao.valor}</span>
+                      <span className="text-green-500 text-xs">{validacao.status}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Observações */}
+            {analysisData.observacoes && analysisData.observacoes.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-800 mb-3">📋 Observações da Análise</h4>
+                <ul className="list-disc list-inside space-y-1 text-sm text-blue-700">
+                  {analysisData.observacoes.map((obs, index) => (
+                    <li key={index}>{obs}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Mensagem quando não há erros */}
             {analysisData.erros.length === 0 && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="flex items-center gap-2 text-green-700">

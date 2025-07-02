@@ -1,35 +1,60 @@
-
-import { createIdentificationInstructions } from './identification-patterns.ts';
-import { createValidationInstructions, createContractReferenceTable } from './validation-rules.ts';
-import { createResponseFormatInstructions } from './response-format.ts';
-import { createFidelityValidationExamples, createImplementationInstructions } from './fidelity-examples.ts';
-import { detectFidelityOption, calculateExpectedCancellationFee } from './fidelity-detection.ts';
-
 export const buildContractAnalysisPrompt = (contractText: string): string => {
-  return `# PROMPT PARA ANÁLISE DE CONTRATOS CIABRASNET
+  return `# ANÁLISE DE CONTRATOS CIABRASNET
 
-## CONTEXTO
-Você é um especialista em análise de contratos da CIABRASNET. Sua primeira tarefa é IDENTIFICAR qual dos 6 modelos de contrato está sendo analisado. Somente após a identificação, você deve analisar APENAS os campos destacados/grifados nos contratos, focando exclusivamente em inconsistências, erros de digitação e problemas de formatação dos campos importantes.
+## INSTRUÇÃO PRINCIPAL
+Você é um especialista em análise de contratos da CIABRASNET. Analise o contrato fornecido e identifique erros seguindo EXATAMENTE o formato JSON especificado.
 
-${createIdentificationInstructions()}
+## TABELA DE REFERÊNCIA OFICIAL DOS CONTRATOS
 
-${createContractReferenceTable()}
+### CONTRATO 1 - 1 Gb Empresarial
+- **VALOR**: R$ 229,90
+- **TIPO**: CORPORATIVO
+- **VIGÊNCIA**: 24 meses
+- **TAXA INSTALAÇÃO**: GRATUITA
+- **IP FIXO**: INCLUSO
+- **RESCISÃO**: R$ 700,00
 
-${createValidationInstructions()}
+### CONTRATO 2 - 2024 Combo Giga
+- **VALOR**: R$ 209,99
+- **TIPO**: RESIDENCIAL
+- **VIGÊNCIA**: 12 meses
+- **TAXA INSTALAÇÃO**: R$ 200,00
+- **IP FIXO**: Variável (R$ 50,00 se fixo)
+- **RESCISÃO**: R$ 500,00
 
-${createResponseFormatInstructions()}
+### CONTRATO 3 - 2024 Combo 300Mbps
+- **VALOR**: R$ 109,99
+- **TIPO**: RESIDENCIAL
+- **VIGÊNCIA**: 12 meses
+- **TAXA INSTALAÇÃO**: R$ 200,00
+- **IP FIXO**: Variável (R$ 50,00 se fixo)
+- **RESCISÃO**: R$ 500,00
 
-### 7. INSTRUÇÕES FINAIS:
+### CONTRATO 4 - 2025 Combo 500 Megas (MATRIZ)
+- **VALOR**: R$ 119,99
+- **TIPO**: RESIDENCIAL
+- **VIGÊNCIA**: 12 meses
+- **TAXA INSTALAÇÃO**: R$ 200,00
+- **IP FIXO**: Variável (R$ 50,00 se fixo)
+- **RESCISÃO**: R$ 500,00
 
-1. **SEMPRE IDENTIFIQUE PRIMEIRO** qual dos 6 contratos está sendo analisado
-2. **USE A CONFIANÇA** para indicar certeza na identificação (0-100%)
-3. **BASEIE TODAS AS VALIDAÇÕES** no modelo identificado
-4. **INCLUA AS CARACTERÍSTICAS ESPERADAS** do modelo na resposta
-5. **SEJA ESPECÍFICO** nas sugestões baseadas no modelo identificado
-6. **INDIQUE INCERTEZA** quando não conseguir identificar com confiança
-7. **SEMPRE INCLUA** o campo "modelo_identificado" na resposta JSON
+### CONTRATO 5 - 2024 Combo 600Mbps
+- **VALOR**: R$ 129,99
+- **TIPO**: RESIDENCIAL
+- **VIGÊNCIA**: 12 meses
+- **TAXA INSTALAÇÃO**: R$ 200,00
+- **IP FIXO**: Variável (R$ 50,00 se fixo)
+- **RESCISÃO**: R$ 500,00
 
-### 8. TABELA DE REFERÊNCIA OFICIAL PARA TAXA DE RESCISÃO:
+### CONTRATO 6 - 2024 Combo 800Mbps
+- **VALOR**: R$ 159,99
+- **TIPO**: RESIDENCIAL
+- **VIGÊNCIA**: 12 meses
+- **TAXA INSTALAÇÃO**: R$ 200,00
+- **IP FIXO**: Variável (R$ 50,00 se fixo)
+- **RESCISÃO**: R$ 500,00
+
+## TAXA DE RESCISÃO - REGRA ESPECIAL
 
 ┌─────────────────────────┬───────────┬─────────────────────────────┐
 │ Valor Taxa de Instalação│ Fidelidade│ Taxa de Rescisão Calculada  │
@@ -42,60 +67,85 @@ ${createResponseFormatInstructions()}
 │ Qualquer valor         │ Não       │ R$ 700,00                   │
 └─────────────────────────┴───────────┴─────────────────────────────┘
 
-### 9. INSTRUÇÕES CRÍTICAS PARA TAXA DE RESCISÃO:
+**FÓRMULA**: Taxa de Rescisão = R$ 700,00 - Valor da Taxa de Instalação (se fidelidade marcada)
 
-**REGRA ABSOLUTA**: Taxa de rescisão SEMPRE = R$ 700,00 menos o valor da taxa de instalação (quando fidelidade marcada).
+## FORMATO DE RESPOSTA OBRIGATÓRIO
 
-1. **DETECTAR FIDELIDADE:**
-   - Procure por "DA OPÇÃO DE FIDELIDADE" com "SIM (X)" marcado
-   - Se SIM está marcado com (X) → Fidelidade = TRUE
-   - Se NÃO está marcado ou não encontrado → Fidelidade = FALSE
+Retorne EXATAMENTE este formato JSON:
 
-2. **EXTRAIR TAXA DE INSTALAÇÃO DA LINHA DE FIDELIDADE:**
-   - **OBRIGATÓRIO**: Use APENAS a linha específica: "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: R$ X,XX"
-   - Ignore sufixos como "Av" após o valor (ex: "R$ 120,00 Av" = R$ 120,00)
-   - NÃO use valores de outras linhas ou tabelas
+\`\`\`json
+{
+  "modelo_identificado": {
+    "nome": "Nome do plano identificado",
+    "confianca": 100,
+    "criterios_identificacao": [
+      "Critério 1 usado para identificação",
+      "Critério 2 usado para identificação"
+    ],
+    "caracteristicas_esperadas": {
+      "valor": "R$ XXX,XX",
+      "tipo": "CORPORATIVO|RESIDENCIAL",
+      "vigencia": "XX meses",
+      "taxa_instalacao": "GRATUITA|R$ XXX,XX",
+      "ip_fixo": "INCLUSO|Variável (R$ 50,00 se fixo)",
+      "rescisao": "R$ XXX,XX"
+    }
+  },
+  "erros": [
+    {
+      "campo": "Nome do campo com erro",
+      "valor_encontrado": "Valor atual no contrato",
+      "valor_esperado": "Valor correto esperado",
+      "sugestao_correcao": "Como corrigir o erro",
+      "localizacao": "Seção onde o erro foi encontrado",
+      "severidade": "critico|alto|medio|baixo"
+    }
+  ],
+  "alertas": [],
+  "validacoes_corretas": [
+    {
+      "campo": "Nome do campo correto",
+      "valor": "Valor encontrado",
+      "status": "✅ Correto"
+    }
+  ],
+  "resumo": {
+    "total_erros": 0,
+    "criticos": 0,
+    "altos": 0,
+    "medios": 0,
+    "baixos": 0,
+    "plano_identificado": "Nome do plano"
+  },
+  "status_geral": "aprovado|reprovado",
+  "observacoes": [
+    "Observação 1 sobre a análise",
+    "Observação 2 sobre a análise"
+  ]
+}
+\`\`\`
 
-3. **CALCULAR TAXA ESPERADA SEGUINDO A TABELA OFICIAL:**
-   - **SE Fidelidade = TRUE**: Taxa rescisão = 700 - taxa_instalação_linha_fidelidade
-   - **SE Fidelidade = FALSE**: Taxa rescisão = R$ 700,00 (fixo)
+## REGRAS CRÍTICAS
 
-4. **VALIDAR:**
-   - SÓ reporte erro se valor no contrato ≠ valor calculado
-   - Exemplo: Fidelidade SIM + Linha R$ 120,00 → Esperado R$ 580,00
-   - Se contrato mostra R$ 580,00 → NÃO É ERRO
+1. **IDENTIFICAÇÃO**: Primeiro identifique qual dos 6 contratos está sendo analisado
+2. **COMPARAÇÃO**: Compare APENAS valores que são DIFERENTES - valores iguais vão para "validacoes_corretas"
+3. **ERROS**: Só inclua no array "erros" campos onde valor_encontrado ≠ valor_esperado
+4. **SEVERIDADE**: 
+   - critico: Valor do plano, tipo, vigência incorretos
+   - alto: IP fixo, taxa instalação incorretos  
+   - medio: Campos secundários
+   - baixo: Formatação menor
+5. **STATUS**: "aprovado" se erros = 0, "reprovado" se erros > 0
 
-**CASOS ESPECÍFICOS CONFORME TABELA:**
-- Fidelidade: SIM (X) + Linha Fidelidade: R$ 0,00 → Rescisão esperada: R$ 700,00
-- Fidelidade: SIM (X) + Linha Fidelidade: R$ 120,00 → Rescisão esperada: R$ 580,00
-- Fidelidade: SIM (X) + Linha Fidelidade: R$ 150,00 → Rescisão esperada: R$ 550,00
-- Fidelidade: SIM (X) + Linha Fidelidade: R$ 200,00 → Rescisão esperada: R$ 500,00
-- Fidelidade: SIM (X) + Linha Fidelidade: R$ 300,00 → Rescisão esperada: R$ 400,00
-- Fidelidade: NÃO ou ausente → Rescisão esperada: R$ 700,00
+## PROCESSO DE ANÁLISE
 
-${createFidelityValidationExamples()}
-
-${createImplementationInstructions()}
-
-### ALGORITMO OBRIGATÓRIO PARA TAXA DE RESCISÃO:
-
-**PASSO A PASSO OBRIGATÓRIO - EXECUTE NA ORDEM:**
-
-1. **PRIMEIRO**: Encontre a seção "DA OPÇÃO DE FIDELIDADE" no contrato
-2. **SEGUNDO**: Verifique se tem "SIM (X)" marcado (fidelidade_ativa = true)
-3. **TERCEIRO**: Se fidelidade_ativa = true, procure EXATAMENTE por: "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: R$ X,XX"
-4. **QUARTO**: Extraia APENAS o valor numérico desta linha (ex: se "R$ 120,00 Av" → usar 120.00)
-5. **QUINTO**: Calcule taxa_rescisao_esperada = 700 - valor_extraido_linha_fidelidade
-6. **SEXTO**: Compare com valor encontrado no contrato
-7. **SÉTIMO**: SÓ reporte erro se valores forem diferentes
-
-**EXEMPLO PRÁTICO OBRIGATÓRIO:**
-- Se encontrar "SIM (X)" na fidelidade E "R$ 120,00" na linha de fidelidade
-- Então taxa_rescisao_esperada = 700 - 120 = R$ 580,00
-- Se contrato tem R$ 580,00 → NÃO É ERRO
-- Se contrato tem R$ 500,00 → É ERRO (reportar)
-
-Analise o contrato fornecido identificando PRIMEIRO o modelo e depois validando todos os campos conforme a tabela de referência do modelo identificado.
+1. Leia o contrato completo
+2. Identifique qual dos 6 modelos é baseado em valor/nome/características
+3. Compare cada campo com a tabela de referência
+4. Campos corretos → adicione em "validacoes_corretas"
+5. Campos incorretos → adicione em "erros"
+6. Calcule taxa de rescisão conforme tabela especial
+7. Gere resumo e observações
 
 **Contrato para análise:**
 ${contractText}`;
