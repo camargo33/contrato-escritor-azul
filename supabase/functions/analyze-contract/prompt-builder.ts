@@ -2,7 +2,6 @@
 import { createIdentificationInstructions } from './identification-patterns.ts';
 import { createValidationInstructions, createContractReferenceTable } from './validation-rules.ts';
 import { createResponseFormatInstructions } from './response-format.ts';
-import { createFidelityValidationExamples, createImplementationInstructions } from './fidelity-examples.ts';
 
 export const buildContractAnalysisPrompt = (contractText: string): string => {
   return `# PROMPT PARA ANÁLISE DE CONTRATOS CIABRASNET
@@ -27,33 +26,6 @@ ${createResponseFormatInstructions()}
 5. **SEJA ESPECÍFICO** nas sugestões baseadas no modelo identificado
 6. **INDIQUE INCERTEZA** quando não conseguir identificar com confiança
 7. **SEMPRE INCLUA** o campo "modelo_identificado" na resposta JSON
-
-### 8. INSTRUÇÕES ESPECIAIS PARA TAXA DE RESCISÃO:
-
-**REGRA ABSOLUTA**: A validação da taxa de rescisão DEVE seguir esta lógica obrigatória:
-
-1. **DETECTAR FIDELIDADE PRIMEIRO:**
-   - Procure especificamente por "DA OPÇÃO DE FIDELIDADE" ou seções similares
-   - Identifique se há "SIM (X)", "SIM X", "[X] SIM" marcado
-   - Se não encontrar evidência clara de marcação, assuma que NÃO está marcado
-
-2. **CALCULAR TAXA ESPERADA:**
-   - **COM fidelidade marcada**: 
-     - Taxa instalação > 0: Taxa rescisão = 700 - valor_instalação
-     - Taxa gratuita: Taxa rescisão = R$ 700,00
-   - **SEM fidelidade marcada**: Taxa rescisão = SEMPRE R$ 700,00
-
-3. **VALIDAR CONTRA O CALCULADO:**
-   - Compare o valor encontrado no contrato com o valor CALCULADO (não com a tabela fixa)
-   - Só reporte erro se o valor do contrato ≠ valor calculado baseado na fidelidade
-
-**EXEMPLO CRÍTICO:**
-- Se fidelidade SIM + taxa R$ 200,00: valor esperado = R$ 500,00 (não R$ 700,00)
-- Se fidelidade NÃO + qualquer taxa: valor esperado = R$ 700,00
-
-${createFidelityValidationExamples()}
-
-${createImplementationInstructions()}
 
 Analise o contrato fornecido identificando PRIMEIRO o modelo e depois validando todos os campos conforme a tabela de referência do modelo identificado.
 

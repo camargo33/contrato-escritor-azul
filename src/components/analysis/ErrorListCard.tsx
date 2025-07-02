@@ -49,21 +49,6 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
       return false;
     }
     
-    // Casos especiais para taxa de rescisão com validação de fidelidade
-    if (erro.campo?.toLowerCase().includes('rescisão') || erro.campo?.toLowerCase().includes('rescisao')) {
-      // Para taxa de rescisão, aceitar ambos os valores possíveis baseados na fidelidade
-      const valorEncontrado = parseFloat(normalizeMoney(encontrado));
-      const valorEsperado = parseFloat(normalizeMoney(esperado));
-      
-      // Se encontrado é 700 e esperado é 500, ou vice-versa, verificar contexto
-      if ((valorEncontrado === 700 && valorEsperado === 500) || 
-          (valorEncontrado === 500 && valorEsperado === 700)) {
-        // Este é um caso onde a lógica de fidelidade deve ser aplicada
-        // Aceitar ambos os valores como válidos até a nova lógica ser completamente implementada
-        return true; // Manter como erro para forçar validação correta
-      }
-    }
-    
     return true;
   };
 
