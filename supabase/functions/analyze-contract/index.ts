@@ -12,12 +12,18 @@ import {
 import { analyzeContractWithOpenAI } from './openai-service.ts';
 
 serve(async (req) => {
+  // Handle CORS preflight requests FIRST
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      status: 200,
+      headers: corsHeaders 
+    });
   }
 
   try {
     console.log("=== ANALYZE CONTRACT FUNCTION STARTED ===");
+    console.log("Method:", req.method);
+    console.log("Headers:", Object.fromEntries(req.headers.entries()));
     
     const { contractText, filename } = await req.json();
 
@@ -65,6 +71,7 @@ serve(async (req) => {
 
     const result = createSuccessResponse(analysisResult.content!, filename);
     return new Response(JSON.stringify(result), {
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
