@@ -35,24 +35,63 @@ export const VALIDATION_FIELDS: ValidationField[] = [
   }
 ];
 
-// Lógica específica para cálculo da Taxa de Rescisão
-export const calculateExpectedCancellationFee = (installationFeeText: string): string => {
+// Função para detectar se a opção Fidelidade está marcada no contrato
+export const detectFidelityOption = (contractText: string): boolean => {
+  if (!contractText) return false;
+  
+  // Padrões para detectar fidelidade marcada como SIM
+  const fidelityPatterns = [
+    /fidelidade[:\s]*sim[^\w]*\(?\s*x\s*\)?/i,
+    /fidelidade[:\s]*\(?\s*x\s*\)?\s*sim/i,
+    /sim[^\w]*\(?\s*x\s*\)?[^\w]*fidelidade/i,
+    /prazo.*fidelidade[:\s]*sim[^\w]*\(?\s*x\s*\)?/i,
+    /adesão.*fidelidade[:\s]*sim[^\w]*\(?\s*x\s*\)?/i,
+    /contrato.*fidelidade[:\s]*sim[^\w]*\(?\s*x\s*\)?/i
+  ];
+  
+  // Verifica se algum padrão indica que a fidelidade está marcada como SIM
+  for (const pattern of fidelityPatterns) {
+    if (pattern.test(contractText)) {
+      console.log(`Fidelidade detectada como SIM através do padrão: ${pattern}`);
+      return true;
+    }
+  }
+  
+  console.log('Fidelidade não detectada como marcada (SIM) - usando valor padrão R$ 700,00');
+  return false;
+};
+
+// Lógica específica para cálculo da Taxa de Rescisão baseada na Fidelidade
+export const calculateExpectedCancellationFee = (installationFeeText: string, contractText: string): string => {
+  // Primeiro, detectar se a fidelidade está marcada
+  const hasFidelity = detectFidelityOption(contractText);
+  
+  // Se NÃO tem fidelidade marcada, sempre retorna R$ 700,00
+  if (!hasFidelity) {
+    console.log('Fidelidade não marcada - Taxa de Rescisão fixa: R$ 700,00');
+    return 'R$ 700,00';
+  }
+  
+  // Se TEM fidelidade marcada, aplicar a lógica da tabela
+  console.log('Fidelidade marcada - aplicando lógica da tabela');
+  
   // Extrair valor numérico da taxa de instalação
   const installationValue = extractMonetaryValue(installationFeeText);
   
-  // Aplicar a lógica da tabela
+  // Aplicar a lógica: Taxa Rescisão = 700 - Taxa Instalação
   if (installationValue === 0) {
-    return 'R$ 700,00';
+    return 'R$ 700,00'; // Se instalação gratuita, rescisão é R$ 700,00
   } else if (installationValue === 150) {
-    return 'R$ 550,00';
+    return 'R$ 550,00'; // 700 - 150 = 550
   } else if (installationValue === 200) {
-    return 'R$ 500,00';
+    return 'R$ 500,00'; // 700 - 200 = 500
   } else if (installationValue === 300) {
-    return 'R$ 400,00';
+    return 'R$ 400,00'; // 700 - 300 = 400
   }
   
-  // Valor padrão se não encontrar correspondência
-  return 'R$ 500,00';
+  // Para outros valores, calcular dinamicamente
+  const rescissionValue = 700 - installationValue;
+  return `R$ ${rescissionValue.toFixed(2).replace('.', ',')}`;
 };
 
 // Função auxiliar para extrair valor monetário
@@ -92,23 +131,40 @@ ${fieldsText}
 - **Tipo de Plano**: Apenas "1 Gb Empresarial" é corporativo, todos os outros são residenciais
 - **Taxa de Instalação**: Verificar conforme tabela de referência
 - **Equipamentos**: Verificar valores exatos conforme tabela
-- **Taxa de Rescisão**: VALIDAÇÃO ESPECIAL - Verificar usando a seguinte lógica:
-  * Se Taxa de Instalação = R$ 0,00 (gratuita) → Taxa de Rescisão = R$ 700,00
-  * Se Taxa de Instalação = R$ 150,00 → Taxa de Rescisão = R$ 550,00
-  * Se Taxa de Instalação = R$ 200,00 → Taxa de Rescisão = R$ 500,00
-  * Se Taxa de Instalação = R$ 300,00 → Taxa de Rescisão = R$ 400,00
+- **Taxa de Rescisão**: VALIDAÇÃO ESPECIAL NOVA - Verificar usando a seguinte lógica:
+
+### 3. REGRA CRÍTICA NOVA - TAXA DE RESCISÃO BASEADA EM FIDELIDADE:
+
+**ETAPA 1: DETECTAR SE FIDELIDADE ESTÁ MARCADA**
+- Procurar no contrato por padrões como:
+  * "Fidelidade: SIM (X)"
+  * "SIM (X)" na seção de fidelidade
+  * "Prazo de fidelidade: SIM" com marcação
+  * Qualquer indicação de que a opção SIM está marcada para fidelidade
+
+**ETAPA 2: APLICAR LÓGICA CONDICIONAL**
+
+**SE FIDELIDADE = SIM (MARCADA):**
+- Taxa Instalação R$ 0,00 (gratuita) → Taxa Rescisão = R$ 700,00
+- Taxa Instalação R$ 150,00 → Taxa Rescisão = R$ 550,00 (700 - 150)
+- Taxa Instalação R$ 200,00 → Taxa Rescisão = R$ 500,00 (700 - 200)
+- Taxa Instalação R$ 300,00 → Taxa Rescisão = R$ 400,00 (700 - 300)
+
+**SE FIDELIDADE = NÃO (NÃO MARCADA) OU NÃO DETECTADA:**
+- Taxa Rescisão = **SEMPRE R$ 700,00** (independente da taxa de instalação)
+
 - **IP Fixo**: 
   - "INCLUSO": Apenas no contrato empresarial (Contrato 1)
   - "Variável": Todos os residenciais (cobrança de R$ 50,00 se fixo marcado)
 - **Cláusulas**: TODOS os contratos devem ter cláusulas de 1 a 11
 
-### 3. REGRA CRÍTICA - APENAS DIVERGÊNCIAS SÃO ERROS:
+### 4. REGRA CRÍTICA - APENAS DIVERGÊNCIAS SÃO ERROS:
 
 **ATENÇÃO: SÓ REPORTE COMO ERRO SE HOUVER DIFERENÇA REAL ENTRE OS VALORES**
 
 ALGORITMO DE VALIDAÇÃO:
 1. valor_contrato = extrair valor do contrato
-2. valor_esperado = buscar valor na tabela de referência OU calcular usando regra especial (rescisão)
+2. valor_esperado = buscar valor na tabela de referência OU calcular usando regra especial (rescisão com fidelidade)
 3. SE (valor_contrato == valor_esperado):
      → IGNORAR COMPLETAMENTE (não é erro)
      → NÃO incluir no resultado
@@ -116,41 +172,50 @@ ALGORITMO DE VALIDAÇÃO:
      → É UM ERRO REAL
      → Incluir no array de erros
 
-**REGRA ESPECIAL PARA TAXA DE RESCISÃO:**
-- PRIMEIRA: Identifique o valor da Taxa de Instalação no contrato
-- SEGUNDA: Use a tabela de cálculo para determinar o valor esperado da Taxa de Rescisão:
-  * Taxa Instalação R$ 0,00 (gratuita) = Taxa Rescisão R$ 700,00
-  * Taxa Instalação R$ 150,00 = Taxa Rescisão R$ 550,00
-  * Taxa Instalação R$ 200,00 = Taxa Rescisão R$ 500,00
-  * Taxa Instalação R$ 300,00 = Taxa Rescisão R$ 400,00
-- TERCEIRA: Compare o valor encontrado no contrato com o valor calculado
-- QUARTA: Só reporte erro se houver divergência
+**REGRA ESPECIAL ATUALIZADA PARA TAXA DE RESCISÃO:**
+- PRIMEIRA: Detecte se a opção "Fidelidade" está marcada como SIM no contrato
+- SEGUNDA: Identifique o valor da Taxa de Instalação no contrato
+- TERCEIRA: Use a lógica condicional:
+  * SE fidelidade NÃO marcada: Taxa Rescisão esperada = R$ 700,00
+  * SE fidelidade SIM marcada: Use tabela de cálculo (700 - taxa instalação)
+- QUARTA: Compare o valor encontrado no contrato com o valor calculado
+- QUINTA: Só reporte erro se houver divergência
 
 **REGRA ABSOLUTA**: 
 - Valores IGUAIS = NÃO É ERRO = NÃO REPORTAR
 - Valores DIFERENTES = É ERRO = REPORTAR
 
-### 4. EXEMPLOS PRÁTICOS - TAXA DE RESCISÃO:
+### 5. EXEMPLOS PRÁTICOS ATUALIZADOS - TAXA DE RESCISÃO:
 
-**CENÁRIO 1 - NÃO É ERRO:**
-- Taxa Instalação no contrato: "GRATUITA"
-- Taxa Rescisão no contrato: "R$ 700,00"
-- Taxa Rescisão esperada (calculada): "R$ 700,00"
-- RESULTADO: NÃO REPORTAR (valores iguais)
-
-**CENÁRIO 2 - É ERRO:**
+**CENÁRIO 1 - FIDELIDADE NÃO MARCADA - NÃO É ERRO:**
+- Fidelidade: NÃO (X) ou não marcada
 - Taxa Instalação no contrato: "R$ 200,00"
 - Taxa Rescisão no contrato: "R$ 700,00"
-- Taxa Rescisão esperada (calculada): "R$ 500,00"
-- RESULTADO: REPORTAR ERRO (valores diferentes)
-
-**CENÁRIO 3 - NÃO É ERRO:**
-- Taxa Instalação no contrato: "R$ 150,00"
-- Taxa Rescisão no contrato: "R$ 550,00"
-- Taxa Rescisão esperada (calculada): "R$ 550,00"
+- Taxa Rescisão esperada: "R$ 700,00" (valor fixo quando sem fidelidade)
 - RESULTADO: NÃO REPORTAR (valores iguais)
 
-### 5. EXEMPLOS PRÁTICOS - OUTROS CAMPOS:
+**CENÁRIO 2 - FIDELIDADE MARCADA - NÃO É ERRO:**
+- Fidelidade: SIM (X)
+- Taxa Instalação no contrato: "R$ 200,00"
+- Taxa Rescisão no contrato: "R$ 500,00"
+- Taxa Rescisão esperada: "R$ 500,00" (700 - 200)
+- RESULTADO: NÃO REPORTAR (valores iguais)
+
+**CENÁRIO 3 - FIDELIDADE MARCADA - É ERRO:**
+- Fidelidade: SIM (X)
+- Taxa Instalação no contrato: "R$ 200,00"
+- Taxa Rescisão no contrato: "R$ 700,00"
+- Taxa Rescisão esperada: "R$ 500,00" (700 - 200)
+- RESULTADO: REPORTAR ERRO (valores diferentes)
+
+**CENÁRIO 4 - FIDELIDADE NÃO MARCADA - É ERRO:**
+- Fidelidade: NÃO (X)
+- Taxa Instalação no contrato: "R$ 200,00"
+- Taxa Rescisão no contrato: "R$ 500,00"
+- Taxa Rescisão esperada: "R$ 700,00" (valor fixo)
+- RESULTADO: REPORTAR ERRO (valores diferentes)
+
+### 6. EXEMPLOS PRÁTICOS - OUTROS CAMPOS:
 
 **NUNCA REPORTE ESTES COMO ERRO (valores iguais):**
 - Contrato: "R$ 109,99" | Tabela: "R$ 109,99" → NÃO É ERRO - IGNORAR
@@ -161,19 +226,20 @@ ALGORITMO DE VALIDAÇÃO:
 - Contrato: "R$ 120,00" | Tabela: "R$ 109,99" → É ERRO - REPORTAR
 - Contrato: "24 meses" | Tabela: "12 meses" → É ERRO - REPORTAR
 
-### 6. INSTRUÇÕES OBRIGATÓRIAS:
+### 7. INSTRUÇÕES OBRIGATÓRIAS:
 
 **REGRA FUNDAMENTAL**: Só inclua no array de erros campos com DIVERGÊNCIA REAL
 
-1. **PARA TAXA DE RESCISÃO**: Use SEMPRE a lógica de cálculo baseada na Taxa de Instalação
-2. **COMPARE EXATAMENTE** os valores: contrato vs esperado (calculado ou tabela)
-3. **SE FOREM IGUAIS**: NÃO inclua no resultado (não é erro)
-4. **SE FOREM DIFERENTES**: Inclua no array de erros
-5. **RESULTADO VAZIO []**: Quando TODOS os valores estão corretos
-6. **STATUS "aprovado"**: Quando não há divergências reais
+1. **PARA TAXA DE RESCISÃO**: Use SEMPRE a nova lógica baseada em fidelidade
+2. **DETECTE FIDELIDADE PRIMEIRO**: Procure se está marcada como SIM
+3. **APLIQUE LÓGICA CONDICIONAL**: Com ou sem fidelidade
+4. **COMPARE EXATAMENTE** os valores: contrato vs esperado (calculado)
+5. **SE FOREM IGUAIS**: NÃO inclua no resultado (não é erro)
+6. **SE FOREM DIFERENTES**: Inclua no array de erros
+7. **RESULTADO VAZIO []**: Quando TODOS os valores estão corretos
+8. **STATUS "aprovado"**: Quando não há divergências reais
 
-**IMPORTANTE**: O sistema está reportando valores corretos como erro. Isso está ERRADO. 
-Apenas divergências devem ser reportadas.`;
+**IMPORTANTE**: O sistema deve agora considerar a opção de fidelidade antes de calcular a taxa de rescisão esperada.`;
 };
 
 export const createContractReferenceTable = (): string => {
@@ -185,7 +251,7 @@ export const createContractReferenceTable = (): string => {
 - **TIPO**: ${model.type}
 - **TAXA INSTALAÇÃO**: ${model.installation_fee}
 - **EQUIPAMENTOS**: ${model.equipment}
-- **RESCISÃO**: ${model.cancellation_fee} (CALCULAR conforme Taxa de Instalação)
+- **RESCISÃO**: CALCULAR baseado na FIDELIDADE (ver tabela abaixo)
 - **IP FIXO**: ${model.fixed_ip}
 - **CLÁUSULAS**: ${model.clauses}`;
   }).join('\n\n');
@@ -194,17 +260,29 @@ export const createContractReferenceTable = (): string => {
 
 ${contractsText}
 
-## TABELA DE CÁLCULO DA TAXA DE RESCISÃO
+## NOVA TABELA DE CÁLCULO DA TAXA DE RESCISÃO (BASEADA EM FIDELIDADE)
 
-**REGRA ESPECIAL**: A Taxa de Rescisão deve ser calculada baseada na Taxa de Instalação:
+**REGRA PRINCIPAL**: A Taxa de Rescisão depende se a FIDELIDADE está marcada:
 
-| Taxa de Instalação | Fidelidade | Taxa de Rescisão Calculada |
-|-------------------|------------|----------------------------|
-| R$ 0,00 (gratuita) | Sim | R$ 700,00 |
-| R$ 150,00 | Sim | R$ 550,00 |
-| R$ 200,00 | Sim | R$ 500,00 |
-| R$ 300,00 | Sim | R$ 400,00 |
+### CENÁRIO A: FIDELIDADE = NÃO (não marcada)
+| Qualquer Taxa de Instalação | Taxa de Rescisão FIXA |
+|-----------------------------|-----------------------|
+| Qualquer valor (R$ 0 a R$ 300) | **R$ 700,00** |
 
-**IMPORTANTE**: NÃO use o valor da rescisão da tabela de contratos. 
-SEMPRE calcule baseado na Taxa de Instalação encontrada no contrato.`;
+### CENÁRIO B: FIDELIDADE = SIM (marcada)
+| Taxa de Instalação | Taxa de Rescisão Calculada |
+|-------------------|----------------------------|
+| R$ 0,00 (gratuita) | R$ 700,00 |
+| R$ 150,00 | R$ 550,00 (700 - 150) |
+| R$ 200,00 | R$ 500,00 (700 - 200) |
+| R$ 300,00 | R$ 400,00 (700 - 300) |
+
+**ALGORITMO DE VALIDAÇÃO ATUALIZADO:**
+1. **PRIMEIRO**: Detectar se fidelidade está marcada como SIM
+2. **SEGUNDO**: Se NÃO marcada → Taxa Rescisão = R$ 700,00 (sempre)
+3. **TERCEIRO**: Se SIM marcada → Taxa Rescisão = 700 - Taxa Instalação
+4. **QUARTO**: Comparar valor encontrado vs valor esperado calculado
+5. **QUINTO**: Só reportar erro se houver divergência real
+
+**IMPORTANTE**: Agora é obrigatório verificar a marcação da fidelidade antes de calcular o valor esperado da rescisão.`;
 };
