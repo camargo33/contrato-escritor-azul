@@ -54,7 +54,55 @@ ${fieldsText}
 - **Tipo de Plano**: Apenas "1 Gb Empresarial" é corporativo, todos os outros são residenciais
 - **Taxa de Instalação**: Verificar conforme tabela de referência
 - **Equipamentos**: Verificar valores exatos conforme tabela
-- **Rescisão**: Verificar valores conforme tabela de referência
+
+### 2.1. VALIDAÇÃO DA TAXA DE RESCISÃO - LÓGICA CORRIGIDA COM FIDELIDADE:
+
+**TABELA DE REFERÊNCIA OBRIGATÓRIA:**
+
+┌─────────────────────────┬───────────┬─────────────────────────────┐
+│ Valor Taxa de Instalação│ Fidelidade│ Taxa de Rescisão Calculada  │
+├─────────────────────────┼───────────┼─────────────────────────────┤
+│ R$ 0,00 (gratuita)     │ Sim       │ R$ 700,00                   │
+│ R$ 120,00              │ Sim       │ R$ 580,00                   │
+│ R$ 150,00              │ Sim       │ R$ 550,00                   │
+│ R$ 200,00              │ Sim       │ R$ 500,00                   │
+│ R$ 300,00              │ Sim       │ R$ 400,00                   │
+│ Qualquer valor         │ Não       │ R$ 700,00                   │
+└─────────────────────────┴───────────┴─────────────────────────────┘
+
+**REGRA ABSOLUTA**: A taxa de rescisão SEMPRE é R$ 700,00 menos o valor da taxa de instalação quando fidelidade está marcada.
+
+**ETAPA 1 - DETECTAR FIDELIDADE:**
+1. Procurar na seção "DA OPÇÃO DE FIDELIDADE" por "SIM (X)" marcado
+2. Padrões específicos:
+   - "DA OPÇÃO DE FIDELIDADE: SIM (X) NÃO ( )"
+   - "SIM (X)" na seção de fidelidade
+   - Qualquer marcação clara do SIM
+
+**ETAPA 2 - EXTRAIR TAXA DE INSTALAÇÃO COM FIDELIDADE:**
+⚠️ **CRÍTICO**: Use APENAS a taxa específica da linha de fidelidade!
+
+Procurar ESPECIFICAMENTE por:
+- "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: R$ X,XX"
+- Ignorar sufixos como "Av" após o valor
+- Focar no valor exato desta linha específica
+
+**ETAPA 3 - APLICAR LÓGICA SIMPLES:**
+
+**SE FIDELIDADE = SIM (marcada):**
+- Taxa Rescisão = R$ 700,00 - Taxa Instalação da Linha de Fidelidade
+- Exemplo: Linha de Fidelidade R$ 120,00 → Rescisão = R$ 580,00 (700 - 120)
+- NUNCA usar valores de outras linhas ou tabelas de referência
+
+**SE FIDELIDADE = NÃO (não marcada):**
+- Taxa Rescisão = SEMPRE R$ 700,00
+- Não considerar nenhuma taxa de instalação
+
+**VALIDAÇÃO FINAL:**
+- SÓ reportar erro se: Valor no contrato ≠ Valor calculado pela lógica acima
+- Se Fidelidade SIM + Taxa R$ 120,00: Esperar R$ 580,00 no contrato
+- Se no contrato mostra R$ 580,00 → NÃO É ERRO
+
 - **IP Fixo**: 
   - "INCLUSO": Apenas no contrato empresarial (Contrato 1)
   - "Variável": Todos os residenciais (cobrança de R$ 50,00 se fixo marcado)
