@@ -89,6 +89,7 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
     }
     
     const normalizeMoney = (value: string) => {
+      if (!value || typeof value !== 'string') return '';
       return value.replace(/[R$\s]/g, '').replace(',', '.');
     };
     
@@ -101,6 +102,7 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
     }
     
     const normalizeText = (text: string) => {
+      if (!text || typeof text !== 'string') return '';
       return text.toLowerCase().replace(/\s+/g, ' ').trim();
     };
     
