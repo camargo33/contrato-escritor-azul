@@ -1,7 +1,7 @@
 import { AlertTriangle, Info } from "lucide-react";
 
 interface AlertItem {
-  tipo: 'campo_vazio' | 'erro_digitacao' | 'formato_invalido';
+  tipo: 'campo_vazio' | 'erro_digitacao' | 'formato_invalido' | 'valor_suspeito';
   campo: string;
   valor_encontrado: string;
   sugestao: string;
@@ -24,6 +24,8 @@ const AlertListCard = ({ alertas }: AlertListCardProps) => {
         return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
       case 'formato_invalido':
         return <AlertTriangle className="h-4 w-4 text-orange-500" />;
+      case 'valor_suspeito':
+        return <AlertTriangle className="h-4 w-4 text-red-500" />;
       default:
         return <AlertTriangle className="h-4 w-4 text-gray-500" />;
     }
@@ -37,6 +39,8 @@ const AlertListCard = ({ alertas }: AlertListCardProps) => {
         return 'border-l-yellow-400 bg-yellow-50';
       case 'formato_invalido':
         return 'border-l-orange-400 bg-orange-50';
+      case 'valor_suspeito':
+        return 'border-l-red-400 bg-red-50';
       default:
         return 'border-l-gray-400 bg-gray-50';
     }

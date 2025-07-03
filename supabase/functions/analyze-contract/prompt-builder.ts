@@ -27,6 +27,23 @@ Analisar contratos OCR da CIABRASNET, identificar o modelo e validar apenas camp
 - Endereço completo
 - Telefone (formato XX) XXXXX-XXXX)
 
+### Validação Rigorosa de CPF/CNPJ:
+- **CPF**: Deve ter EXATAMENTE 11 dígitos (sem pontos/traços)
+- **CNPJ**: Deve ter EXATAMENTE 14 dígitos (sem pontos/traços)
+- **Alertar**: Se tiver dígitos extras ou faltantes (ex: CPF com 12 dígitos)
+- **Formato**: XXX.XXX.XXX-XX para CPF, XX.XXX.XXX/XXXX-XX para CNPJ
+
+### Detecção de Erros de Digitação:
+- **Caracteres duplicados**: SOOLTEIRO → SOLTEIRO, Camarrgo → Camargo
+- **Nomes suspeitos**: Verificar padrões anômalos em nomes/sobrenomes
+- **Estado civil**: SOOLTEIRO, CASSADO, VIUUVO, etc.
+- **Cidades**: São Paaulo, Riio de Janeiro, etc.
+
+### Validação de Valores Monetários:
+- **Detectar zeros extras**: R$ 2000,00 quando deveria ser R$ 200,00
+- **Comparar ordem de magnitude**: Alertar se valor 10x maior/menor que esperado
+- **Valores suspeitos**: Taxas de instalação muito altas (>R$ 500,00)
+
 ### Campos de Validação (Erros se diferentes):
 - **Valor do plano** (deve ser exato da tabela)
 - **Prazo vigência** (CORPORATIVO=24 meses, RESIDENCIAL=12 meses)
@@ -111,6 +128,18 @@ if (valor_contrato === valor_esperado) {
       "campo": "Estado Civil",
       "valor_encontrado": "SOOLTEIRO",
       "sugestao": "Verificar se deveria ser 'SOLTEIRO'"
+    },
+    {
+      "tipo": "formato_invalido",
+      "campo": "CPF",
+      "valor_encontrado": "123.456.789-123",
+      "sugestao": "CPF deve ter exatamente 11 dígitos (encontrado 12)"
+    },
+    {
+      "tipo": "valor_suspeito",
+      "campo": "Taxa de Instalação",
+      "valor_encontrado": "R$ 2000,00",
+      "sugestao": "Valor suspeito - verificar se não deveria ser R$ 200,00"
     }
   ],
   "validacoes_corretas": [

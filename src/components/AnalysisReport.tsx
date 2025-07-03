@@ -44,7 +44,7 @@ interface ModeloIdentificado {
 }
 
 interface AlertItem {
-  tipo: 'campo_vazio' | 'erro_digitacao' | 'formato_invalido';
+  tipo: 'campo_vazio' | 'erro_digitacao' | 'formato_invalido' | 'valor_suspeito';
   campo: string;
   valor_encontrado: string;
   sugestao: string;
@@ -224,7 +224,7 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
                       <div className="text-sm text-yellow-600">Alertas Detectados</div>
                     </div>
                     <div className="space-y-1 text-xs">
-                      {['campo_vazio', 'erro_digitacao', 'formato_invalido'].map(tipo => {
+                      {['campo_vazio', 'erro_digitacao', 'formato_invalido', 'valor_suspeito'].map(tipo => {
                         const count = analysisData.alertas.filter(a => a.tipo === tipo).length;
                         if (count === 0) return null;
                         return (
