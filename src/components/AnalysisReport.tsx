@@ -3,6 +3,7 @@ import AnalysisHeader from "./analysis/AnalysisHeader";
 import ModelIdentificationCard from "./analysis/ModelIdentificationCard";
 import StatusBadge from "./analysis/StatusBadge";
 import ErrorListCard from "./analysis/ErrorListCard";
+import AlertListCard from "./analysis/AlertListCard";
 import FallbackAnalysisView from "./analysis/FallbackAnalysisView";
 import AnalysisFooter from "./analysis/AnalysisFooter";
 
@@ -42,13 +43,21 @@ interface ModeloIdentificado {
   };
 }
 
+interface AlertItem {
+  tipo: 'campo_vazio' | 'erro_digitacao' | 'formato_invalido';
+  campo: string;
+  valor_encontrado: string;
+  sugestao: string;
+}
+
 interface AnalysisData {
   modelo_identificado: ModeloIdentificado;
   erros: ErrorAnalysis[];
-  alertas: any[];
+  alertas: AlertItem[];
   validacoes_corretas: ValidacaoCorreta[];
   resumo: {
     total_erros: number;
+    total_alertas?: number;
     criticos: number;
     altos: number;
     medios: number;
@@ -176,37 +185,69 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
             {/* Status Geral */}
             <StatusBadge status={analysisData.status_geral} />
 
-            {/* Resumo Detalhado de Erros */}
-            {analysisData.resumo && analysisData.resumo.total_erros > 0 && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="text-center mb-3">
-                  <div className="text-3xl font-bold text-red-700">{analysisData.resumo.total_erros}</div>
-                  <div className="text-sm text-red-600">Erros Encontrados</div>
-                </div>
-                <div className="grid grid-cols-4 gap-2 text-xs">
-                  <div className="text-center">
-                    <div className="font-bold text-red-600">{analysisData.resumo.criticos}</div>
-                    <div className="text-red-500">Críticos</div>
+            {/* Resumo Detalhado */}
+            {(analysisData.resumo && (analysisData.resumo.total_erros > 0 || (analysisData.alertas && analysisData.alertas.length > 0))) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Resumo de Erros */}
+                {analysisData.resumo.total_erros > 0 && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="text-center mb-3">
+                      <div className="text-3xl font-bold text-red-700">{analysisData.resumo.total_erros}</div>
+                      <div className="text-sm text-red-600">Erros Encontrados</div>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 text-xs">
+                      <div className="text-center">
+                        <div className="font-bold text-red-600">{analysisData.resumo.criticos}</div>
+                        <div className="text-red-500">Críticos</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-bold text-orange-600">{analysisData.resumo.altos}</div>
+                        <div className="text-orange-500">Altos</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-bold text-yellow-600">{analysisData.resumo.medios}</div>
+                        <div className="text-yellow-500">Médios</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-bold text-blue-600">{analysisData.resumo.baixos}</div>
+                        <div className="text-blue-500">Baixos</div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <div className="font-bold text-orange-600">{analysisData.resumo.altos}</div>
-                    <div className="text-orange-500">Altos</div>
+                )}
+
+                {/* Resumo de Alertas */}
+                {analysisData.alertas && analysisData.alertas.length > 0 && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="text-center mb-3">
+                      <div className="text-3xl font-bold text-yellow-700">{analysisData.alertas.length}</div>
+                      <div className="text-sm text-yellow-600">Alertas Detectados</div>
+                    </div>
+                    <div className="space-y-1 text-xs">
+                      {['campo_vazio', 'erro_digitacao', 'formato_invalido'].map(tipo => {
+                        const count = analysisData.alertas.filter(a => a.tipo === tipo).length;
+                        if (count === 0) return null;
+                        return (
+                          <div key={tipo} className="flex justify-between">
+                            <span className="capitalize">{tipo.replace('_', ' ')}</span>
+                            <span className="font-bold">{count}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <div className="font-bold text-yellow-600">{analysisData.resumo.medios}</div>
-                    <div className="text-yellow-500">Médios</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-bold text-blue-600">{analysisData.resumo.baixos}</div>
-                    <div className="text-blue-500">Baixos</div>
-                  </div>
-                </div>
+                )}
               </div>
             )}
 
             {/* Lista de Erros */}
             {analysisData.erros.length > 0 && (
               <ErrorListCard erros={analysisData.erros} />
+            )}
+
+            {/* Lista de Alertas */}
+            {analysisData.alertas && analysisData.alertas.length > 0 && (
+              <AlertListCard alertas={analysisData.alertas} />
             )}
 
             {/* Validações Corretas */}
