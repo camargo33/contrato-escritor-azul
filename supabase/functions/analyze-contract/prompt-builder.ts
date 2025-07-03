@@ -2,7 +2,7 @@ export const buildContractAnalysisPrompt = (contractText: string): string => {
   return `# ANÁLISE DE CONTRATOS CIABRASNET
 
 ## INSTRUÇÃO PRINCIPAL
-Você é um especialista em análise de contratos da CIABRASNET. Analise o contrato fornecido e identifique erros seguindo EXATAMENTE o formato JSON especificado.
+Você é um especialista em análise de contratos da CIABRASNET. Analise o contrato fornecido e identifique TODOS os problemas, incluindo erros críticos, alertas de digitação e formatos inválidos. Use EXATAMENTE o formato JSON especificado.
 
 ## TABELA DE REFERÊNCIA OFICIAL DOS CONTRATOS
 
@@ -69,6 +69,31 @@ Você é um especialista em análise de contratos da CIABRASNET. Analise o contr
 
 **FÓRMULA**: Taxa de Rescisão = R$ 700,00 - Valor da Taxa de Instalação (se fidelidade marcada)
 
+## DETECÇÃO DE PROBLEMAS OBRIGATÓRIA
+
+### ERROS CRÍTICOS (Impedem funcionamento):
+- Valores do plano incorretos
+- Taxa de instalação com valores impossíveis (ex: R$ 2000,00 → R$ 200,00)
+- Tipo de contrato errado
+- Vigência incorreta
+- Cálculos de rescisão impossíveis (valores negativos)
+
+### ALERTAS DE DIGITAÇÃO (erro_digitacao):
+- "SOOLTEIRO" → "SOLTEIRO"
+- "Camarrgo" → "Camargo"
+- "SOLTERIO" → "SOLTEIRO"
+- "CASDO" → "CASADO"
+- Nomes com letras duplicadas ou faltando
+- Endereços com erros de grafia
+
+### ALERTAS DE FORMATO INVÁLIDO (formato_invalido):
+- CPF com dígitos extras: "137.158.269-677" (tem 12 dígitos)
+- CPF com dígitos faltando: "137.158.26-67" (tem 10 dígitos)
+- CNPJ com formato incorreto
+- Telefones mal formatados
+- CEP inválido
+- Emails mal formados
+
 ## FORMATO DE RESPOSTA OBRIGATÓRIO
 
 Retorne EXATAMENTE este formato JSON:
@@ -98,29 +123,49 @@ Retorne EXATAMENTE este formato JSON:
       "valor_esperado": "Valor correto esperado",
       "sugestao_correcao": "Como corrigir o erro",
       "localizacao": "Seção onde o erro foi encontrado",
-      "severidade": "critico|alto|medio|baixo"
+      "severidade": "critico|alto|medio|baixo",
+      "impacto": "Descrição do impacto do erro"
     }
   ],
-  "alertas": [],
+  "alertas": [
+    {
+      "tipo": "erro_digitacao|formato_invalido",
+      "campo": "Nome do campo com problema",
+      "valor_encontrado": "Valor com problema",
+      "sugestao": "Sugestão de correção"
+    }
+  ],
   "validacoes_corretas": [
     {
       "campo": "Nome do campo correto",
       "valor": "Valor encontrado",
-      "status": "✅ Correto"
+      "status": "✅ Correto conforme tabela|✅ Marcado corretamente|✅ Formato válido"
     }
   ],
+  "calculo_taxa_rescisao": {
+    "fidelidade_marcada": true,
+    "taxa_instalacao_encontrada": "R$ XXX,XX",
+    "taxa_instalacao_correta": "R$ XXX,XX", 
+    "calculo_incorreto": "Explicação do cálculo errado (se aplicável)",
+    "calculo_correto": "700 - XXX = R$ XXX,XX",
+    "observacao": "Observação sobre o cálculo"
+  },
   "resumo": {
     "total_erros": 0,
+    "total_alertas": 0,
     "criticos": 0,
     "altos": 0,
     "medios": 0,
     "baixos": 0,
-    "plano_identificado": "Nome do plano"
+    "plano_identificado": "Nome do plano",
+    "principais_problemas": [
+      "Lista dos principais problemas encontrados"
+    ]
   },
   "status_geral": "aprovado|reprovado",
   "observacoes": [
-    "Observação 1 sobre a análise",
-    "Observação 2 sobre a análise"
+    "Observação contextualizada sobre a análise",
+    "Sugestões de ações corretivas"
   ]
 }
 \`\`\`
@@ -128,24 +173,60 @@ Retorne EXATAMENTE este formato JSON:
 ## REGRAS CRÍTICAS
 
 1. **IDENTIFICAÇÃO**: Primeiro identifique qual dos 6 contratos está sendo analisado
-2. **COMPARAÇÃO**: Compare APENAS valores que são DIFERENTES - valores iguais vão para "validacoes_corretas"
-3. **ERROS**: Só inclua no array "erros" campos onde valor_encontrado ≠ valor_esperado
-4. **SEVERIDADE**: 
-   - critico: Valor do plano, tipo, vigência incorretos
-   - alto: IP fixo, taxa instalação incorretos  
-   - medio: Campos secundários
-   - baixo: Formatação menor
-5. **STATUS**: "aprovado" se erros = 0, "reprovado" se erros > 0
+2. **DETECÇÃO OBRIGATÓRIA**: SEMPRE procure por:
+   - Erros de digitação (SOOLTEIRO, Camarrgo, etc.)
+   - Formatos inválidos de CPF/CNPJ (dígitos extras ou faltando)
+   - Valores evidentemente incorretos (R$ 2000,00 ao invés de R$ 200,00)
+3. **CATEGORIZAÇÃO**: 
+   - **ERROS**: Valores incorretos que impedem funcionamento correto
+   - **ALERTAS**: Problemas de digitação e formato que precisam atenção
+   - **VALIDAÇÕES CORRETAS**: Campos que estão exatamente como esperado
+4. **SEVERIDADE DOS ERROS**: 
+   - **critico**: Valores que impossibilitam funcionamento (taxa negativa, plano errado)
+   - **alto**: Dados importantes incorretos (taxa instalação, IP fixo)
+   - **medio**: Campos secundários com valores errados
+   - **baixo**: Problemas menores de formatação
+5. **CÁLCULO RESCISÃO**: SEMPRE explicar:
+   - Se fidelidade está marcada (SIM/NÃO)
+   - Taxa de instalação encontrada vs. correta
+   - Cálculo incorreto (se aplicável) e por que está errado
+   - Cálculo correto usando a fórmula
+6. **STATUS FINAL**: 
+   - "reprovado" se há QUALQUER erro no array "erros"
+   - "aprovado" APENAS se array "erros" estiver vazio (alertas não reprovam)
 
-## PROCESSO DE ANÁLISE
+## PROCESSO DE ANÁLISE OBRIGATÓRIO
 
-1. Leia o contrato completo
-2. Identifique qual dos 6 modelos é baseado em valor/nome/características
-3. Compare cada campo com a tabela de referência
-4. Campos corretos → adicione em "validacoes_corretas"
-5. Campos incorretos → adicione em "erros"
-6. Calcule taxa de rescisão conforme tabela especial
-7. Gere resumo e observações
+1. **Leia o contrato completo** palavra por palavra
+2. **Identifique o modelo** baseado em valor/nome/características
+3. **Procure ATIVAMENTE por**:
+   - Erros de digitação em TODOS os campos (nome, endereço, estado civil)
+   - Formatos inválidos de documentos (CPF, CNPJ, telefone)
+   - Valores impossíveis ou claramente incorretos
+4. **Categorize TODOS os problemas encontrados**:
+   - Campos com valores incorretos → "erros"
+   - Problemas de digitação/formato → "alertas"
+   - Campos corretos → "validacoes_corretas"
+5. **Calcule taxa de rescisão** com explicação completa
+6. **Gere resumo detalhado** com principais problemas
+7. **Determine status final** baseado na presença de erros críticos
+
+## EXEMPLOS DE DETECÇÃO OBRIGATÓRIA
+
+### Erros de Digitação a Detectar:
+- "SOOLTEIRO" → alerta tipo "erro_digitacao"
+- "Camarrgo" → alerta tipo "erro_digitacao"  
+- "CASDO" → alerta tipo "erro_digitacao"
+- Qualquer nome com letras duplicadas suspeitas
+
+### Formatos Inválidos a Detectar:
+- CPF "137.158.269-677" → alerta tipo "formato_invalido" (12 dígitos)
+- CPF "137.158.26-67" → alerta tipo "formato_invalido" (10 dígitos)
+- Telefones sem código de área ou mal formatados
+
+### Valores Impossíveis a Detectar:
+- Taxa instalação "R$ 2000,00" quando deveria ser "R$ 200,00" → erro crítico
+- Qualquer valor monetário com zeros extras evidentes
 
 **Contrato para análise:**
 ${contractText}`;
