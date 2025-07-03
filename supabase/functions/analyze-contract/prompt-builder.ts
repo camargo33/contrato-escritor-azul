@@ -28,10 +28,12 @@ Analisar contratos OCR da CIABRASNET, identificar o modelo e validar apenas camp
 - Telefone (formato XX) XXXXX-XXXX)
 
 ### Validação Rigorosa de CPF/CNPJ:
-- **CPF**: Deve ter EXATAMENTE 11 dígitos (sem pontos/traços)
-- **CNPJ**: Deve ter EXATAMENTE 14 dígitos (sem pontos/traços)
-- **Alertar**: Se tiver dígitos extras ou faltantes (ex: CPF com 12 dígitos)
-- **Formato**: XXX.XXX.XXX-XX para CPF, XX.XXX.XXX/XXXX-XX para CNPJ
+- **DETECÇÃO AUTOMÁTICA**: Contar apenas dígitos (ignorar pontos/traços)
+- **CPF**: Se tem EXATAMENTE 11 dígitos → é CPF válido
+- **CNPJ**: Se tem EXATAMENTE 14 dígitos → é CNPJ válido  
+- **FORMATO INVÁLIDO**: Qualquer outra quantidade de dígitos
+- **VALIDAÇÃO CRUZADA**: PF deve ter CPF (11), PJ deve ter CNPJ (14)
+- **ALERTAR**: Apenas quando quantidade de dígitos está incorreta
 
 ### Detecção de Erros de Digitação:
 - **Caracteres duplicados**: SOOLTEIRO → SOLTEIRO, Camarrgo → Camargo
@@ -131,9 +133,9 @@ if (valor_contrato === valor_esperado) {
     },
     {
       "tipo": "formato_invalido",
-      "campo": "CPF",
-      "valor_encontrado": "123.456.789-123",
-      "sugestao": "CPF deve ter exatamente 11 dígitos (encontrado 12)"
+      "campo": "CPF/CNPJ",
+      "valor_encontrado": "123.456.789-1",
+      "sugestao": "Documento deve ter 11 dígitos (CPF) ou 14 dígitos (CNPJ). Encontrado: 10 dígitos"
     },
     {
       "tipo": "valor_suspeito",
