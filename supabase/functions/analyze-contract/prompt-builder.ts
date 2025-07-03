@@ -20,12 +20,10 @@ Analisar contratos OCR da CIABRASNET, identificar o modelo e validar apenas camp
 
 ## ETAPA 2: VALIDAÇÃO DE CAMPOS
 
-### Campos Obrigatórios (Alertas se vazios):
-- Nome completo
-- CPF/CNPJ (consistência PF=CPF, PJ=CNPJ)
+### Campos de Validação de Formato:
+- CPF/CNPJ (validação rigorosa de dígitos)
 - Email (verificar erros de digitação)
-- Endereço completo
-- Telefone (formato XX) XXXXX-XXXX)
+- Telefone (formato brasileiro obrigatório)
 
 ### Validação Rigorosa de CPF/CNPJ:
 - **DETECÇÃO AUTOMÁTICA**: Contar apenas dígitos (ignorar pontos/traços)
@@ -34,6 +32,14 @@ Analisar contratos OCR da CIABRASNET, identificar o modelo e validar apenas camp
 - **FORMATO INVÁLIDO**: Qualquer outra quantidade de dígitos
 - **VALIDAÇÃO CRUZADA**: PF deve ter CPF (11), PJ deve ter CNPJ (14)
 - **ALERTAR**: Apenas quando quantidade de dígitos está incorreta
+
+### Validação Rigorosa de Telefone:
+- **FORMATO BRASILEIRO**: (XX) XXXXX-XXXX (11 dígitos) ou (XX) XXXX-XXXX (10 dígitos)
+- **CONTAR DÍGITOS**: Ignorar parênteses, espaços e traços
+- **VALIDAR DDD**: Primeiros dois dígitos devem ser DDD válido (11-99)
+- **ALERTAR**: Se não tiver 10 ou 11 dígitos ou formato incorreto
+- **EXEMPLOS VÁLIDOS**: (11) 99999-9999, (21) 3333-4444
+- **EXEMPLOS INVÁLIDOS**: 11999999999 (sem formatação), (11) 999-9999 (poucos dígitos)
 
 ### Detecção de Erros de Digitação:
 - **Caracteres duplicados**: SOOLTEIRO → SOLTEIRO, Camarrgo → Camargo
@@ -118,13 +124,7 @@ if (valor_contrato === valor_esperado) {
     }
   ],
   "alertas": [
-    // Campos em branco ou problemas menores aqui
-    {
-      "tipo": "campo_vazio",
-      "campo": "Nome",
-      "valor_encontrado": "",
-      "sugestao": "Campo 'Nome' está em branco"
-    },
+    // APENAS problemas de formato e digitação (NÃO campos vazios)
     {
       "tipo": "erro_digitacao",
       "campo": "Estado Civil",
@@ -133,9 +133,15 @@ if (valor_contrato === valor_esperado) {
     },
     {
       "tipo": "formato_invalido",
-      "campo": "CPF/CNPJ",
+      "campo": "CPF",
       "valor_encontrado": "123.456.789-1",
-      "sugestao": "Documento deve ter 11 dígitos (CPF) ou 14 dígitos (CNPJ). Encontrado: 10 dígitos"
+      "sugestao": "CPF deve ter exatamente 11 dígitos. Encontrado: 10 dígitos"
+    },
+    {
+      "tipo": "formato_invalido",
+      "campo": "Telefone",
+      "valor_encontrado": "11999999999",
+      "sugestao": "Telefone deve estar no formato (XX) XXXXX-XXXX ou (XX) XXXX-XXXX"
     },
     {
       "tipo": "valor_suspeito",
@@ -168,9 +174,11 @@ if (valor_contrato === valor_esperado) {
 1. **IDENTIFIQUE primeiro** o modelo baseado no valor
 2. **COMPARE exatamente** valores encontrados vs esperados
 3. **NÃO reporte** valores iguais como erro
-4. **INCLUA alertas** para campos em branco e erros de digitação
-5. **USE cálculo simples** para taxa de rescisão
-6. **ARRAY VAZIO []** quando todos valores corretos
+4. **INCLUA alertas** APENAS para erros de formato e digitação (NÃO campos vazios)
+5. **VALIDE CPF/CNPJ** contando dígitos exatos (11 ou 14)
+6. **VALIDE TELEFONE** formato brasileiro com DDD
+7. **USE cálculo simples** para taxa de rescisão
+8. **ARRAY VAZIO []** quando todos valores corretos
 
 **LEMBRE-SE**: Valores idênticos = ACERTO = Não reportar
 
