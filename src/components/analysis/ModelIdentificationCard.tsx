@@ -62,8 +62,8 @@ const ModelIdentificationCard = ({ modelo }: ModelIdentificationCardProps) => {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
             {Object.entries(modelo.caracteristicas_esperadas).map(([key, value]) => (
               <div key={key} className="flex flex-col">
-                <span className="font-medium text-gray-700">{key ? key.replace('_', ' ').toUpperCase() : 'CAMPO'}:</span>
-                <span className="text-gray-600">{value || 'Não informado'}</span>
+                <span className="font-medium text-gray-700">{key.replace('_', ' ').toUpperCase()}:</span>
+                <span className="text-gray-600">{value}</span>
               </div>
             ))}
           </div>

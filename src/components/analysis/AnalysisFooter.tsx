@@ -16,7 +16,7 @@ const AnalysisFooter = ({ statusGeral, errorCount, onNewAnalysis }: AnalysisFoot
           (statusGeral === 'aprovado' || errorCount === 0) ? 'text-green-600' : 'text-slate-600'
         }`}>
           Status: {statusGeral ? 
-            (typeof statusGeral === 'string' ? statusGeral.replace('_', ' ') : statusGeral) : 
+            statusGeral.replace('_', ' ') : 
             (errorCount === 0 ? 'Aprovado' : 'Análise concluída')
           }
         </div>

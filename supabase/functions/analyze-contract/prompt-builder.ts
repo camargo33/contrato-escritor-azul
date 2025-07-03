@@ -1,143 +1,151 @@
 export const buildContractAnalysisPrompt = (contractText: string): string => {
-  return `# VALIDADOR DE CONTRATOS CIABRASNET
+  return `# ANÁLISE DE CONTRATOS CIABRASNET
 
-## OBJETIVO
-Analisar contratos OCR da CIABRASNET, identificar o modelo e validar apenas campos com DIVERGÊNCIAS REAIS.
+## INSTRUÇÃO PRINCIPAL
+Você é um especialista em análise de contratos da CIABRASNET. Analise o contrato fornecido e identifique erros seguindo EXATAMENTE o formato JSON especificado.
 
-## ETAPA 1: IDENTIFICAÇÃO DO MODELO
+## TABELA DE REFERÊNCIA OFICIAL DOS CONTRATOS
 
-### Modelos Disponíveis:
-1. **2024 Combo 600Mbps** - R$ 129,99 - RESIDENCIAL - 12 meses - Taxa: R$ 200,00
-2. **1 Gb Empresarial** - R$ 229,90 - CORPORATIVO - 24 meses - Taxa: GRATUITA - IP: INCLUSO
-3. **2024 Combo Giga** - R$ 209,99 - RESIDENCIAL - 12 meses - Taxa: GRATUITA  
-4. **2024 Combo 300Mbps** - R$ 109,99 - RESIDENCIAL - 12 meses - Taxa: R$ 200,00
-5. **2024 Combo 800Mbps** - R$ 159,99 - RESIDENCIAL - 12 meses - Taxa: GRATUITA
+### CONTRATO 1 - 1 Gb Empresarial
+- **VALOR**: R$ 229,90
+- **TIPO**: CORPORATIVO
+- **VIGÊNCIA**: 24 meses
+- **TAXA INSTALAÇÃO**: GRATUITA
+- **IP FIXO**: INCLUSO
+- **RESCISÃO**: R$ 700,00
 
-### Critérios de Identificação:
-- **Valor do plano** (mais confiável)
-- **Nome do plano** no texto
-- **Velocidade mencionada**
+### CONTRATO 2 - 2024 Combo Giga
+- **VALOR**: R$ 209,99
+- **TIPO**: RESIDENCIAL
+- **VIGÊNCIA**: 12 meses
+- **TAXA INSTALAÇÃO**: R$ 200,00
+- **IP FIXO**: Variável (R$ 50,00 se fixo)
+- **RESCISÃO**: R$ 500,00
 
-## ETAPA 2: VALIDAÇÃO DE CAMPOS
+### CONTRATO 3 - 2024 Combo 300Mbps
+- **VALOR**: R$ 109,99
+- **TIPO**: RESIDENCIAL
+- **VIGÊNCIA**: 12 meses
+- **TAXA INSTALAÇÃO**: R$ 200,00
+- **IP FIXO**: Variável (R$ 50,00 se fixo)
+- **RESCISÃO**: R$ 500,00
 
-### Campos Obrigatórios (Alertas se vazios):
-- Nome completo
-- CPF/CNPJ (consistência PF=CPF, PJ=CNPJ + **VALIDAR FORMATO**)
-- Email (verificar erros de digitação)
-- Endereço completo
-- Telefone (formato XX) XXXXX-XXXX)
+### CONTRATO 4 - 2025 Combo 500 Megas (MATRIZ)
+- **VALOR**: R$ 119,99
+- **TIPO**: RESIDENCIAL
+- **VIGÊNCIA**: 12 meses
+- **TAXA INSTALAÇÃO**: R$ 200,00
+- **IP FIXO**: Variável (R$ 50,00 se fixo)
+- **RESCISÃO**: R$ 500,00
 
-### Validações Críticas de Formato:
-- **CPF INVÁLIDO**: CPF deve ter EXATAMENTE 11 dígitos (XXX.XXX.XXX-XX)
-- **ERROS DE DIGITAÇÃO**: Verificar campos como "SOOLTEIRO" → "SOLTEIRO", "Camarrgo" → "Camargo"
-- **TAXA DE INSTALAÇÃO**: Verificar se valor está correto (ex: R$ 2000,00 quando deveria ser R$ 200,00)
+### CONTRATO 5 - 2024 Combo 600Mbps
+- **VALOR**: R$ 129,99
+- **TIPO**: RESIDENCIAL
+- **VIGÊNCIA**: 12 meses
+- **TAXA INSTALAÇÃO**: R$ 200,00
+- **IP FIXO**: Variável (R$ 50,00 se fixo)
+- **RESCISÃO**: R$ 500,00
 
-### Campos de Validação (Erros se diferentes):
-- **Valor do plano** (deve ser exato da tabela)
-- **Prazo vigência** (CORPORATIVO=24 meses, RESIDENCIAL=12 meses)
-- **Tipo do plano** (apenas "1 Gb Empresarial" é CORPORATIVO)
-- **Taxa instalação** (conforme tabela)
-- **Taxa rescisão** (usar cálculo de fidelidade)
-- **IP Fixo** (INCLUSO só no empresarial, outros=Variável R$ 50,00)
+### CONTRATO 6 - 2024 Combo 800Mbps
+- **VALOR**: R$ 159,99
+- **TIPO**: RESIDENCIAL
+- **VIGÊNCIA**: 12 meses
+- **TAXA INSTALAÇÃO**: R$ 200,00
+- **IP FIXO**: Variável (R$ 50,00 se fixo)
+- **RESCISÃO**: R$ 500,00
 
-## ETAPA 3: CÁLCULO TAXA DE RESCISÃO
+## TAXA DE RESCISÃO - REGRA ESPECIAL
 
-### Regra Correta:
-\`\`\`
-1. Procurar "DA OPÇÃO DE FIDELIDADE" com "SIM (X)"
-2. SE fidelidade marcada:
-   - Procurar o DESCONTO da fidelidade (ex: "R$ 580,00 da Taxa de Instalação")
-   - Taxa rescisão ESPERADA = R$ 700,00 - desconto_fidelidade
-   - Exemplo: R$ 700 - R$ 580 = R$ 120,00
-3. SE fidelidade NÃO marcada:
-   - Taxa rescisão ESPERADA = R$ 700,00
-4. COMPARAR taxa encontrada no contrato com taxa ESPERADA calculada
-5. SÓ reportar erro se valores forem diferentes
-\`\`\`
+┌─────────────────────────┬───────────┬─────────────────────────────┐
+│ Valor Taxa de Instalação│ Fidelidade│ Taxa de Rescisão Calculada  │
+├─────────────────────────┼───────────┼─────────────────────────────┤
+│ R$ 0,00 (gratuita)     │ Sim       │ R$ 700,00                   │
+│ R$ 120,00              │ Sim       │ R$ 580,00                   │
+│ R$ 150,00              │ Sim       │ R$ 550,00                   │
+│ R$ 200,00              │ Sim       │ R$ 500,00                   │
+│ R$ 300,00              │ Sim       │ R$ 400,00                   │
+│ Qualquer valor         │ Não       │ R$ 700,00                   │
+└─────────────────────────┴───────────┴─────────────────────────────┘
 
-### Exemplos Corretos:
-- Fidelidade SIM + Desconto R$ 580,00 → Rescisão ESPERADA = R$ 700 - R$ 580 = R$ 120,00
-- Se contrato mostra R$ 120,00 → ✅ CORRETO (não reportar)
-- Se contrato mostra R$ 500,00 → ❌ ERRO (reportar)
+**FÓRMULA**: Taxa de Rescisão = R$ 700,00 - Valor da Taxa de Instalação (se fidelidade marcada)
 
-- Fidelidade SIM + Desconto R$ 200,00 → Rescisão ESPERADA = R$ 700 - R$ 200 = R$ 500,00  
-- Se contrato mostra R$ 500,00 → ✅ CORRETO (não reportar)
+## FORMATO DE RESPOSTA OBRIGATÓRIO
 
-- Fidelidade SIM + Desconto GRATUITO → Rescisão ESPERADA = R$ 700,00
-- Fidelidade NÃO → Rescisão ESPERADA = R$ 700,00
-
-## ETAPA 4: EXEMPLOS DE ERROS CRÍTICOS QUE DEVEM SER DETECTADOS
-
-### ⚠️ ERROS OBRIGATÓRIOS A DETECTAR:
-1. **CPF com formato inválido**: "137.158.269-677" (12 dígitos) → ERRO
-2. **Erros de digitação óbvios**: "SOOLTEIRO" → "SOLTEIRO", "Camarrgo" → "Camargo"
-3. **Taxa de instalação incorreta**: R$ 2000,00 quando deveria ser R$ 200,00
-4. **Campos obrigatórios em branco ou com erro**
-
-### ⚠️ IMPORTANTE - VALIDAÇÃO DE CPF:
-- CPF deve ter EXATAMENTE 11 dígitos: XXX.XXX.XXX-XX
-- Se encontrar CPF com mais ou menos dígitos, É ERRO CRÍTICO
-- Exemplo: "137.158.269-677" tem 12 dígitos → REPORTAR COMO ERRO
-
-## ETAPA 5: REGRA CRÍTICA
-
-**⚠️ SÓ REPORTAR COMO ERRO SE VALORES FOREM DIFERENTES**
-
-\`\`\`javascript
-// ALGORITMO DE VALIDAÇÃO
-valor_contrato = extrair_do_contrato()
-valor_esperado = buscar_na_tabela()
-
-if (valor_contrato === valor_esperado) {
-    // NÃO É ERRO - NÃO INCLUIR NO RESULTADO
-} else {
-    // É ERRO REAL - INCLUIR NO ARRAY DE ERROS
-}
-\`\`\`
-
-## FORMATO DE RESPOSTA
+Retorne EXATAMENTE este formato JSON:
 
 \`\`\`json
 {
   "modelo_identificado": {
-    "nome": "2024 Combo 600Mbps",
-    "confianca": 95
+    "nome": "Nome do plano identificado",
+    "confianca": 100,
+    "criterios_identificacao": [
+      "Critério 1 usado para identificação",
+      "Critério 2 usado para identificação"
+    ],
+    "caracteristicas_esperadas": {
+      "valor": "R$ XXX,XX",
+      "tipo": "CORPORATIVO|RESIDENCIAL",
+      "vigencia": "XX meses",
+      "taxa_instalacao": "GRATUITA|R$ XXX,XX",
+      "ip_fixo": "INCLUSO|Variável (R$ 50,00 se fixo)",
+      "rescisao": "R$ XXX,XX"
+    }
   },
   "erros": [
-    // APENAS divergências reais aqui
     {
-      "campo": "Valor do Plano",
-      "valor_encontrado": "R$ 120,00",
-      "valor_esperado": "R$ 129,99",
-      "sugestao_correcao": "Corrigir valor para R$ 129,99"
+      "campo": "Nome do campo com erro",
+      "valor_encontrado": "Valor atual no contrato",
+      "valor_esperado": "Valor correto esperado",
+      "sugestao_correcao": "Como corrigir o erro",
+      "localizacao": "Seção onde o erro foi encontrado",
+      "severidade": "critico|alto|medio|baixo"
     }
   ],
-  "alertas": [
-    // Campos em branco aqui
-    "Campo 'Nome' está em branco"
+  "alertas": [],
+  "validacoes_corretas": [
+    {
+      "campo": "Nome do campo correto",
+      "valor": "Valor encontrado",
+      "status": "✅ Correto"
+    }
   ],
-  "status": "aprovado|reprovado"
+  "resumo": {
+    "total_erros": 0,
+    "criticos": 0,
+    "altos": 0,
+    "medios": 0,
+    "baixos": 0,
+    "plano_identificado": "Nome do plano"
+  },
+  "status_geral": "aprovado|reprovado",
+  "observacoes": [
+    "Observação 1 sobre a análise",
+    "Observação 2 sobre a análise"
+  ]
 }
 \`\`\`
 
-## INSTRUÇÕES FINAIS
+## REGRAS CRÍTICAS
 
-1. **IDENTIFIQUE primeiro** o modelo baseado no valor
-2. **VALIDE OBRIGATORIAMENTE**:
-   - CPF deve ter 11 dígitos (se tiver 12 ou mais, É ERRO)
-   - Erros de digitação óbvios (SOOLTEIRO, Camarrgo, etc.)
-   - Taxa de instalação correta (R$ 2000,00 ≠ R$ 200,00)
-3. **COMPARE exatamente** valores encontrados vs esperados
-4. **NÃO reporte** valores iguais como erro
-5. **INCLUA alertas** para campos em branco
-6. **USE cálculo simples** para taxa de rescisão
-7. **SE ENCONTRAR QUALQUER ERRO** → status = "reprovado"
+1. **IDENTIFICAÇÃO**: Primeiro identifique qual dos 6 contratos está sendo analisado
+2. **COMPARAÇÃO**: Compare APENAS valores que são DIFERENTES - valores iguais vão para "validacoes_corretas"
+3. **ERROS**: Só inclua no array "erros" campos onde valor_encontrado ≠ valor_esperado
+4. **SEVERIDADE**: 
+   - critico: Valor do plano, tipo, vigência incorretos
+   - alto: IP fixo, taxa instalação incorretos  
+   - medio: Campos secundários
+   - baixo: Formatação menor
+5. **STATUS**: "aprovado" se erros = 0, "reprovado" se erros > 0
 
-**CRÍTICO**: Antes de marcar como "aprovado", verifique se NÃO HÁ:
-- CPF com formato inválido
-- Erros de digitação
-- Valores incorretos de taxa
-- Se há QUALQUER erro → status = "reprovado"
+## PROCESSO DE ANÁLISE
+
+1. Leia o contrato completo
+2. Identifique qual dos 6 modelos é baseado em valor/nome/características
+3. Compare cada campo com a tabela de referência
+4. Campos corretos → adicione em "validacoes_corretas"
+5. Campos incorretos → adicione em "erros"
+6. Calcule taxa de rescisão conforme tabela especial
+7. Gere resumo e observações
 
 **Contrato para análise:**
 ${contractText}`;

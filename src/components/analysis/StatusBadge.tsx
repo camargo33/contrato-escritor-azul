@@ -28,7 +28,7 @@ const StatusBadge = ({ status }: StatusBadgeProps) => {
         ) : (
           <AlertCircle className="h-5 w-5" />
         )}
-        Status: {status ? (typeof status === 'string' ? status.replace('_', ' ').toUpperCase() : status) : 'PROCESSANDO'}
+        Status: {status.replace('_', ' ').toUpperCase()}
       </div>
     </div>
   );

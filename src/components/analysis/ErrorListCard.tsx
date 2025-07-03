@@ -28,7 +28,6 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
     
     // Normalizar valores monetários para comparação
     const normalizeMoney = (value: string) => {
-      if (!value || typeof value !== 'string') return '';
       return value.replace(/[R$\s]/g, '').replace(',', '.');
     };
     
@@ -43,7 +42,6 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
     
     // Normalizar texto (maiúsculas, espaços)
     const normalizeText = (text: string) => {
-      if (!text || typeof text !== 'string') return '';
       return text.toLowerCase().replace(/\s+/g, ' ').trim();
     };
     
