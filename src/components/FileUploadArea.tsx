@@ -8,10 +8,9 @@ interface FileUploadAreaProps {
   uploadState: UploadState;
   setUploadState: React.Dispatch<React.SetStateAction<UploadState>>;
   onReset: () => void;
-  onAnalyze?: () => void;
 }
 
-const FileUploadArea = ({ uploadState, setUploadState, onReset, onAnalyze }: FileUploadAreaProps) => {
+const FileUploadArea = ({ uploadState, setUploadState, onReset }: FileUploadAreaProps) => {
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -23,14 +22,14 @@ const FileUploadArea = ({ uploadState, setUploadState, onReset, onAnalyze }: Fil
     
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
-      processFile(files[0], setUploadState, onAnalyze);
+      processFile(files[0], setUploadState);
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      processFile(files[0], setUploadState, onAnalyze);
+      processFile(files[0], setUploadState);
     }
   };
 

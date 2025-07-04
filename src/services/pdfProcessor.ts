@@ -84,8 +84,7 @@ export const extractTextFromPDF = async (file: File): Promise<string> => {
 
 export const processFile = async (
   file: File,
-  setUploadState: React.Dispatch<React.SetStateAction<any>>,
-  onAnalyzeCallback?: () => void
+  setUploadState: React.Dispatch<React.SetStateAction<any>>
 ) => {
   const validationError = validateFile(file);
   if (validationError) {
@@ -128,17 +127,6 @@ export const processFile = async (
       }));
       
       toast.success("PDF processado com sucesso!");
-      
-      // Chamar análise automática se callback foi fornecido
-      if (onAnalyzeCallback) {
-        console.log("Iniciando análise automática em 500ms...");
-        setTimeout(() => {
-          console.log("Executando callback de análise automática");
-          onAnalyzeCallback();
-        }, 500); // Pequeno delay para melhor UX
-      } else {
-        console.log("Callback de análise não fornecido");
-      }
     }
   } catch (error: any) {
     console.error("Erro ao processar PDF:", error);

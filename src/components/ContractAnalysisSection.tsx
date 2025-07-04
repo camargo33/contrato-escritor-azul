@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, Zap } from "lucide-react";
@@ -19,6 +19,22 @@ import { useContractUpload } from '@/hooks/useContractUpload';
 const ContractAnalysisSection = () => {
   const { uploadState, setUploadState, resetUpload, handleNewAnalysis } = useContractUpload();
   const queryClient = useQueryClient();
+
+  // Monitorar quando arquivo está pronto para análise automática
+  useEffect(() => {
+    if (uploadState.file && uploadState.fullText && !uploadState.isAnalyzing && !uploadState.analysisResult && !uploadState.error) {
+      console.log("Arquivo pronto para análise automática:", {
+        hasFile: !!uploadState.file,
+        hasText: !!uploadState.fullText,
+        textLength: uploadState.fullText?.length || 0
+      });
+      
+      // Pequeno delay para garantir que o estado foi atualizado
+      setTimeout(() => {
+        handleAnalyze();
+      }, 100);
+    }
+  }, [uploadState.file, uploadState.fullText, uploadState.isAnalyzing, uploadState.analysisResult, uploadState.error]);
 
   const handleAnalyze = async () => {
     if (!uploadState.file || !uploadState.fullText) {
@@ -110,7 +126,6 @@ const ContractAnalysisSection = () => {
             uploadState={uploadState}
             setUploadState={setUploadState}
             onReset={resetUpload}
-            onAnalyze={handleAnalyze}
           />
         </div>
 
