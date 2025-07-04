@@ -29,7 +29,7 @@ const ApiKeyStatus = ({ className }: ApiKeyStatusProps) => {
     <div className={className}>
       <div className="flex items-center gap-2">
         {hasApiKey ? (
-          <Badge variant="default" className="bg-success text-white flex items-center gap-2">
+          <Badge variant="default" className="bg-green-500 text-white flex items-center gap-2">
             <CheckCircle className="h-3 w-3" />
             API Configurada
           </Badge>
