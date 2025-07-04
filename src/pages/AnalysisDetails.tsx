@@ -115,10 +115,19 @@ const AnalysisDetails = () => {
       <div className="p-6">
         <div className="max-w-4xl mx-auto">
           <AnalysisReport
-            content={typeof analysis.analysis_content === 'object' 
-              ? JSON.stringify(analysis.analysis_content, null, 2)
-              : String(analysis.analysis_content || '')
-            }
+            content={(() => {
+              // Se analysis_content é um objeto com raw_content, extrair o raw_content
+              if (typeof analysis.analysis_content === 'object' && analysis.analysis_content !== null) {
+                const contentObj = analysis.analysis_content as any;
+                if (contentObj.raw_content) {
+                  return String(contentObj.raw_content);
+                }
+                // Se é um objeto mas não tem raw_content, stringify
+                return JSON.stringify(analysis.analysis_content, null, 2);
+              }
+              // Se é string, usar direto
+              return String(analysis.analysis_content || '');
+            })()}
             timestamp={analysis.analysis_timestamp}
             filename={analysis.analyzed_filename}
             onNewAnalysis={() => navigate('/analise')}

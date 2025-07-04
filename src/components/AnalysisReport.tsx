@@ -108,8 +108,19 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
     console.log("Content length:", content?.length);
     
     try {
-      // Tenta extrair JSON da resposta
-      const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || content.match(/\{[\s\S]*\}/);
+      // Primeiro, tenta extrair JSON de blocos markdown
+      let jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
+      
+      if (!jsonMatch) {
+        // Se não encontrou markdown, tenta encontrar JSON diretamente
+        jsonMatch = content.match(/\{[\s\S]*\}/);
+      }
+      
+      if (!jsonMatch) {
+        // Tenta limpar caracteres de escape e procurar novamente
+        const cleanContent = content.replace(/\\"/g, '"').replace(/\\n/g, '\n');
+        jsonMatch = cleanContent.match(/```json\s*([\s\S]*?)\s*```/) || cleanContent.match(/\{[\s\S]*\}/);
+      }
       
       console.log("JSON match encontrado:", !!jsonMatch);
       
@@ -117,36 +128,74 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
         const jsonStr = jsonMatch[1] || jsonMatch[0];
         console.log("JSON string extraída:", jsonStr);
         
-        const analysisData = JSON.parse(jsonStr) as AnalysisData;
-        console.log("Análise parseada com sucesso:", analysisData);
-        
-        // Filtrar apenas erros reais
-        const errosReais = analysisData.erros.filter(isRealError);
-        
-        // Recalcular estatísticas baseadas nos erros reais
-        const resumoAtualizado = {
-          ...analysisData.resumo,
-          total_erros: errosReais.length,
-        };
+        // Tenta limpar caracteres de escape se necessário
+        let cleanJsonStr = jsonStr;
+        try {
+          const analysisData = JSON.parse(cleanJsonStr) as AnalysisData;
+          console.log("Análise parseada com sucesso:", analysisData);
+          
+          // Filtrar apenas erros reais
+          const errosReais = analysisData.erros.filter(isRealError);
+          
+          // Recalcular estatísticas baseadas nos erros reais
+          const resumoAtualizado = {
+            ...analysisData.resumo,
+            total_erros: errosReais.length,
+          };
 
-        // Atualizar status baseado nos erros reais
-        let statusAtualizado = analysisData.status_geral;
-        if (errosReais.length === 0) {
-          statusAtualizado = 'aprovado';
-        } else {
-          statusAtualizado = 'reprovado';
+          // Atualizar status baseado nos erros reais
+          let statusAtualizado = analysisData.status_geral;
+          if (errosReais.length === 0) {
+            statusAtualizado = 'aprovado';
+          } else {
+            statusAtualizado = 'reprovado';
+          }
+          
+          return {
+            analysisData: {
+              ...analysisData,
+              erros: errosReais,
+              resumo: resumoAtualizado,
+              status_geral: statusAtualizado
+            },
+            errorCount: errosReais.length,
+            fullContent: content
+          };
+        } catch (parseError) {
+          console.log("Erro no primeiro parse, tentando limpar caracteres de escape:", parseError);
+          // Tenta limpar caracteres de escape e parsear novamente
+          cleanJsonStr = jsonStr.replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
+          const analysisData = JSON.parse(cleanJsonStr) as AnalysisData;
+          console.log("Análise parseada com sucesso após limpeza:", analysisData);
+          
+          // Filtrar apenas erros reais
+          const errosReais = analysisData.erros.filter(isRealError);
+          
+          // Recalcular estatísticas baseadas nos erros reais
+          const resumoAtualizado = {
+            ...analysisData.resumo,
+            total_erros: errosReais.length,
+          };
+
+          // Atualizar status baseado nos erros reais
+          let statusAtualizado = analysisData.status_geral;
+          if (errosReais.length === 0) {
+            statusAtualizado = 'aprovado';
+          } else {
+            statusAtualizado = 'reprovado';
+          }
+          
+          return {
+            analysisData: {
+              ...analysisData,
+              erros: errosReais,
+              resumo: resumoAtualizado,
+              status_geral: statusAtualizado
+            },
+            errorCount: errosReais.length,
+            fullContent: content
+          };
         }
-        
-        return {
-          analysisData: {
-            ...analysisData,
-            erros: errosReais,
-            resumo: resumoAtualizado,
-            status_geral: statusAtualizado
-          },
-          errorCount: errosReais.length,
-          fullContent: content
-        };
       }
     } catch (error) {
       console.log("Erro ao parsear JSON, usando método de fallback:", error);
