@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 const Reports = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPeriod, setFilterPeriod] = useState("all");
+  const navigate = useNavigate();
 
   // Buscar histórico completo de análises
   const { data: analysisHistory, isLoading } = useQuery({
@@ -236,7 +238,11 @@ const Reports = () => {
               </TableHeader>
               <TableBody>
                 {filteredData.map((item) => (
-                  <TableRow key={item.id}>
+                  <TableRow 
+                    key={item.id}
+                    className="cursor-pointer hover:bg-muted/80 transition-colors"
+                    onClick={() => navigate(`/relatorios/analise/${item.id}`)}
+                  >
                     <TableCell className="font-medium">
                       {item.analyzed_filename}
                     </TableCell>

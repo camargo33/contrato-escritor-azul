@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import ContractAnalysis from "./pages/ContractAnalysis";
 import BaseContracts from "./pages/BaseContracts";
 import Reports from "./pages/Reports";
+import AnalysisDetails from "./pages/AnalysisDetails";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./components/auth/AuthPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -72,6 +73,13 @@ const App = () => (
               <ProtectedRoute>
                 <AppLayout>
                   <Reports />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/relatorios/analise/:id" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <AnalysisDetails />
                 </AppLayout>
               </ProtectedRoute>
             } />
