@@ -67,7 +67,7 @@ const ContractAnalysisSection = () => {
   };
 
   const handleNewAnalysisWithRefresh = () => {
-    handleNewAnalysis();
+    resetUpload(); // Usar resetUpload completo ao invés de handleNewAnalysis
     // Invalidar queries novamente para garantir dados atualizados
     queryClient.invalidateQueries({ queryKey: ['analysis-history'] });
     queryClient.invalidateQueries({ queryKey: ['analysis-reports'] });
@@ -102,6 +102,7 @@ const ContractAnalysisSection = () => {
             uploadState={uploadState}
             setUploadState={setUploadState}
             onReset={resetUpload}
+            onAnalyze={handleAnalyze}
           />
         </div>
 
@@ -124,13 +125,7 @@ const ContractAnalysisSection = () => {
           </div>
         )}
 
-        {/* Botão de Análise */}
-        <div className="stagger-item">
-          <AnalyzeButton
-            uploadState={uploadState}
-            onClick={handleAnalyze}
-          />
-        </div>
+        {/* Botão de Análise - Oculto pois análise é automática */}
 
         {/* Resultado da Análise */}
         {uploadState.analysisResult && uploadState.analysisResult.success && (

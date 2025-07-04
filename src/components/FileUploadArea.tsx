@@ -8,9 +8,10 @@ interface FileUploadAreaProps {
   uploadState: UploadState;
   setUploadState: React.Dispatch<React.SetStateAction<UploadState>>;
   onReset: () => void;
+  onAnalyze?: () => void;
 }
 
-const FileUploadArea = ({ uploadState, setUploadState, onReset }: FileUploadAreaProps) => {
+const FileUploadArea = ({ uploadState, setUploadState, onReset, onAnalyze }: FileUploadAreaProps) => {
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -22,14 +23,14 @@ const FileUploadArea = ({ uploadState, setUploadState, onReset }: FileUploadArea
     
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
-      processFile(files[0], setUploadState);
+      processFile(files[0], setUploadState, onAnalyze);
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      processFile(files[0], setUploadState);
+      processFile(files[0], setUploadState, onAnalyze);
     }
   };
 
@@ -52,6 +53,11 @@ const FileUploadArea = ({ uploadState, setUploadState, onReset }: FileUploadArea
         <>
           <Loader2 className="h-12 w-12 text-blue-500 mx-auto mb-4 animate-spin" />
           <p className="text-blue-600 mb-2">Extraindo texto do PDF...</p>
+        </>
+      ) : uploadState.isAnalyzing ? (
+        <>
+          <Loader2 className="h-12 w-12 text-orange-500 mx-auto mb-4 animate-spin" />
+          <p className="text-orange-600 mb-2">Analisando automaticamente...</p>
         </>
       ) : uploadState.file ? (
         <>
