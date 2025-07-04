@@ -60,6 +60,12 @@ Analisar contratos OCR da CIABRASNET, identificar o modelo e validar apenas camp
 - **Taxa rescisão** (usar cálculo de fidelidade)
 - **IP Fixo** (INCLUSO só no empresarial, outros=Variável R$ 50,00)
 
+### Validação Específica de IP Fixo:
+- **SE opção "Fixo" estiver marcada**: Valor deve ser R$ 50,00
+- **SE opção "Variável" estiver marcada**: Valor deve ser R$ 0,00
+- **EMPRESARIAL**: IP Fixo INCLUSO (não cobra taxa adicional)
+- **RESIDENCIAL**: IP Fixo opcional com taxa de R$ 50,00
+
 ## ETAPA 3: CÁLCULO TAXA DE RESCISÃO
 
 ### Regra Simples:
