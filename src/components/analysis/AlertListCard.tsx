@@ -12,8 +12,69 @@ interface AlertListCardProps {
 }
 
 const AlertListCard = ({ alertas }: AlertListCardProps) => {
-  if (!alertas || alertas.length === 0) {
-    return null;
+  // Função para verificar se é realmente um alerta válido
+  const isValidAlert = (alerta: AlertItem): boolean => {
+    const valorEncontrado = alerta.valor_encontrado?.trim() || '';
+    const campo = alerta.campo?.toLowerCase() || '';
+    
+    // Se o campo está preenchido corretamente, não é um alerta real
+    if (campo.includes('nome') && valorEncontrado && valorEncontrado !== '(vazio)') {
+      return false;
+    }
+    
+    // Telefone no formato correto não é alerta
+    if (campo.includes('telefone') || campo.includes('celular')) {
+      const telefoneRegex = /^\(\d{2}\)\s?\d{4,5}-?\d{4}$/;
+      if (telefoneRegex.test(valorEncontrado.replace(/\s/g, ''))) {
+        return false;
+      }
+    }
+    
+    // CPF no formato correto não é alerta
+    if (campo.includes('cpf')) {
+      const cpfRegex = /^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/;
+      if (cpfRegex.test(valorEncontrado.replace(/\s/g, ''))) {
+        return false;
+      }
+    }
+    
+    // E-mail válido não é alerta
+    if (campo.includes('email') || campo.includes('e-mail')) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (emailRegex.test(valorEncontrado)) {
+        return false;
+      }
+    }
+    
+    // Outros campos: se não estão vazios e não são suspeitos, não são alertas
+    if (valorEncontrado && valorEncontrado !== '(vazio)' && alerta.tipo === 'campo_vazio') {
+      return false;
+    }
+    
+    return true;
+  };
+
+  // Filtrar apenas alertas reais
+  const alertasReais = alertas?.filter(isValidAlert) || [];
+
+  if (alertasReais.length === 0) {
+    return (
+      <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+            <span className="text-white text-lg">✓</span>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-green-800">
+              Nenhum alerta foi detectado
+            </h3>
+            <p className="text-green-600 text-sm">
+              Todos os campos estão dentro do padrão esperado.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const getAlertIcon = (tipo: string) => {
@@ -49,10 +110,10 @@ const AlertListCard = ({ alertas }: AlertListCardProps) => {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-slate-700 border-b pb-2">
-        Alertas Detectados ({alertas.length}):
+        Alertas Detectados ({alertasReais.length}):
       </h3>
       
-      {alertas.map((alerta, index) => (
+      {alertasReais.map((alerta, index) => (
         <div key={index} className={`border-l-4 p-4 rounded-r-lg ${getAlertColor(alerta.tipo)}`}>
           <div className="flex items-start gap-3">
             {getAlertIcon(alerta.tipo)}

@@ -101,6 +101,48 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
     return true;
   };
 
+  // Função para verificar se é realmente um alerta válido (mesma lógica do AlertListCard)
+  const isValidAlert = (alerta: AlertItem): boolean => {
+    const valorEncontrado = alerta.valor_encontrado?.trim() || '';
+    const campo = alerta.campo?.toLowerCase() || '';
+    
+    // Se o campo está preenchido corretamente, não é um alerta real
+    if (campo.includes('nome') && valorEncontrado && valorEncontrado !== '(vazio)') {
+      return false;
+    }
+    
+    // Telefone no formato correto não é alerta
+    if (campo.includes('telefone') || campo.includes('celular')) {
+      const telefoneRegex = /^\(\d{2}\)\s?\d{4,5}-?\d{4}$/;
+      if (telefoneRegex.test(valorEncontrado.replace(/\s/g, ''))) {
+        return false;
+      }
+    }
+    
+    // CPF no formato correto não é alerta
+    if (campo.includes('cpf')) {
+      const cpfRegex = /^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/;
+      if (cpfRegex.test(valorEncontrado.replace(/\s/g, ''))) {
+        return false;
+      }
+    }
+    
+    // E-mail válido não é alerta
+    if (campo.includes('email') || campo.includes('e-mail')) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (emailRegex.test(valorEncontrado)) {
+        return false;
+      }
+    }
+    
+    // Outros campos: se não estão vazios e não são suspeitos, não são alertas
+    if (valorEncontrado && valorEncontrado !== '(vazio)' && alerta.tipo === 'campo_vazio') {
+      return false;
+    }
+    
+    return true;
+  };
+
   const parseAnalysisContent = (content: string): { analysisData: AnalysisData | null; errorCount: number; fullContent: string } => {
     console.log("=== DEBUG parseAnalysisContent ===");
     console.log("Tipo do content:", typeof content);
@@ -137,10 +179,14 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
           // Filtrar apenas erros reais
           const errosReais = analysisData.erros.filter(isRealError);
           
-          // Recalcular estatísticas baseadas nos erros reais
+          // Filtrar apenas alertas reais
+          const alertasReais = analysisData.alertas.filter(isValidAlert);
+          
+          // Recalcular estatísticas baseadas nos erros e alertas reais
           const resumoAtualizado = {
             ...analysisData.resumo,
             total_erros: errosReais.length,
+            total_alertas: alertasReais.length,
           };
 
           // Atualizar status baseado nos erros reais
@@ -155,6 +201,7 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
             analysisData: {
               ...analysisData,
               erros: errosReais,
+              alertas: alertasReais,
               resumo: resumoAtualizado,
               status_geral: statusAtualizado
             },
@@ -171,10 +218,14 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
           // Filtrar apenas erros reais
           const errosReais = analysisData.erros.filter(isRealError);
           
-          // Recalcular estatísticas baseadas nos erros reais
+          // Filtrar apenas alertas reais
+          const alertasReais = analysisData.alertas.filter(isValidAlert);
+          
+          // Recalcular estatísticas baseadas nos erros e alertas reais
           const resumoAtualizado = {
             ...analysisData.resumo,
             total_erros: errosReais.length,
+            total_alertas: alertasReais.length,
           };
 
           // Atualizar status baseado nos erros reais
@@ -189,6 +240,7 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
             analysisData: {
               ...analysisData,
               erros: errosReais,
+              alertas: alertasReais,
               resumo: resumoAtualizado,
               status_geral: statusAtualizado
             },
