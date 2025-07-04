@@ -21,8 +21,16 @@ const ContractAnalysisSection = () => {
   const queryClient = useQueryClient();
 
   const handleAnalyze = async () => {
-    if (!uploadState.file || !uploadState.fullText) return;
+    if (!uploadState.file || !uploadState.fullText) {
+      console.log("Análise não executada - arquivo ou texto não disponível:", {
+        hasFile: !!uploadState.file,
+        hasText: !!uploadState.fullText,
+        textLength: uploadState.fullText?.length || 0
+      });
+      return;
+    }
 
+    console.log("Iniciando análise do contrato...", uploadState.file.name);
     setUploadState(prev => ({ ...prev, isAnalyzing: true, analysisResult: null }));
 
     try {
@@ -119,9 +127,21 @@ const ContractAnalysisSection = () => {
         )}
 
         {/* Preview do Texto */}
-        {uploadState.textPreview && (
+        {uploadState.textPreview && !uploadState.isAnalyzing && !uploadState.analysisResult && (
           <div className="stagger-item">
             <TextPreviewCard textPreview={uploadState.textPreview} />
+          </div>
+        )}
+
+        {/* Indicador de Análise em Progresso */}
+        {uploadState.isAnalyzing && (
+          <div className="stagger-item">
+            <FeedbackMessage
+              type="info"
+              title="Análise em Progresso"
+              message="A inteligência artificial está analisando o contrato automaticamente..."
+              className="border-blue-200 bg-blue-50 animate-pulse"
+            />
           </div>
         )}
 

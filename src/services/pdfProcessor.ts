@@ -131,9 +131,13 @@ export const processFile = async (
       
       // Chamar análise automática se callback foi fornecido
       if (onAnalyzeCallback) {
+        console.log("Iniciando análise automática em 500ms...");
         setTimeout(() => {
+          console.log("Executando callback de análise automática");
           onAnalyzeCallback();
         }, 500); // Pequeno delay para melhor UX
+      } else {
+        console.log("Callback de análise não fornecido");
       }
     }
   } catch (error: any) {
