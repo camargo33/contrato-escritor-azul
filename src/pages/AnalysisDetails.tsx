@@ -115,9 +115,9 @@ const AnalysisDetails = () => {
       <div className="p-6">
         <div className="max-w-4xl mx-auto">
           <AnalysisReport
-            content={typeof analysis.analysis_content === 'string' 
-              ? analysis.analysis_content 
-              : JSON.stringify(analysis.analysis_content)
+            content={typeof analysis.analysis_content === 'object' 
+              ? JSON.stringify(analysis.analysis_content, null, 2)
+              : String(analysis.analysis_content || '')
             }
             timestamp={analysis.analysis_timestamp}
             filename={analysis.analyzed_filename}

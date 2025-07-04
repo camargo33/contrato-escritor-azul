@@ -102,13 +102,23 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
   };
 
   const parseAnalysisContent = (content: string): { analysisData: AnalysisData | null; errorCount: number; fullContent: string } => {
+    console.log("=== DEBUG parseAnalysisContent ===");
+    console.log("Tipo do content:", typeof content);
+    console.log("Content original:", content);
+    console.log("Content length:", content?.length);
+    
     try {
       // Tenta extrair JSON da resposta
       const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || content.match(/\{[\s\S]*\}/);
       
+      console.log("JSON match encontrado:", !!jsonMatch);
+      
       if (jsonMatch) {
         const jsonStr = jsonMatch[1] || jsonMatch[0];
+        console.log("JSON string extraída:", jsonStr);
+        
         const analysisData = JSON.parse(jsonStr) as AnalysisData;
+        console.log("Análise parseada com sucesso:", analysisData);
         
         // Filtrar apenas erros reais
         const errosReais = analysisData.erros.filter(isRealError);
