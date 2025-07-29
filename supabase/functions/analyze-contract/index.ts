@@ -3,13 +3,13 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { 
   corsHeaders, 
-  validateOpenAIApiKey, 
+  validateOpenRouterApiKey, 
   createErrorResponse, 
   createSuccessResponse,
-  handleOpenAIError,
+  handleOpenRouterError,
   handleGenericError
 } from './utils.ts';
-import { analyzeContractWithOpenAI } from './openai-service.ts';
+import { analyzeContractWithOpenRouter } from './openai-service.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -30,8 +30,8 @@ serve(async (req) => {
       });
     }
 
-    // Validar API key
-    const apiKeyValidation = validateOpenAIApiKey();
+    // Validar API key do OpenRouter
+    const apiKeyValidation = validateOpenRouterApiKey();
     if (!apiKeyValidation.isValid) {
       const result = createErrorResponse(
         apiKeyValidation.error!, 
@@ -44,8 +44,8 @@ serve(async (req) => {
       });
     }
 
-    // Analisar contrato com OpenAI
-    const analysisResult = await analyzeContractWithOpenAI({
+    // Analisar contrato com OpenRouter
+    const analysisResult = await analyzeContractWithOpenRouter({
       contractText,
       filename,
       apiKey: apiKeyValidation.apiKey!

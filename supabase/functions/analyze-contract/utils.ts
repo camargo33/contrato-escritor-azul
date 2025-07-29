@@ -11,55 +11,43 @@ export interface ApiKeyValidationResult {
   debug?: any;
 }
 
-export const validateOpenAIApiKey = (): ApiKeyValidationResult => {
-  console.log("=== VERIFICANDO CONFIGURAÇÃO DA API KEY ===");
+export const validateOpenRouterApiKey = (): ApiKeyValidationResult => {
+  console.log("=== VERIFICANDO CONFIGURAÇÃO DA API KEY OPENROUTER ===");
   
-  // Verificar todas as possíveis configurações da API key
-  const possibleKeys = ['OPENAI_API_KEY', 'OpenAI', 'OPENAI'];
-  let openAIApiKey = null;
-  
-  for (const keyName of possibleKeys) {
-    const key = Deno.env.get(keyName);
-    if (key) {
-      console.log(`✓ Encontrada API key: ${keyName}`);
-      openAIApiKey = key;
-      break;
-    } else {
-      console.log(`✗ Não encontrada: ${keyName}`);
-    }
-  }
+  // Buscar pela chave OpenRouter
+  const openRouterApiKey = Deno.env.get('OpenRouter');
   
   // Listar todas as variáveis de ambiente disponíveis (sem mostrar valores)
   const allEnvVars = Object.keys(Deno.env.toObject());
   console.log("Variáveis de ambiente disponíveis:", allEnvVars);
   
-  if (!openAIApiKey) {
-    console.error("❌ ERRO CRÍTICO: Nenhuma API key da OpenAI encontrada");
+  if (!openRouterApiKey) {
+    console.error("❌ ERRO CRÍTICO: API key do OpenRouter não encontrada");
     return {
       isValid: false,
-      error: "API key da OpenAI não configurada. Verifique se uma das seguintes variáveis está definida nos secrets: OPENAI_API_KEY, OpenAI, ou OPENAI",
+      error: "API key do OpenRouter não configurada. Verifique se a variável 'OpenRouter' está definida nos secrets",
       debug: {
         available_env_vars: allEnvVars,
-        checked_keys: possibleKeys
+        checked_key: 'OpenRouter'
       }
     };
   }
 
-  // Validar formato da API key
-  if (!openAIApiKey.startsWith('sk-')) {
-    console.error("❌ ERRO: API key não tem o formato correto");
-    console.log("Formato atual:", openAIApiKey.substring(0, 10) + "...");
+  // Validar formato da API key OpenRouter
+  if (!openRouterApiKey.startsWith('sk-or-')) {
+    console.error("❌ ERRO: API key OpenRouter não tem o formato correto");
+    console.log("Formato atual:", openRouterApiKey.substring(0, 15) + "...");
     
     return {
       isValid: false,
-      error: "API key da OpenAI inválida. A chave deve começar com 'sk-'. Verifique se a chave foi copiada corretamente."
+      error: "API key do OpenRouter inválida. A chave deve começar com 'sk-or-'. Verifique se a chave foi copiada corretamente."
     };
   }
 
-  console.log("✅ API key validada com sucesso");
+  console.log("✅ API key OpenRouter validada com sucesso");
   return {
     isValid: true,
-    apiKey: openAIApiKey
+    apiKey: openRouterApiKey
   };
 };
 
@@ -82,19 +70,19 @@ export const createSuccessResponse = (content: string, filename: string) => {
   };
 };
 
-export const handleOpenAIError = (response: Response, errorText: string) => {
-  let errorMessage = "Erro na comunicação com OpenAI";
+export const handleOpenRouterError = (response: Response, errorText: string) => {
+  let errorMessage = "Erro na comunicação com OpenRouter";
   
   if (response.status === 401) {
-    errorMessage = 'API key da OpenAI inválida ou expirada. Verifique se a chave está correta e ativa em sua conta OpenAI.';
+    errorMessage = 'API key do OpenRouter inválida ou expirada. Verifique se a chave está correta e ativa em sua conta OpenRouter.';
   } else if (response.status === 429) {
-    errorMessage = 'Limite de uso da API OpenAI atingido. Tente novamente em alguns minutos ou verifique seu plano OpenAI.';
+    errorMessage = 'Limite de uso da API OpenRouter atingido. Tente novamente em alguns minutos ou verifique seu plano OpenRouter.';
   } else if (response.status === 400) {
-    errorMessage = 'Erro na requisição para OpenAI. O formato dos dados pode estar incorreto.';
+    errorMessage = 'Erro na requisição para OpenRouter. O formato dos dados pode estar incorreto.';
   } else if (response.status === 503) {
-    errorMessage = 'Serviço da OpenAI temporariamente indisponível. Tente novamente em alguns minutos.';
+    errorMessage = 'Serviço do OpenRouter temporariamente indisponível. Tente novamente em alguns minutos.';
   } else {
-    errorMessage = `Erro na API OpenAI: ${response.status} - ${response.statusText}`;
+    errorMessage = `Erro na API OpenRouter: ${response.status} - ${response.statusText}`;
   }
   
   return {
@@ -111,10 +99,10 @@ export const handleGenericError = (error: any) => {
   
   if (error.name === 'AbortError') {
     errorMessage = "Timeout na análise (60s). Tente novamente com um arquivo menor.";
-  } else if (error.message.includes('API key da OpenAI não configurada')) {
-    errorMessage = "API key da OpenAI não configurada. Verifique os secrets do Supabase.";
+  } else if (error.message.includes('API key do OpenRouter não configurada')) {
+    errorMessage = "API key do OpenRouter não configurada. Verifique os secrets do Supabase.";
   } else if (error.message.includes('401') || error.message.includes('inválida')) {
-    errorMessage = "API key da OpenAI inválida. Verifique sua chave da OpenAI nos secrets do Supabase.";
+    errorMessage = "API key do OpenRouter inválida. Verifique sua chave do OpenRouter nos secrets do Supabase.";
   } else if (error.message.includes('429')) {
     errorMessage = "Limite de uso da API atingido. Tente novamente em alguns minutos.";
   } else if (error.message.includes('400')) {
@@ -122,7 +110,7 @@ export const handleGenericError = (error: any) => {
   } else if (error.message.includes('network') || error.message.includes('fetch')) {
     errorMessage = "Erro de conexão. Verifique sua internet e tente novamente.";
   } else {
-    errorMessage = error.message || "Erro na comunicação com OpenAI";
+    errorMessage = error.message || "Erro na comunicação com OpenRouter";
   }
 
   return {

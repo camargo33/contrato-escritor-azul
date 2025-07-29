@@ -1,37 +1,39 @@
 
 import { createContractAnalysisPrompt } from './prompt.ts';
 
-export interface OpenAIAnalysisRequest {
+export interface OpenRouterAnalysisRequest {
   contractText: string;
   filename: string;
   apiKey: string;
 }
 
-export interface OpenAIAnalysisResponse {
+export interface OpenRouterAnalysisResponse {
   success: boolean;
   content?: string;
   error?: string;
   debug?: any;
 }
 
-export const analyzeContractWithOpenAI = async (
-  request: OpenAIAnalysisRequest
-): Promise<OpenAIAnalysisResponse> => {
+export const analyzeContractWithOpenRouter = async (
+  request: OpenRouterAnalysisRequest
+): Promise<OpenRouterAnalysisResponse> => {
   const { contractText, filename, apiKey } = request;
   
   console.log("Iniciando análise para arquivo:", filename);
   console.log("Tamanho do texto:", contractText.length, "caracteres");
-  console.log("🔄 Testando conectividade com OpenAI usando GPT-4o-mini...");
+  console.log("🔄 Conectando com OpenRouter usando GPT-4o-mini...");
   
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://kwwqyfvkpjatckvngtur.supabase.co',
+        'X-Title': 'Contract Analysis System'
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'openai/gpt-4o-mini',
         messages: [
           {
             role: 'user',
@@ -44,16 +46,16 @@ export const analyzeContractWithOpenAI = async (
       signal: AbortSignal.timeout(60000)
     });
 
-    console.log("📡 Status da resposta OpenAI:", response.status);
+    console.log("📡 Status da resposta OpenRouter:", response.status);
     console.log("📡 Headers da resposta:", Object.fromEntries(response.headers.entries()));
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ Erro na API OpenAI: ${response.status} - ${errorText}`);
+      console.error(`❌ Erro na API OpenRouter: ${response.status} - ${errorText}`);
       
       return {
         success: false,
-        error: `Erro na API OpenAI: ${response.status}`,
+        error: `Erro na API OpenRouter: ${response.status}`,
         debug: {
           status: response.status,
           response_text: errorText.substring(0, 500)
@@ -64,15 +66,15 @@ export const analyzeContractWithOpenAI = async (
     const data = await response.json();
     
     if (!data.choices || data.choices.length === 0) {
-      console.error("❌ Resposta inválida da OpenAI:", data);
+      console.error("❌ Resposta inválida da OpenRouter:", data);
       
       return {
         success: false,
-        error: 'Resposta inválida da OpenAI. Tente novamente.'
+        error: 'Resposta inválida da OpenRouter. Tente novamente.'
       };
     }
 
-    console.log("✅ Análise concluída com sucesso usando GPT-4o-mini!");
+    console.log("✅ Análise concluída com sucesso usando OpenRouter GPT-4o-mini!");
 
     return {
       success: true,
@@ -80,11 +82,11 @@ export const analyzeContractWithOpenAI = async (
     };
 
   } catch (error: any) {
-    console.error("Erro na chamada da OpenAI:", error);
+    console.error("Erro na chamada da OpenRouter:", error);
     
     return {
       success: false,
-      error: error.message || "Erro na comunicação com OpenAI",
+      error: error.message || "Erro na comunicação com OpenRouter",
       debug: {
         error_name: error.name,
         error_message: error.message
