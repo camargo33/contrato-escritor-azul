@@ -1,5 +1,6 @@
-
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle, XCircle, Zap } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface ErrorAnalysis {
   severidade?: string;
@@ -7,8 +8,11 @@ interface ErrorAnalysis {
   valor_encontrado: string;
   valor_esperado: string;
   sugestao_correcao: string;
+  explicacao?: string;
   localizacao?: string;
   confianca?: number;
+  origem_erro?: string;
+  correcao_necessaria?: string;
 }
 
 interface ErrorListCardProps {
@@ -49,22 +53,64 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
       return false;
     }
     
-    // Casos especiais para taxa de rescisão com validação de fidelidade
-    if (erro.campo?.toLowerCase().includes('rescisão') || erro.campo?.toLowerCase().includes('rescisao')) {
-      // Para taxa de rescisão, aceitar ambos os valores possíveis baseados na fidelidade
-      const valorEncontrado = parseFloat(normalizeMoney(encontrado));
-      const valorEsperado = parseFloat(normalizeMoney(esperado));
-      
-      // Se encontrado é 700 e esperado é 500, ou vice-versa, verificar contexto
-      if ((valorEncontrado === 700 && valorEsperado === 500) || 
-          (valorEncontrado === 500 && valorEsperado === 700)) {
-        // Este é um caso onde a lógica de fidelidade deve ser aplicada
-        // Aceitar ambos os valores como válidos até a nova lógica ser completamente implementada
-        return true; // Manter como erro para forçar validação correta
-      }
-    }
-    
     return true;
+  };
+
+  // Função para obter ícone baseado na severidade
+  const getSeverityIcon = (severidade?: string) => {
+    switch (severidade?.toLowerCase()) {
+      case 'critico':
+        return <XCircle className="h-5 w-5 text-red-500" />;
+      case 'alto':
+        return <AlertTriangle className="h-5 w-5 text-orange-500" />;
+      case 'medio':
+        return <AlertCircle className="h-5 w-5 text-yellow-500" />;
+      case 'baixo':
+        return <AlertCircle className="h-5 w-5 text-blue-500" />;
+      default:
+        return <AlertCircle className="h-5 w-5 text-red-500" />;
+    }
+  };
+
+  // Função para obter cores baseadas na severidade
+  const getSeverityColors = (severidade?: string) => {
+    switch (severidade?.toLowerCase()) {
+      case 'critico':
+        return {
+          border: 'border-red-400',
+          bg: 'bg-red-50',
+          badge: 'bg-red-600 text-white',
+          text: 'text-red-800'
+        };
+      case 'alto':
+        return {
+          border: 'border-orange-400',
+          bg: 'bg-orange-50',
+          badge: 'bg-orange-600 text-white',
+          text: 'text-orange-800'
+        };
+      case 'medio':
+        return {
+          border: 'border-yellow-400',
+          bg: 'bg-yellow-50',
+          badge: 'bg-yellow-600 text-white',
+          text: 'text-yellow-800'
+        };
+      case 'baixo':
+        return {
+          border: 'border-blue-400',
+          bg: 'bg-blue-50',
+          badge: 'bg-blue-600 text-white',
+          text: 'text-blue-800'
+        };
+      default:
+        return {
+          border: 'border-red-400',
+          bg: 'bg-red-50',
+          badge: 'bg-red-600 text-white',
+          text: 'text-red-800'
+        };
+    }
   };
 
   // Filtrar apenas erros reais
@@ -76,50 +122,108 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
   }
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-slate-700 border-b pb-2">
-        Erros Detectados ({errosReais.length}):
-      </h3>
+    <div className="mb-6">
+      <div className="flex items-center gap-3 mb-3">
+        <XCircle className="h-5 w-5 text-red-600" />
+        <h3 className="text-lg font-semibold text-slate-700">Erros Detectados ({errosReais.length})</h3>
+      </div>
       
-      {errosReais.map((erro, index) => (
-        <div key={index} className="border-l-4 border-red-400 bg-red-50 p-4 rounded-r-lg">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-red-500 mt-1" />
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="font-medium text-gray-800">{erro.campo}</span>
-                {erro.confianca && (
-                  <>
-                    <span className="text-gray-600">•</span>
-                    <span className="text-sm text-gray-600">Confiança: {erro.confianca}%</span>
-                  </>
-                )}
-              </div>
+      <div className="space-y-4">
+        {errosReais.map((erro, index) => {
+          const colors = getSeverityColors(erro.severidade);
+          
+          return (
+            <Card key={index} className={`border-2 ${colors.border} ${colors.bg}`}>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    {getSeverityIcon(erro.severidade)}
+                    <span className={colors.text}>{erro.campo}</span>
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    {erro.severidade && (
+                      <Badge variant="default" className={`text-xs font-medium ${colors.badge}`}>
+                        {erro.severidade.toUpperCase()}
+                      </Badge>
+                    )}
+                    {erro.confianca && (
+                      <Badge variant="outline" className="text-xs">
+                        {erro.confianca}% confiança
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
               
-              <div className="space-y-2 text-sm">
-                <div>
-                  <span className="font-medium text-gray-700">Encontrado:</span>
-                  <span className="ml-2 text-gray-800">{erro.valor_encontrado}</span>
+              <CardContent className="space-y-4">
+                {/* Comparação de Valores */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-3 bg-white border border-red-200 rounded-lg">
+                    <div className="text-sm font-medium text-red-700 mb-1">❌ Valor Encontrado</div>
+                    <div className="text-lg font-semibold text-red-800">{erro.valor_encontrado}</div>
+                  </div>
+                  
+                  <div className="p-3 bg-white border border-green-200 rounded-lg">
+                    <div className="text-sm font-medium text-green-700 mb-1">✅ Valor Esperado</div>
+                    <div className="text-lg font-semibold text-green-800">{erro.valor_esperado}</div>
+                  </div>
                 </div>
-                <div>
-                  <span className="font-medium text-gray-700">Esperado:</span>
-                  <span className="ml-2 text-gray-800">{erro.valor_esperado}</span>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Sugestão:</span>
-                  <span className="ml-2 text-gray-800">{erro.sugestao_correcao}</span>
-                </div>
-                {erro.localizacao && (
-                  <div>
-                    <span className="font-medium text-gray-700">Localização:</span>
-                    <span className="ml-2 text-gray-800">{erro.localizacao}</span>
+
+                {/* Explicação (se disponível) */}
+                {erro.explicacao && (
+                  <div className="p-3 bg-white border border-blue-200 rounded-lg">
+                    <div className="text-sm font-medium text-blue-700 mb-1">💡 Explicação</div>
+                    <div className="text-sm text-blue-800">{erro.explicacao}</div>
                   </div>
                 )}
-              </div>
-            </div>
-          </div>
+
+                {/* Sugestão de Correção */}
+                <div className="p-3 bg-white border border-purple-200 rounded-lg">
+                  <div className="text-sm font-medium text-purple-700 mb-1">🔧 Correção Necessária</div>
+                  <div className="text-sm text-purple-800">
+                    {erro.correcao_necessaria || erro.sugestao_correcao}
+                  </div>
+                </div>
+
+                {/* Informações Adicionais */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  {erro.localizacao && (
+                    <div className="p-2 bg-white border border-gray-200 rounded">
+                      <span className="font-medium text-gray-700">📍 Localização:</span>
+                      <div className="text-gray-800 mt-1">{erro.localizacao}</div>
+                    </div>
+                  )}
+                  
+                  {erro.origem_erro && (
+                    <div className="p-2 bg-white border border-gray-200 rounded">
+                      <span className="font-medium text-gray-700">🔍 Origem do Erro:</span>
+                      <div className="text-gray-800 mt-1">{erro.origem_erro}</div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Resumo de Ações */}
+      <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+        <div className="flex items-center gap-2 mb-2">
+          <Zap className="h-4 w-4 text-gray-600" />
+          <span className="font-medium text-gray-800">📋 Próximos Passos</span>
         </div>
-      ))}
+        <div className="text-sm text-gray-700">
+          {errosReais.length === 1 ? (
+            'Corrija o erro identificado acima antes de aprovar o contrato.'
+          ) : (
+            `Corrija os ${errosReais.length} erros identificados acima antes de aprovar o contrato.`
+          )}
+        </div>
+        <div className="text-xs text-gray-600 mt-1">
+          💡 Dica: Use as sugestões de correção para ajustar os valores no contrato.
+        </div>
+      </div>
     </div>
   );
 };
