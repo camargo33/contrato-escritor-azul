@@ -21,8 +21,11 @@ interface ErrorAnalysis {
   valor_encontrado: string;
   valor_esperado: string;
   sugestao_correcao: string;
-  localizacao: string;
-  severidade: 'critico' | 'alto' | 'medio' | 'baixo';
+  explicacao?: string;
+  localizacao?: string;
+  severidade?: 'critico' | 'alto' | 'medio' | 'baixo';
+  origem_erro?: string;
+  correcao_necessaria?: string;
 }
 
 interface ValidacaoCorreta {
@@ -35,7 +38,7 @@ interface ModeloIdentificado {
   nome: string;
   confianca: number;
   criterios_identificacao: string[];
-  caracteristicas_esperadas: {
+  caracteristicas_esperadas?: {
     valor: string;
     tipo: string;
     vigencia: string;
@@ -74,34 +77,32 @@ interface TaxValidationData {
 }
 
 interface AnalysisData {
-  modelo_identificado: ModeloIdentificado;
-  erros: ErrorAnalysis[];
-  alertas: AlertItem[];
-  validacoes_corretas: ValidacaoCorreta[];
-  resumo: {
+  modelo_identificado?: ModeloIdentificado;
+  erros?: ErrorAnalysis[];
+  alertas?: AlertItem[];
+  validacoes_corretas?: ValidacaoCorreta[];
+  resumo?: {
     total_erros: number;
     total_alertas?: number;
-    criticos: number;
-    altos: number;
-    medios: number;
-    baixos: number;
-    plano_identificado: string;
+    criticos?: number;
+    altos?: number;
+    medios?: number;
+    baixos?: number;
+    plano_identificado?: string;
   };
-  status_geral: 'aprovado' | 'reprovado';
-  observacoes: string[];
+  status_geral?: 'aprovado' | 'reprovado';
+  observacoes?: string[];
   analise_fidelidade?: FidelityAnalysisData;
   validacao_taxas?: TaxValidationData;
 }
 
 const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: AnalysisReportProps) => {
-  // Função para verificar se é um erro real (mesma lógica do ErrorListCard)
+  // Função para verificar se é um erro real
   const isRealError = (erro: ErrorAnalysis): boolean => {
     const encontrado = erro.valor_encontrado?.toString().trim() || '';
     const esperado = erro.valor_esperado?.toString().trim() || '';
     
-    if (encontrado === esperado) {
-      return false;
-    }
+    if (encontrado === esperado) return false;
     
     const normalizeMoney = (value: string) => {
       return value.replace(/[R$\s]/g, '').replace(',', '.');
@@ -110,196 +111,142 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
     if (encontrado.includes('R$') && esperado.includes('R$')) {
       const encontradoNum = normalizeMoney(encontrado);
       const esperadoNum = normalizeMoney(esperado);
-      if (encontradoNum === esperadoNum) {
-        return false;
-      }
+      if (encontradoNum === esperadoNum) return false;
     }
     
     const normalizeText = (text: string) => {
       return text.toLowerCase().replace(/\s+/g, ' ').trim();
     };
     
-    if (normalizeText(encontrado) === normalizeText(esperado)) {
-      return false;
-    }
-    
-    return true;
+    return normalizeText(encontrado) !== normalizeText(esperado);
   };
 
-  // Função para verificar se é realmente um alerta válido (mesma lógica do AlertListCard)
+  // Função para verificar se é um alerta válido
   const isValidAlert = (alerta: AlertItem): boolean => {
     const valorEncontrado = alerta.valor_encontrado?.trim() || '';
     const campo = alerta.campo?.toLowerCase() || '';
     
-    // Se o campo está preenchido corretamente, não é um alerta real
-    if (campo.includes('nome') && valorEncontrado && valorEncontrado !== '(vazio)') {
-      return false;
-    }
-    
-    // Telefone no formato correto não é alerta
+    if (campo.includes('nome') && valorEncontrado && valorEncontrado !== '(vazio)') return false;
     if (campo.includes('telefone') || campo.includes('celular')) {
       const telefoneRegex = /^\(\d{2}\)\s?\d{4,5}-?\d{4}$/;
-      if (telefoneRegex.test(valorEncontrado.replace(/\s/g, ''))) {
-        return false;
-      }
+      if (telefoneRegex.test(valorEncontrado.replace(/\s/g, ''))) return false;
     }
-    
-    // CPF no formato correto não é alerta
     if (campo.includes('cpf')) {
       const cpfRegex = /^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/;
-      if (cpfRegex.test(valorEncontrado.replace(/\s/g, ''))) {
-        return false;
-      }
+      if (cpfRegex.test(valorEncontrado.replace(/\s/g, ''))) return false;
     }
-    
-    // E-mail válido não é alerta
     if (campo.includes('email') || campo.includes('e-mail')) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (emailRegex.test(valorEncontrado)) {
-        return false;
-      }
+      if (emailRegex.test(valorEncontrado)) return false;
     }
-    
-    // Outros campos: se não estão vazios e não são suspeitos, não são alertas
-    if (valorEncontrado && valorEncontrado !== '(vazio)' && alerta.tipo === 'campo_vazio') {
-      return false;
-    }
+    if (valorEncontrado && valorEncontrado !== '(vazio)' && alerta.tipo === 'campo_vazio') return false;
     
     return true;
   };
 
   const parseAnalysisContent = (content: string): { analysisData: AnalysisData | null; errorCount: number; fullContent: string } => {
-    console.log("=== DEBUG parseAnalysisContent ===");
-    console.log("Tipo do content:", typeof content);
-    console.log("Content original:", content);
-    console.log("Content length:", content?.length);
+    console.log("🔍 [DEBUG] Iniciando parseAnalysisContent...");
+    console.log("📄 Content recebido:", content?.substring(0, 200) + "...");
     
     try {
-      // Primeiro, tenta extrair JSON de blocos markdown
-      let jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
+      let jsonData: any = null;
       
-      if (!jsonMatch) {
-        // Se não encontrou markdown, tenta encontrar JSON diretamente
-        jsonMatch = content.match(/\{[\s\S]*\}/);
+      // Tentar diferentes métodos de parsing
+      
+      // 1. Se já é um objeto JSON
+      if (typeof content === 'object') {
+        console.log("✅ Content já é objeto JSON");
+        jsonData = content;
       }
-      
-      if (!jsonMatch) {
-        // Tenta limpar caracteres de escape e procurar novamente
-        const cleanContent = content.replace(/\\"/g, '"').replace(/\\n/g, '\n');
-        jsonMatch = cleanContent.match(/```json\s*([\s\S]*?)\s*```/) || cleanContent.match(/\{[\s\S]*\}/);
+      // 2. Tentar parse direto
+      else if (content.trim().startsWith('{')) {
+        console.log("🔄 Tentando parse direto...");
+        jsonData = JSON.parse(content);
+        console.log("✅ Parse direto funcionou!");
       }
-      
-      console.log("JSON match encontrado:", !!jsonMatch);
-      
-      if (jsonMatch) {
-        const jsonStr = jsonMatch[1] || jsonMatch[0];
-        console.log("JSON string extraída:", jsonStr);
+      // 3. Procurar JSON em markdown
+      else {
+        console.log("🔍 Procurando JSON em markdown...");
+        const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || content.match(/```\s*(\{[\s\S]*?\})\s*```/) || content.match(/(\{[\s\S]*\})/);
         
-        // Tenta limpar caracteres de escape se necessário
-        let cleanJsonStr = jsonStr;
-        try {
-          const analysisData = JSON.parse(cleanJsonStr) as AnalysisData;
-          console.log("Análise parseada com sucesso:", analysisData);
+        if (jsonMatch) {
+          const jsonStr = jsonMatch[1] || jsonMatch[0];
+          console.log("📋 JSON extraído:", jsonStr.substring(0, 200) + "...");
           
-          // Filtrar apenas erros reais
-          const errosReais = analysisData.erros.filter(isRealError);
+          // Limpar caracteres de escape
+          let cleanJsonStr = jsonStr
+            .replace(/\\"/g, '"')
+            .replace(/\\n/g, '\n')
+            .replace(/\\\\/g, '\\')
+            .trim();
           
-          // Filtrar apenas alertas reais
-          const alertasReais = analysisData.alertas.filter(isValidAlert);
-          
-          // Recalcular estatísticas baseadas nos erros e alertas reais
-          const resumoAtualizado = {
-            ...analysisData.resumo,
-            total_erros: errosReais.length,
-            total_alertas: alertasReais.length,
-          };
-
-          // Atualizar status baseado nos erros reais
-          let statusAtualizado = analysisData.status_geral;
-          if (errosReais.length === 0) {
-            statusAtualizado = 'aprovado';
-          } else {
-            statusAtualizado = 'reprovado';
-          }
-          
-          return {
-            analysisData: {
-              ...analysisData,
-              erros: errosReais,
-              alertas: alertasReais,
-              resumo: resumoAtualizado,
-              status_geral: statusAtualizado
-            },
-            errorCount: errosReais.length,
-            fullContent: content
-          };
-        } catch (parseError) {
-          console.log("Erro no primeiro parse, tentando limpar caracteres de escape:", parseError);
-          // Tenta limpar caracteres de escape e parsear novamente
-          cleanJsonStr = jsonStr.replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
-          const analysisData = JSON.parse(cleanJsonStr) as AnalysisData;
-          console.log("Análise parseada com sucesso após limpeza:", analysisData);
-          
-          // Filtrar apenas erros reais
-          const errosReais = analysisData.erros.filter(isRealError);
-          
-          // Filtrar apenas alertas reais
-          const alertasReais = analysisData.alertas.filter(isValidAlert);
-          
-          // Recalcular estatísticas baseadas nos erros e alertas reais
-          const resumoAtualizado = {
-            ...analysisData.resumo,
-            total_erros: errosReais.length,
-            total_alertas: alertasReais.length,
-          };
-
-          // Atualizar status baseado nos erros reais
-          let statusAtualizado = analysisData.status_geral;
-          if (errosReais.length === 0) {
-            statusAtualizado = 'aprovado';
-          } else {
-            statusAtualizado = 'reprovado';
-          }
-          
-          return {
-            analysisData: {
-              ...analysisData,
-              erros: errosReais,
-              alertas: alertasReais,
-              resumo: resumoAtualizado,
-              status_geral: statusAtualizado
-            },
-            errorCount: errosReais.length,
-            fullContent: content
-          };
+          jsonData = JSON.parse(cleanJsonStr);
+          console.log("✅ Parse do markdown funcionou!");
         }
       }
+      
+      if (jsonData) {
+        console.log("📊 Dados parseados:", {
+          hasModelo: !!jsonData.modelo_identificado,
+          hasAnalyseFidelidade: !!jsonData.analise_fidelidade,
+          hasValidacaoTaxas: !!jsonData.validacao_taxas,
+          hasErros: !!jsonData.erros,
+          numErros: jsonData.erros?.length || 0
+        });
+        
+        // Criar dados padronizados
+        const analysisData: AnalysisData = {
+          modelo_identificado: jsonData.modelo_identificado,
+          erros: jsonData.erros || [],
+          alertas: jsonData.alertas || [],
+          validacoes_corretas: jsonData.validacoes_corretas || [],
+          resumo: jsonData.resumo || { total_erros: 0 },
+          status_geral: jsonData.status_geral || 'aprovado',
+          observacoes: jsonData.observacoes || [],
+          analise_fidelidade: jsonData.analise_fidelidade,
+          validacao_taxas: jsonData.validacao_taxas
+        };
+        
+        // Filtrar erros reais
+        const errosReais = analysisData.erros?.filter(isRealError) || [];
+        const alertasReais = analysisData.alertas?.filter(isValidAlert) || [];
+        
+        // Atualizar contadores
+        analysisData.erros = errosReais;
+        analysisData.alertas = alertasReais;
+        analysisData.resumo = {
+          ...analysisData.resumo,
+          total_erros: errosReais.length,
+          total_alertas: alertasReais.length,
+        };
+        analysisData.status_geral = errosReais.length === 0 ? 'aprovado' : 'reprovado';
+        
+        console.log("✅ Análise processada com sucesso!");
+        console.log("📈 Estatísticas finais:", {
+          errosReais: errosReais.length,
+          alertasReais: alertasReais.length,
+          status: analysisData.status_geral
+        });
+        
+        return {
+          analysisData,
+          errorCount: errosReais.length,
+          fullContent: content
+        };
+      }
     } catch (error) {
-      console.log("Erro ao parsear JSON, usando método de fallback:", error);
+      console.error("❌ Erro no parsing:", error);
+      console.log("📄 Content que falhou:", content?.substring(0, 500));
     }
 
-    // Fallback para análises não estruturadas
-    const errorPatterns = [
-      /\d+\.\s*(.+)$/gm,
-      /[-•]\s*(.+)$/gm,
-      /erro/gi,
-      /incorreto/gi,
-      /faltando/gi,
-      /inconsistente/gi,
-      /problema/gi
-    ];
-    
+    // Fallback
+    console.log("⚠️ Usando fallback para análises não estruturadas");
+    const errorPatterns = [/\d+\.\s*(.+)$/gm, /[-•]\s*(.+)$/gm, /erro/gi, /incorreto/gi];
     let errorCount = 0;
     errorPatterns.forEach(pattern => {
       const matches = content.match(pattern);
-      if (matches) {
-        errorCount += matches.length;
-      }
+      if (matches) errorCount += matches.length;
     });
-
-    if (errorCount === 0 && (content.toLowerCase().includes('erro') || content.toLowerCase().includes('incorreto'))) {
-      errorCount = 1;
-    }
 
     return { analysisData: null, errorCount, fullContent: content };
   };
@@ -319,7 +266,9 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
             )}
 
             {/* Status Geral */}
-            <StatusBadge status={analysisData.status_geral} />
+            {analysisData.status_geral && (
+              <StatusBadge status={analysisData.status_geral} />
+            )}
 
             {/* Análise da Fidelidade - NOVO COMPONENTE */}
             {analysisData.analise_fidelidade && (
@@ -343,19 +292,19 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
                     </div>
                     <div className="grid grid-cols-4 gap-2 text-xs">
                       <div className="text-center">
-                        <div className="font-bold text-red-600">{analysisData.resumo.criticos}</div>
+                        <div className="font-bold text-red-600">{analysisData.resumo.criticos || 0}</div>
                         <div className="text-red-500">Críticos</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-bold text-orange-600">{analysisData.resumo.altos}</div>
+                        <div className="font-bold text-orange-600">{analysisData.resumo.altos || 0}</div>
                         <div className="text-orange-500">Altos</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-bold text-yellow-600">{analysisData.resumo.medios}</div>
+                        <div className="font-bold text-yellow-600">{analysisData.resumo.medios || 0}</div>
                         <div className="text-yellow-500">Médios</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-bold text-blue-600">{analysisData.resumo.baixos}</div>
+                        <div className="font-bold text-blue-600">{analysisData.resumo.baixos || 0}</div>
                         <div className="text-blue-500">Baixos</div>
                       </div>
                     </div>
@@ -369,25 +318,13 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
                       <div className="text-3xl font-bold text-yellow-700">{analysisData.alertas.length}</div>
                       <div className="text-sm text-yellow-600">Alertas Detectados</div>
                     </div>
-                    <div className="space-y-1 text-xs">
-                      {['campo_vazio', 'erro_digitacao', 'formato_invalido', 'valor_suspeito'].map(tipo => {
-                        const count = analysisData.alertas.filter(a => a.tipo === tipo).length;
-                        if (count === 0) return null;
-                        return (
-                          <div key={tipo} className="flex justify-between">
-                            <span className="capitalize">{tipo.replace('_', ' ')}</span>
-                            <span className="font-bold">{count}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
                   </div>
                 )}
               </div>
             )}
 
             {/* Lista de Erros */}
-            {analysisData.erros.length > 0 && (
+            {analysisData.erros && analysisData.erros.length > 0 && (
               <ErrorListCard erros={analysisData.erros} />
             )}
 
@@ -425,7 +362,7 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
             )}
 
             {/* Mensagem quando não há erros */}
-            {analysisData.erros.length === 0 && (
+            {(!analysisData.erros || analysisData.erros.length === 0) && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="flex items-center gap-2 text-green-700">
                   <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
