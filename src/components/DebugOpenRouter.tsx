@@ -26,8 +26,7 @@ const DebugOpenRouter = () => {
         success: !response.error,
         data: response.data,
         error: response.error,
-        timestamp: new Date().toISOString(),
-        status: response.status || 'unknown'
+        timestamp: new Date().toISOString()
       });
     } catch (error) {
       console.error("❌ Erro no teste:", error);

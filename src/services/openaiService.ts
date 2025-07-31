@@ -37,7 +37,7 @@ export const openaiService = {
       console.log("=== RESPOSTA DA FUNÇÃO SUPABASE ===");
       console.log("🔴 Erro:", response.error);
       console.log("🟢 Dados:", response.data);
-      console.log("📊 Status:", response.status || 'unknown');
+      console.log("📊 Response:", response);
       
       if (response.error) {
         console.error("❌ Erro direto da função:", response.error);
@@ -69,8 +69,7 @@ export const openaiService = {
           timestamp: new Date().toLocaleString('pt-BR'),
           filename,
           debug: {
-            response_error: response.error,
-            response_status: response.status
+            response_error: response.error
           }
         };
       }

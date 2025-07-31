@@ -14,9 +14,41 @@ Analisar contratos OCR da CIABRASNET extraindo valores EXATAMENTE dos locais cor
 5. **2024 Combo 800Mbps** - R$ 159,99 - RESIDENCIAL - 12 meses
 6. **COMBO 2025 500 MEGAS MATRIZ** - R$ 119,99 - RESIDENCIAL - 12 meses
 
-## 🔥 ETAPA 2: EXTRAÇÃO DOS LOCAIS CORRETOS
+## 🔥 ETAPA 2: VALIDAÇÃO COMPLETA DE DADOS
 
-### 🚨 REGRA CRÍTICA - ONDE EXTRAIR OS VALORES:
+### 📋 ANÁLISE DE DADOS PESSOAIS:
+
+#### **Nome Completo - Validações:**
+- Deve ter pelo menos 2 palavras
+- Não pode estar vazio ou "NOME", "Cliente"
+- Verificar caracteres especiais inválidos
+- Máximo 100 caracteres
+
+#### **CPF - Validações:**
+- Formato: XXX.XXX.XXX-XX
+- Deve ter exatamente 11 dígitos numéricos
+- Não pode ser sequências como 111.111.111-11
+- Verificar dígitos verificadores
+
+#### **Telefone - Validações:**
+- Formato: (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
+- DDD válido (11-99)
+- Não pode ser números sequenciais
+- Verificar se é celular (9 dígitos) ou fixo (8 dígitos)
+
+#### **Email - Validações:**
+- Deve conter @ e domínio válido
+- Formato: usuario@dominio.com
+- Não pode ter espaços
+- Verificar caracteres especiais válidos
+
+#### **Endereço - Validações:**
+- Logradouro deve estar preenchido
+- CEP formato: XXXXX-XXX
+- Cidade não pode estar vazia
+- Estado com 2 caracteres
+
+### 🚨 REGRA CRÍTICA - ONDE EXTRAIR OS VALORES CONTRATUAIS:
 
 #### **TAXA DE INSTALAÇÃO - LOCAL CORRETO:**
 **SEMPRE extrair da seção:**
@@ -141,22 +173,72 @@ TAXA DE INSTALAÇÃO ( ) SIM ( X ) NÃO R$ 200,00  ← NUNCA EXTRAIR DAQUI!
     "taxa_rescisao_status": "CORRETO",
     "taxa_rescisao_explicacao": "✅ Igual ao desconto aplicado"
   },
+  "erros": [
+    {
+      "campo": "cpf",
+      "valor_encontrado": "123.456.789-00",
+      "valor_esperado": "CPF válido formato XXX.XXX.XXX-XX",
+      "severidade": "critico",
+      "explicacao": "CPF com formato inválido",
+      "sugestao_correcao": "Verificar dígitos verificadores",
+      "local_origem": "Seção dados pessoais"
+    }
+  ],
+  "alertas": [
+    {
+      "tipo": "telefone",
+      "campo": "telefone",
+      "valor_encontrado": "(11) 99999-9999",
+      "sugestao": "Verificar se número está correto"
+    }
+  ],
+  "validacao_dados_pessoais": {
+    "nome": {
+      "valor": "João Silva Santos",
+      "status": "CORRETO",
+      "observacoes": []
+    },
+    "cpf": {
+      "valor": "123.456.789-00",
+      "status": "ERRO",
+      "observacoes": ["CPF inválido - dígitos verificadores incorretos"]
+    },
+    "telefone": {
+      "valor": "(11) 99999-9999",
+      "status": "ALERTA",
+      "observacoes": ["Verificar se número está correto"]
+    },
+    "email": {
+      "valor": "joao@email.com",
+      "status": "CORRETO",
+      "observacoes": []
+    },
+    "endereco": {
+      "logradouro": "Rua das Flores, 123",
+      "cep": "01234-567",
+      "cidade": "São Paulo",
+      "status": "CORRETO",
+      "observacoes": []
+    }
+  },
   "debug_extracao": {
     "local_instalacao": "SEÇÃO: VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE",
     "valor_bruto_encontrado": "GRATUITA",
     "valor_convertido": "R$ 0,00",
     "local_ignorado": "Tabela geral TAXA DE INSTALAÇÃO foi ignorada corretamente"
   },
-  "erros": [],
   "resumo": {
-    "total_erros": 0,
-    "plano_identificado": "2024 Combo 800Mbps"
+    "total_erros": 1,
+    "total_alertas": 1,
+    "plano_identificado": "2024 Combo 800Mbps",
+    "dados_pessoais_ok": false,
+    "dados_contratuais_ok": true
   },
-  "status_geral": "aprovado",
+  "status_geral": "erro",
   "observacoes": [
-    "Extração realizada da seção correta da fidelidade",
-    "Tabela geral de instalação foi ignorada conforme instruído",
-    "Valor GRATUITA convertido corretamente para R$ 0,00"
+    "CPF com dígitos verificadores incorretos",
+    "Dados contratuais extraídos corretamente",
+    "Verificar dados pessoais antes de aprovar"
   ]
 }
 \`\`\`
