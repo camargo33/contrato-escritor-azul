@@ -1,33 +1,80 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, FileText, TrendingUp, Clock, CheckCircle, AlertTriangle } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { BarChart3, FileText, TrendingUp, Clock, CheckCircle, AlertTriangle, RefreshCw } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { contractService } from "@/services/contractService";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { toast } from "sonner";
+import { useState } from "react";
 
 const Dashboard = () => {
+  const queryClient = useQueryClient();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   // Buscar estatísticas dos contratos base
-  const { data: baseContracts, isLoading: loadingBase } = useQuery({
+  const { data: baseContracts, isLoading: loadingBase, refetch: refetchBase } = useQuery({
     queryKey: ['base-contracts-stats'],
     queryFn: () => contractService.getUserBaseContracts(),
+    refetchInterval: 30000, // Atualizar a cada 30 segundos
+    refetchOnWindowFocus: true, // Atualizar quando a janela ganha foco
   });
 
   // Buscar histórico de análises
-  const { data: analysisHistory, isLoading: loadingAnalysis } = useQuery({
+  const { data: analysisHistory, isLoading: loadingAnalysis, refetch: refetchHistory } = useQuery({
     queryKey: ['analysis-history'],
     queryFn: async () => {
+      console.log("🔍 Buscando histórico de análises...");
+      
       const { data, error } = await supabase
         .from('analysis_history')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(10);
       
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Erro ao buscar histórico:", error);
+        throw error;
+      }
+      
+      console.log("✅ Histórico carregado:", data?.length || 0, "registros");
       return data || [];
     },
+    refetchInterval: 15000, // Atualizar a cada 15 segundos
+    refetchOnWindowFocus: true, // Atualizar quando a janela ganha foco
   });
+
+  // Função para atualizar manualmente
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    console.log("🔄 Atualizando dashboard manualmente...");
+    
+    try {
+      // Invalidar todas as queries
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['analysis-history'] }),
+        queryClient.invalidateQueries({ queryKey: ['base-contracts-stats'] }),
+        queryClient.invalidateQueries({ queryKey: ['base-contracts'] })
+      ]);
+      
+      // Forçar refetch
+      await Promise.all([
+        refetchHistory(),
+        refetchBase()
+      ]);
+      
+      toast.success("✅ Dashboard atualizado com sucesso!");
+      console.log("✅ Dashboard atualizado manualmente!");
+      
+    } catch (error) {
+      console.error("❌ Erro ao atualizar dashboard:", error);
+      toast.error("❌ Erro ao atualizar dashboard");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   if (loadingBase || loadingAnalysis) {
     return (
@@ -59,13 +106,33 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b border-border bg-background">
-        <div className="px-6 py-4">
-          <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">Visão geral do sistema de análise de contratos</p>
+        <div className="px-6 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
+            <p className="text-muted-foreground">Visão geral do sistema de análise de contratos</p>
+          </div>
+          
+          {/* Botão de Atualização Manual */}
+          <Button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Atualizando...' : 'Atualizar'}
+          </Button>
         </div>
       </div>
 
       <div className="p-6 space-y-6">
+        {/* Status de Atualização */}
+        <div className="text-xs text-muted-foreground text-right">
+          Última atualização: {new Date().toLocaleTimeString('pt-BR')} • 
+          Atualização automática a cada 15s
+        </div>
+
         {/* Cards de Estatísticas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="hover:shadow-md transition-shadow">
@@ -174,19 +241,51 @@ const Dashboard = () => {
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {analysis.errors_found || 0} erros encontrados • {' '}
-                        {new Date(analysis.created_at).toLocaleDateString('pt-BR')}
+                        {new Date(analysis.created_at).toLocaleDateString('pt-BR')} às{' '}
+                        {new Date(analysis.created_at).toLocaleTimeString('pt-BR', { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
                       </p>
                     </div>
                   </div>
                 )) || (
                   <div className="text-center text-muted-foreground py-4">
+                    <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     Nenhuma atividade recente
+                    <br />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleRefresh}
+                      className="mt-2"
+                    >
+                      Atualizar agora
+                    </Button>
                   </div>
                 )}
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Debug Info (apenas em desenvolvimento) */}
+        {process.env.NODE_ENV === 'development' && (
+          <Card className="border-dashed">
+            <CardHeader>
+              <CardTitle className="text-sm text-muted-foreground">
+                Debug Info (Dev)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs text-muted-foreground space-y-1">
+              <p>• Base Contracts: {baseContracts?.length || 0}</p>
+              <p>• Analysis History: {analysisHistory?.length || 0}</p>
+              <p>• Loading Base: {loadingBase ? 'Sim' : 'Não'}</p>
+              <p>• Loading Analysis: {loadingAnalysis ? 'Sim' : 'Não'}</p>
+              <p>• Last Analysis: {analysisHistory?.[0]?.created_at || 'Nenhuma'}</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
