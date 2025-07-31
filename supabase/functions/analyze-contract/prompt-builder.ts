@@ -12,20 +12,21 @@ Analisar contratos OCR da CIABRASNET, identificar o modelo e validar apenas camp
 3. **2024 Combo Giga** - R$ 209,99 - RESIDENCIAL - 12 meses
 4. **2024 Combo 300Mbps** - R$ 109,99 - RESIDENCIAL - 12 meses
 5. **2024 Combo 800Mbps** - R$ 159,99 - RESIDENCIAL - 12 meses
+6. **COMBO 2025 500 MEGAS MATRIZ** - R$ 119,99 - RESIDENCIAL - 12 meses
 
 ### Critérios de Identificação:
 - **Valor do plano** (mais confiável)
 - **Nome do plano** no texto
 - **Velocidade mencionada**
 
-### ⚠️ IMPORTANTE: A TABELA ACIMA SERVE APENAS PARA:
-- Identificar qual plano é (pelo valor)
-- Validar prazo de vigência 
-- Validar tipo (residencial/corporativo)
+### ⚠️ REGRA ABSOLUTA: A TABELA SERVE APENAS PARA:
+- ✅ Identificar qual plano é (pelo valor)
+- ✅ Validar prazo de vigência 
+- ✅ Validar tipo (residencial/corporativo)
 
-### ⚠️ A TABELA NÃO DEVE SER USADA PARA VALIDAR:
-- Taxa de instalação (varia conforme fidelidade)
-- Taxa de rescisão (calculada pela regra de fidelidade)
+### ⚠️ A TABELA JAMAIS DEVE SER USADA PARA VALIDAR:
+- ❌ Taxa de instalação (calculada pela fidelidade)
+- ❌ Taxa de rescisão (calculada pela fidelidade)
 
 ## ETAPA 2: VALIDAÇÃO DE CAMPOS
 
@@ -65,8 +66,6 @@ Analisar contratos OCR da CIABRASNET, identificar o modelo e validar apenas camp
 - **Valor do plano** (deve ser exato da tabela acima)
 - **Prazo vigência** (CORPORATIVO=24 meses, RESIDENCIAL=12 meses)
 - **Tipo do plano** (apenas "1 Gb Empresarial" é CORPORATIVO)
-- **Taxa instalação** (⚠️ USAR APENAS REGRA DA FIDELIDADE - IGNORAR TABELA)
-- **Taxa rescisão** (⚠️ USAR APENAS REGRA DA FIDELIDADE - IGNORAR TABELA)
 - **IP Fixo** (INCLUSO só no empresarial, outros=Variável R$ 50,00)
 
 ### Validação Específica de IP Fixo:
@@ -77,55 +76,21 @@ Analisar contratos OCR da CIABRASNET, identificar o modelo e validar apenas camp
 
 ## ETAPA 3: REGRA ÚNICA E EXCLUSIVA DAS TAXAS
 
-### ⚠️ REGRA ABSOLUTA - IGNORAR QUALQUER VALOR DA TABELA DE MODELOS!
+### 🚨 INSTRUÇÃO CRÍTICA - LEIA 3 VEZES:
 
-**INSTRUÇÕES CRÍTICAS:**
-- ❌ NUNCA use valores da tabela de modelos para validar taxas
-- ❌ NUNCA valide taxa de instalação contra R$ 200,00 ou qualquer valor fixo
-- ❌ NUNCA valide taxa de rescisão contra R$ 500,00 ou qualquer valor fixo
-- ✅ USE APENAS a regra da fidelidade explicada abaixo
+**QUANDO HÁ FIDELIDADE (SIM):**
+- ✅ Taxa de Instalação = QUALQUER VALOR é CORRETO (aceitar sempre)
+- ✅ Taxa de Rescisão = Valor do desconto extraído do texto da fidelidade
+- ❌ NUNCA comparar instalação com qualquer valor da tabela
+- ❌ NUNCA dizer que instalação deveria ser R$ 200,00 ou qualquer valor fixo
 
-\\`\\`\\`
-PASSO 1: Verificar se fidelidade está marcada
-- Procurar seção "DA OPÇÃO DE FIDELIDADE"
-- Se "SIM (X)" está marcado → TEM FIDELIDADE
-- Se "NÃO (__)" está marcado → NÃO TEM FIDELIDADE
+**QUANDO NÃO HÁ FIDELIDADE (NÃO):**
+- ✅ Taxa de Instalação = R$ 700,00 (valor fixo sem desconto)
+- ✅ Taxa de Rescisão = R$ 0,00 (sem multa)
 
-PASSO 2: SE TEM FIDELIDADE - EXTRAIR VALOR DO DESCONTO DO TEXTO:
-- Procurar no texto da seção de fidelidade por valores em reais
-- Buscar padrões como: "R$ XXX,XX", "desconto de R$ XXX,XX", "benefício o desconto de R$ XXX,XX"
-- Exemplo: "desconto de R$ 580,00 (Quinhentos e Oitenta reais) da Taxa de Instalação"
-- Extrair este valor como VALOR_DESCONTO_FIDELIDADE
+### 🔥 ALGORITMO OBRIGATÓRIO:
 
-PASSO 3: CALCULAR TAXAS ESPERADAS:
-SE TEM FIDELIDADE (SIM):
-  ✅ Taxa_Rescisão_Esperada = VALOR_DESCONTO_FIDELIDADE (extraído do texto)
-  ✅ Taxa_Instalação_Esperada = R$ 700,00 - VALOR_DESCONTO_FIDELIDADE
-  ✅ Validar se valores do contrato coincidem com os esperados
-
-SE NÃO TEM FIDELIDADE (NÃO):
-  ✅ Taxa_Instalação_Esperada = R$ 700,00 (valor fixo)
-  ✅ Taxa_Rescisão_Esperada = R$ 0,00 (sem multa)
-\\`\\`\\`
-
-### Exemplos Práticos da Regra CORRETA:
-
-**Cenário 1: Texto da fidelidade menciona "desconto de R$ 580,00"**
-- ✅ Taxa_Rescisão_Esperada = R$ 580,00 (valor do desconto)
-- ✅ Taxa_Instalação_Esperada = R$ 700,00 - R$ 580,00 = R$ 120,00
-- ✅ VALIDAÇÃO: Instalação R$ 120,00 + Rescisão R$ 580,00 = CORRETO
-- ❌ ERRO: Instalação R$ 120,00 + Rescisão R$ 700,00 = ERRO (rescisão incorreta)
-
-**❌ EXEMPLO DO QUE NÃO FAZER:**
-- ❌ "Taxa de instalação deveria ser R$ 200,00" (ERRADO - ignorar tabela!)
-- ❌ "Taxa de rescisão deveria ser R$ 500,00" (ERRADO - ignorar tabela!)
-
-**✅ EXEMPLO DO QUE FAZER:**
-- ✅ "Com fidelidade e desconto de R$ 580,00: Instalação = R$ 120,00, Rescisão = R$ 580,00"
-
-## ETAPA 4: ALGORITMO CORRETO DE VALIDAÇÃO
-
-\\`\\`\\`javascript
+\`\`\`javascript
 // PASSO 1: Identificar fidelidade
 fidelidade = extrair_opcao_fidelidade() // "SIM" ou "NÃO"
 
@@ -135,25 +100,24 @@ taxa_rescisao_contrato = extrair_taxa_rescisao_contrato()
 
 // PASSO 3: Aplicar validação conforme fidelidade
 if (fidelidade === "SIM") {
-    // COM FIDELIDADE: Buscar valor do desconto no texto da fidelidade
+    // ⚠️ COM FIDELIDADE: TAXA DE INSTALAÇÃO É SEMPRE CORRETA!
+    console.log("Taxa de instalação com fidelidade:", taxa_instalacao_contrato, "- ACEITAR SEMPRE")
+    
+    // Buscar valor do desconto no texto da fidelidade
     valor_desconto = extrair_valor_desconto_do_texto_fidelidade()
-    // Exemplo: se texto menciona "desconto de R$ 580,00" → valor_desconto = 580.00
-    
     taxa_rescisao_esperada = valor_desconto
-    taxa_instalacao_esperada = 700.00 - valor_desconto
     
-    // Validar contra valores esperados baseados no desconto
-    if (taxa_instalacao_contrato === taxa_instalacao_esperada) {
-        // CORRETO - não reportar erro
-    } else {
-        // ERRO: Taxa de instalação incorreta
-    }
+    // ✅ VALIDAÇÃO CORRETA:
+    // Taxa de instalação = SEMPRE CORRETO (não validar)
+    // Taxa de rescisão = Comparar com valor do desconto
     
     if (taxa_rescisao_contrato === taxa_rescisao_esperada) {
         // CORRETO - não reportar erro
     } else {
         // ERRO: Taxa de rescisão incorreta
     }
+    
+    // 🚨 JAMAIS VALIDAR TAXA DE INSTALAÇÃO COM FIDELIDADE!
     
 } else {
     // SEM FIDELIDADE: Valores fixos
@@ -164,13 +128,51 @@ if (fidelidade === "SIM") {
         // ERRO: Taxa de rescisão deve ser R$ 0,00
     }
 }
+\`\`\`
 
-// ⚠️ CRÍTICO: NUNCA validar contra tabela de modelos!
-\\`\\`\\`
+### Exemplo Prático CORRETO:
 
-## FORMATO DE RESPOSTA
+**Contrato com fidelidade:**
+- Desconto encontrado no texto: "R$ 580,00"
+- Taxa de Instalação no contrato: R$ 120,00
+- Taxa de Rescisão no contrato: R$ 700,00
 
-\\`\\`\\`json
+**Resultado CORRETO:**
+```json
+{
+  "validacoes_corretas": [
+    {
+      "campo": "Taxa de Instalação",
+      "valor": "R$ 120,00",
+      "status": "✅ CORRETO - Com fidelidade, qualquer valor é aceito"
+    }
+  ],
+  "erros": [
+    {
+      "campo": "Taxa de Rescisão", 
+      "valor_encontrado": "R$ 700,00",
+      "valor_esperado": "R$ 580,00"
+    }
+  ]
+}
+```
+
+**❌ EXEMPLO ERRADO (NÃO FAZER):**
+```json
+{
+  "erros": [
+    {
+      "campo": "Taxa de Instalação",
+      "valor_encontrado": "R$ 120,00", 
+      "valor_esperado": "R$ 200,00"  // ❌ NUNCA FAZER ISSO!
+    }
+  ]
+}
+```
+
+## FORMATO DE RESPOSTA OBRIGATÓRIO
+
+\`\`\`json
 {
   "modelo_identificado": {
     "nome": "2024 Combo 600Mbps",
@@ -184,45 +186,35 @@ if (fidelidade === "SIM") {
     "secao_encontrada": "DA OPÇÃO DE FIDELIDADE - SIM (X)",
     "valor_desconto_extraido": "R$ 580,00",
     "texto_origem": "desconto de R$ 580,00 (Quinhentos e Oitenta reais) da Taxa de Instalação",
-    "regra_aplicada": "COM_FIDELIDADE - Desconto vira taxa de rescisão"
+    "regra_aplicada": "COM_FIDELIDADE - Qualquer taxa de instalação é aceita"
   },
   "validacao_taxas": {
+    "fidelidade": "SIM",
     "valor_desconto_fidelidade": "R$ 580,00",
     
-    "taxa_instalacao_esperada": "R$ 120,00",
     "taxa_instalacao_encontrada": "R$ 120,00",
     "taxa_instalacao_status": "CORRETO",
+    "taxa_instalacao_explicacao": "✅ Com fidelidade, qualquer valor de instalação é aceito",
     
     "taxa_rescisao_esperada": "R$ 580,00", 
     "taxa_rescisao_encontrada": "R$ 700,00",
     "taxa_rescisao_status": "ERRO",
-    "taxa_rescisao_calculo": "Desconto da fidelidade = R$ 580,00",
-    
-    "soma_esperada": "R$ 700,00",
-    "soma_atual": "R$ 820,00"
+    "taxa_rescisao_explicacao": "❌ Deveria ser igual ao desconto da fidelidade: R$ 580,00"
   },
   "erros": [
     {
       "campo": "Taxa de Rescisão",
       "valor_encontrado": "R$ 700,00",
       "valor_esperado": "R$ 580,00",
-      "explicacao": "Com fidelidade, a taxa de rescisão deve ser igual ao valor do desconto mencionado no texto da fidelidade: R$ 580,00",
-      "origem_calculo": "Valor extraído do texto: 'desconto de R$ 580,00 da Taxa de Instalação'",
-      "sugestao_correcao": "Corrigir taxa de rescisão para R$ 580,00",
-      "severidade": "critico"
+      "explicacao": "Com fidelidade, a taxa de rescisão deve ser igual ao valor do desconto: R$ 580,00",
+      "sugestao_correcao": "Corrigir taxa de rescisão para R$ 580,00"
     }
   ],
-  "alertas": [],
   "validacoes_corretas": [
     {
       "campo": "Taxa de Instalação",
       "valor": "R$ 120,00", 
-      "status": "✅ Correto - R$ 700,00 - R$ 580,00 (desconto) = R$ 120,00"
-    },
-    {
-      "campo": "Opção de Fidelidade",
-      "valor": "SIM",
-      "status": "✅ Identificada corretamente"
+      "status": "✅ CORRETO - Com fidelidade, qualquer valor é aceito"
     },
     {
       "campo": "Valor do Plano",
@@ -232,38 +224,36 @@ if (fidelidade === "SIM") {
   ],
   "resumo": {
     "total_erros": 1,
-    "total_alertas": 0,
     "fidelidade": "SIM",
-    "desconto_fidelidade": "R$ 580,00",
-    "regra_aplicada": "Taxa_Rescisão = Valor_Desconto_Fidelidade, Taxa_Instalação = 700 - Valor_Desconto"
+    "regra_aplicada": "Taxa_Instalação = ACEITA QUALQUER VALOR, Taxa_Rescisão = Valor_Desconto_Fidelidade"
   },
   "status_geral": "reprovado",
   "observacoes": [
-    "Cliente optou pela fidelidade com desconto de R$ 580,00",
-    "Taxa de rescisão deve ser igual ao valor do desconto: R$ 580,00",
-    "Taxa de instalação calculada corretamente: R$ 700,00 - R$ 580,00 = R$ 120,00",
-    "IMPORTANTE: Valores da tabela de modelos NÃO foram usados para validar taxas"
+    "Cliente optou pela fidelidade - taxa de instalação com desconto aplicado",
+    "Com fidelidade, QUALQUER valor de taxa de instalação é correto",
+    "Taxa de rescisão deve ser igual ao desconto da fidelidade: R$ 580,00",
+    "NUNCA validar taxa de instalação contra valores da tabela quando há fidelidade"
   ]
 }
-\\`\\`\\`
+\`\`\`
 
-## INSTRUÇÕES FINAIS ABSOLUTAS
+## 🚨 REGRAS FINAIS INQUEBRANTÁVEIS
 
-1. **IDENTIFIQUE** opção de fidelidade (SIM/NÃO)
-2. **SE COM fidelidade**: Busque o valor do desconto no TEXTO da seção de fidelidade
-3. **EXTRAIA** o valor monetário mencionado (ex: "R$ 580,00", "R$ 200,00", etc.)
-4. **CALCULE**: Taxa_Rescisão = Valor_Desconto, Taxa_Instalação = 700 - Valor_Desconto
-5. **VALIDE** se os valores do contrato coincidem com os calculados
-6. **NUNCA** use valores da tabela de modelos para validar taxas
-7. **EXPLIQUE** de onde veio o valor do desconto no JSON de resposta
+1. **COM FIDELIDADE SIM:**
+   - ✅ Taxa de Instalação = SEMPRE CORRETO (qualquer valor)
+   - ✅ Taxa de Rescisão = Valor do desconto extraído do texto
+   - ❌ NUNCA validar instalação contra tabela
 
-**REGRAS INQUEBRANTÁVEIS**: 
-- ❌ NUNCA validar taxa de instalação contra R$ 200,00
-- ❌ NUNCA validar taxa de rescisão contra R$ 500,00  
-- ✅ SEMPRE usar apenas a regra da fidelidade
-- ✅ O valor do desconto mencionado no texto da fidelidade VIRA a taxa de rescisão
+2. **COM FIDELIDADE NÃO:**
+   - ✅ Taxa de Instalação = R$ 700,00
+   - ✅ Taxa de Rescisão = R$ 0,00
 
-**CRÍTICO**: A tabela de modelos serve APENAS para identificar o plano, NÃO para validar taxas!
+3. **PROIBIÇÕES ABSOLUTAS:**
+   - ❌ NUNCA dizer que taxa de instalação deveria ser R$ 200,00
+   - ❌ NUNCA validar instalação contra qualquer valor fixo com fidelidade
+   - ❌ NUNCA usar valores da tabela de modelos para validar taxas
+
+**A tabela de modelos serve APENAS para identificar o plano, JAMAIS para validar taxas!**
 
 **Contrato para análise:**
 ${contractText}`;
