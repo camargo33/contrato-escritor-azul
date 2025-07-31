@@ -51,10 +51,14 @@ const ContractAnalysisSection = () => {
     }));
 
     try {
+      console.log("🚀 Iniciando análise do contrato...");
+      
       const result = await openaiService.analyzeContract(
         uploadState.fullText, 
         uploadState.file.name
       );
+
+      console.log("📊 Resultado da análise:", result);
 
       if (result.success) {
         setUploadState(prev => ({
@@ -63,14 +67,30 @@ const ContractAnalysisSection = () => {
           analysisResult: result
         }));
         
-        // Invalidar queries para atualizar dashboard e relatórios
-        queryClient.invalidateQueries({ queryKey: ['analysis-history'] });
-        queryClient.invalidateQueries({ queryKey: ['analysis-reports'] });
-        queryClient.invalidateQueries({ queryKey: ['base-contracts-stats'] });
+        // 🔄 INVALIDAÇÃO ROBUSTA DAS QUERIES PARA ATUALIZAR DASHBOARD
+        console.log("🔄 Invalidando queries para atualizar dashboard...");
         
-        toast.success("✅ Análise concluída com sucesso!");
+        // Aguardar um pouco para garantir que o salvamento foi concluído
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Invalidar todas as queries relacionadas
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['analysis-history'] }),
+          queryClient.invalidateQueries({ queryKey: ['analysis-reports'] }),
+          queryClient.invalidateQueries({ queryKey: ['base-contracts-stats'] }),
+          queryClient.invalidateQueries({ queryKey: ['base-contracts'] })
+        ]);
+        
+        // Forçar refetch das queries principais
+        queryClient.refetchQueries({ queryKey: ['analysis-history'] });
+        
+        console.log("✅ Dashboard atualizado com sucesso!");
+        toast.success("✅ Análise concluída! Dashboard atualizado.");
+        
       } else {
         const errorMsg = result.error || "Erro na análise";
+        console.error("❌ Erro na análise:", errorMsg);
+        
         setUploadState(prev => ({
           ...prev,
           isAnalyzing: false,
@@ -80,7 +100,7 @@ const ContractAnalysisSection = () => {
       }
     } catch (error: any) {
       const errorMsg = error.message || "Erro inesperado na análise";
-      console.error("❌ Erro na análise:", error);
+      console.error("❌ Erro crítico na análise:", error);
       
       setUploadState(prev => ({
         ...prev,
@@ -91,11 +111,22 @@ const ContractAnalysisSection = () => {
     }
   };
 
-  const handleNewAnalysisWithRefresh = () => {
+  const handleNewAnalysisWithRefresh = async () => {
+    console.log("🔄 Iniciando nova análise e atualizando dashboard...");
+    
     resetUpload();
-    // Invalidar queries novamente para garantir dados atualizados
-    queryClient.invalidateQueries({ queryKey: ['analysis-history'] });
-    queryClient.invalidateQueries({ queryKey: ['analysis-reports'] });
+    
+    // Garantir que o dashboard seja atualizado
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['analysis-history'] }),
+      queryClient.invalidateQueries({ queryKey: ['analysis-reports'] }),
+      queryClient.invalidateQueries({ queryKey: ['base-contracts-stats'] })
+    ]);
+    
+    // Forçar refetch
+    queryClient.refetchQueries({ queryKey: ['analysis-history'] });
+    
+    console.log("✅ Dashboard atualizado para nova análise!");
   };
 
   return (
