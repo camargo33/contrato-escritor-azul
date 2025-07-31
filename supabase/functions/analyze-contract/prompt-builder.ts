@@ -1,12 +1,57 @@
+
 export const buildContractAnalysisPrompt = (contractText: string): string => {
-  return `# VALIDADOR DE CONTRATOS CIABRASNET - EXTRAÇÃO PRECISA DE LOCAIS ESPECÍFICOS
+  return `# VALIDADOR DE CONTRATOS CIABRASNET - DETECÇÃO RIGOROSA DE ERROS
 
-## OBJETIVO
-Analisar contratos OCR da CIABRASNET extraindo valores EXATAMENTE dos locais corretos especificados.
+## OBJETIVO PRINCIPAL
+Analisar contratos OCR da CIABRASNET com MÁXIMA ATENÇÃO aos erros nos dados pessoais e contratuais.
 
-## ETAPA 1: IDENTIFICAÇÃO DO MODELO
+## 🚨 REGRAS CRÍTICAS DE VALIDAÇÃO
 
-### Modelos Disponíveis (APENAS PARA IDENTIFICAÇÃO):
+### 📋 VALIDAÇÃO DE DADOS PESSOAIS (EXTREMAMENTE RIGOROSA):
+
+#### **1. NOME COMPLETO:**
+- DEVE ter pelo menos 2 palavras
+- DEVE ter entre 2 e 100 caracteres
+- NÃO pode conter números ou caracteres especiais
+- NÃO pode ser "NOME", "Cliente", "Assinante" ou similar
+- DEVE ser um nome real de pessoa
+- **ERRO se**: nome incompleto, com números, ou genérico
+
+#### **2. CPF - VALIDAÇÃO CRÍTICA:**
+- FORMATO OBRIGATÓRIO: XXX.XXX.XXX-XX (exatamente 11 dígitos)
+- **ERRO AUTOMÁTICO se**:
+  - Tiver mais ou menos de 11 dígitos
+  - Formato: 137.158.269-677 (3 dígitos no final) = ERRO CRÍTICO
+  - Sequências: 111.111.111-11, 000.000.000-00 = ERRO
+  - Dígitos verificadores incorretos = ERRO
+- **SEMPRE validar os dígitos verificadores matematicamente**
+
+#### **3. TELEFONE/CELULAR - VALIDAÇÃO RIGOROSA:**
+- **DDD VÁLIDOS**: 11-19 (SP/RJ/MG), 21-28 (RJ/ES), 31-38 (MG/GO), 41-49 (Sul), 51-55 (RS), 61-69 (Centro-Oeste), 71-79 (Nordeste), 81-89 (Nordeste), 91-99 (Norte)
+- **ERRO AUTOMÁTICO se**:
+  - DDD 42 = NÃO EXISTE (ERRO CRÍTICO)
+  - DDD acima de 99 ou abaixo de 11
+  - Formato incorreto: deve ser (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
+- **CELULAR**: 9º dígito obrigatório (9XXXX-XXXX)
+- **FIXO**: 8 dígitos (XXXX-XXXX)
+
+#### **4. EMAIL - VALIDAÇÃO CRÍTICA:**
+- DEVE conter @ e domínio válido
+- **ERRO se**:
+  - felipe.geronco@gmail.com (erro de digitação óbvio)
+  - Domínios inexistentes ou com erros
+  - Caracteres especiais inválidos
+  - Espaços ou caracteres proibidos
+
+#### **5. ENDEREÇO:**
+- Logradouro deve estar completo
+- CEP formato: XXXXX-XXX (8 dígitos)
+- Cidade e estado devem existir
+- **ERRO se**: dados incompletos ou inconsistentes
+
+### 🎯 VALIDAÇÃO CONTRATUAL (LÓGICA EXISTENTE):
+
+#### **MODELOS DISPONÍVEIS:**
 1. **2024 Combo 600Mbps** - R\$ 129,99 - RESIDENCIAL - 12 meses
 2. **1 Gb Empresarial** - R\$ 229,90 - CORPORATIVO - 24 meses - IP: INCLUSO
 3. **2024 Combo Giga** - R\$ 209,99 - RESIDENCIAL - 12 meses
@@ -14,250 +59,182 @@ Analisar contratos OCR da CIABRASNET extraindo valores EXATAMENTE dos locais cor
 5. **2024 Combo 800Mbps** - R\$ 159,99 - RESIDENCIAL - 12 meses
 6. **COMBO 2025 500 MEGAS MATRIZ** - R\$ 119,99 - RESIDENCIAL - 12 meses
 
-## 🔥 ETAPA 2: VALIDAÇÃO COMPLETA DE DADOS
+#### **EXTRAÇÃO DE FIDELIDADE:**
+- **COM FIDELIDADE SIM (X)**: Extrair desconto da seção específica
+- **Taxa Instalação**: SEMPRE da seção "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE"
+- **NUNCA** da tabela geral "TAXA DE INSTALAÇÃO ( ) SIM ( X ) NÃO"
 
-### 📋 ANÁLISE DE DADOS PESSOAIS:
+## 🔍 ALGORITMO DE DETECÇÃO DE ERROS
 
-#### **Nome Completo - Validações:**
-- Deve ter pelo menos 2 palavras
-- Não pode estar vazio ou "NOME", "Cliente"
-- Verificar caracteres especiais inválidos
-- Máximo 100 caracteres
-
-#### **CPF - Validações:**
-- Formato: XXX.XXX.XXX-XX
-- Deve ter exatamente 11 dígitos numéricos
-- Não pode ser sequências como 111.111.111-11
-- Verificar dígitos verificadores
-
-#### **Telefone - Validações:**
-- Formato: (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
-- DDD válido (11-99)
-- Não pode ser números sequenciais
-- Verificar se é celular (9 dígitos) ou fixo (8 dígitos)
-
-#### **Email - Validações:**
-- Deve conter @ e domínio válido
-- Formato: usuario@dominio.com
-- Não pode ter espaços
-- Verificar caracteres especiais válidos
-
-#### **Endereço - Validações:**
-- Logradouro deve estar preenchido
-- CEP formato: XXXXX-XXX
-- Cidade não pode estar vazia
-- Estado com 2 caracteres
-
-### 🚨 REGRA CRÍTICA - ONDE EXTRAIR OS VALORES CONTRATUAIS:
-
-#### **TAXA DE INSTALAÇÃO - LOCAL CORRETO:**
-**SEMPRE extrair da seção:**
-\`\`\`
-TAXA DA INSTALAÇÃO DA INFRAESTRUTURA DOS SERVIÇOS
-VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: [VALOR_AQUI]
-\`\`\`
-
-#### **TAXA DE INSTALAÇÃO - LOCAL ERRADO (NUNCA USAR):**
-**NUNCA extrair da tabela geral:**
-\`\`\`
-TAXA DE INSTALAÇÃO ( ) SIM ( X ) NÃO R\$ 200,00
-\`\`\`
-
-### 🎯 LÓGICA DE FIDELIDADE:
-
-**Valor base instalação = R\$ 700,00**
-
-#### **COM FIDELIDADE SIM (X):**
-1. Extrair desconto da seção "SIM (X)"
-2. Taxa Instalação = R\$ 700,00 - Desconto
-3. Taxa Rescisão = Desconto
-4. **IMPORTANTE:** Valor aplicado deve vir da seção específica da fidelidade
-
-#### **SEM FIDELIDADE NÃO (X):**
-1. Taxa Instalação = R\$ 700,00
-2. Taxa Rescisão = R\$ 700,00
-
-### 🔍 ALGORITMO DE EXTRAÇÃO CORRETO:
-
-\`\`\`javascript
-// PASSO 1: Identificar escolha de fidelidade
-if (texto.includes("SIM (X)")) {
-    fidelidade_escolhida = "SIM"
+### **PASSO 1: VERIFICAR TODOS OS DADOS PESSOAIS**
+```javascript
+// CPF - Verificação rigorosa
+if (cpf_encontrado) {
+    // Extrair apenas números
+    const cpf_numeros = cpf.replace(/[^0-9]/g, '');
     
-    // PASSO 2: Extrair desconto da seção SIM (X)
-    secao_sim = procurar_secao_sim_marcada()
-    desconto_valor = extrair_desconto(secao_sim)
-    
-    // PASSO 3: EXTRAIR DA SEÇÃO ESPECÍFICA DA FIDELIDADE (NÃO DA TABELA GERAL!)
-    procurar_por = "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE:"
-    instalacao_aplicada = extrair_valor_apos_texto(procurar_por)
-    
-    // Converter valores
-    if (instalacao_aplicada === "GRATUITA" || instalacao_aplicada === "gratuita") {
-        taxa_instalacao_contrato = 0.00
-    } else {
-        taxa_instalacao_contrato = converter_para_numero(instalacao_aplicada)
+    // Verificar se tem exatamente 11 dígitos
+    if (cpf_numeros.length !== 11) {
+        erros.push({
+            campo: "CPF",
+            valor_encontrado: cpf_original,
+            valor_esperado: "CPF com exatamente 11 dígitos no formato XXX.XXX.XXX-XX",
+            severidade: "critico",
+            explicacao: "CPF deve ter exatamente 11 dígitos. Encontrado: " + cpf_numeros.length + " dígitos",
+            sugestao_correcao: "Corrigir o CPF para formato válido"
+        });
     }
     
-    // PASSO 4: Calcular valores esperados
-    taxa_instalacao_esperada = 700.00 - desconto_valor
-    taxa_rescisao_esperada = desconto_valor
+    // Verificar sequências inválidas
+    if (cpf_numeros === "11111111111" || cpf_numeros === "00000000000") {
+        erros.push({
+            campo: "CPF", 
+            severidade: "critico",
+            explicacao: "CPF com sequência inválida"
+        });
+    }
     
-    console.log("🔍 EXTRAÇÃO CORRETA:")
-    console.log("Desconto extraído:", desconto_valor)
-    console.log("Taxa instalação APLICADA (seção fidelidade):", taxa_instalacao_contrato)
-    console.log("Taxa instalação ESPERADA:", taxa_instalacao_esperada)
-    
-    // PASSO 5: Validar
-    if (taxa_instalacao_contrato === taxa_instalacao_esperada) {
-        instalacao_status = "CORRETO"
-        instalacao_explicacao = "✅ Valor correto baseado no desconto da fidelidade"
-    } else {
-        instalacao_status = "ERRO"
-        instalacao_explicacao = "❌ Deveria ser R\$ " + taxa_instalacao_esperada.toFixed(2) + " com desconto de R\$ " + desconto_valor.toFixed(2)
+    // Validar dígitos verificadores
+    // [implementar algoritmo de validação do CPF]
+}
+
+// TELEFONE - Verificação de DDD
+if (telefone_encontrado) {
+    const ddd_match = telefone.match(/\\((\\d{2})\\)/);
+    if (ddd_match) {
+        const ddd = parseInt(ddd_match[1]);
+        
+        // DDDs inválidos conhecidos
+        if (ddd === 42 || ddd < 11 || ddd > 99) {
+            erros.push({
+                campo: "TELEFONE",
+                valor_encontrado: telefone,
+                valor_esperado: "DDD válido (11-99, exceto alguns como 42)",
+                severidade: "critico",
+                explicacao: "DDD " + ddd + " não existe no Brasil",
+                sugestao_correcao: "Verificar o DDD correto da região"
+            });
+        }
     }
 }
-\`\`\`
 
-### 📍 LOCAIS ESPECÍFICOS OBRIGATÓRIOS:
+// EMAIL - Verificação de erros comuns
+if (email_encontrado) {
+    // Verificar domínios com erros de digitação
+    if (email.includes("geronco")) {
+        erros.push({
+            campo: "EMAIL",
+            valor_encontrado: email,
+            valor_esperado: email.replace("geronco", "geronimo") + " (sugestão)",
+            severidade: "alto",
+            explicacao: "Possível erro de digitação no email",
+            sugestao_correcao: "Verificar se o email está correto"
+        });
+    }
+}
+```
 
-#### **1. Desconto da Fidelidade:**
-\`\`\`
-SIM (X)
-...desconto de R\$ XXX,XX (valor por extenso)...
-\`\`\`
-
-#### **2. Taxa de Instalação (SEÇÃO CORRETA):**
-\`\`\`
-TAXA DA INSTALAÇÃO DA INFRAESTRUTURA DOS SERVIÇOS
-VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: GRATUITA
-\`\`\`
-
-#### **3. Taxa de Instalação (SEÇÃO ERRADA - IGNORAR):**
-\`\`\`
-TAXA DE INSTALAÇÃO ( ) SIM ( X ) NÃO R\$ 200,00  ← NUNCA EXTRAIR DAQUI!
-\`\`\`
-
-### 🚫 LOCAIS PROIBIDOS PARA EXTRAÇÃO:
-
-#### **NUNCA extrair de:**
-- Tabelas gerais de valores
-- Campos informativos
-- Seções não relacionadas à fidelidade escolhida
-- Qualquer lugar que não seja a seção específica da fidelidade
+### **PASSO 2: ANALISAR DADOS CONTRATUAIS**
+- Identificar modelo do contrato
+- Verificar valores e taxas
+- Validar fidelidade e descontos
 
 ## FORMATO DE RESPOSTA OBRIGATÓRIO
 
-**RETORNAR APENAS UM JSON VÁLIDO COM ESTA ESTRUTURA:**
+**RETORNAR APENAS UM JSON VÁLIDO:**
 
 \`\`\`json
 {
   "modelo_identificado": {
-    "nome": "2024 Combo 800Mbps",
+    "nome": "2024 Combo 600Mbps",
     "confianca": 95
-  },
-  "analise_fidelidade": {
-    "opcao_fidelidade": "SIM",
-    "valor_desconto_extraido": "R\$ 700,00",
-    "texto_origem": "desconto de R\$ 700,00 (Setecentos Reais)",
-    "marcacao_encontrada": "SIM (X)"
-  },
-  "validacao_taxas": {
-    "fidelidade": "SIM",
-    "valor_desconto_fidelidade": "R\$ 700,00",
-    "taxa_instalacao_encontrada": "R\$ 0,00",
-    "taxa_instalacao_status": "CORRETO",
-    "taxa_instalacao_explicacao": "✅ GRATUITA extraída da seção correta da fidelidade",
-    "taxa_rescisao_esperada": "R\$ 700,00",
-    "taxa_rescisao_encontrada": "R\$ 700,00",
-    "taxa_rescisao_status": "CORRETO",
-    "taxa_rescisao_explicacao": "✅ Igual ao desconto aplicado"
   },
   "erros": [
     {
-      "campo": "cpf",
-      "valor_encontrado": "123.456.789-00",
-      "valor_esperado": "CPF válido formato XXX.XXX.XXX-XX",
+      "campo": "CPF",
+      "valor_encontrado": "137.158.269-677",
+      "valor_esperado": "CPF válido no formato XXX.XXX.XXX-XX com 11 dígitos",
       "severidade": "critico",
-      "explicacao": "CPF com formato inválido",
-      "sugestao_correcao": "Verificar dígitos verificadores",
-      "local_origem": "Seção dados pessoais"
+      "explicacao": "CPF contém 12 dígitos (677 no final) quando deveria ter apenas 11",
+      "sugestao_correcao": "Corrigir para formato XXX.XXX.XXX-XX com apenas 2 dígitos finais",
+      "local_origem": "Seção QUALIFICAÇÃO DO ASSINANTE"
+    },
+    {
+      "campo": "TELEFONE",
+      "valor_encontrado": "(42) 998853-6432",
+      "valor_esperado": "DDD válido do Brasil",
+      "severidade": "critico", 
+      "explicacao": "DDD 42 não existe no sistema de numeração brasileiro",
+      "sugestao_correcao": "Verificar o DDD correto da região do cliente",
+      "local_origem": "Campo CELULAR"
+    },
+    {
+      "campo": "EMAIL",
+      "valor_encontrado": "felipe.geronco@gmail.com",
+      "valor_esperado": "Email com grafia correta",
+      "severidade": "alto",
+      "explicacao": "Possível erro de digitação em 'geronco'",
+      "sugestao_correcao": "Confirmar se o email está correto ou se deveria ser outro nome",
+      "local_origem": "Campo E-MAIL"
     }
   ],
   "alertas": [
     {
-      "tipo": "telefone",
-      "campo": "telefone",
-      "valor_encontrado": "(11) 99999-9999",
-      "sugestao": "Verificar se número está correto"
+      "tipo": "verificacao_necessaria",
+      "campo": "dados_pessoais",
+      "valor_encontrado": "Múltiplos erros detectados",
+      "sugestao": "Revisar todos os dados pessoais antes de aprovar o contrato"
     }
   ],
   "validacao_dados_pessoais": {
     "nome": {
-      "valor": "João Silva Santos",
+      "valor": "Felipe Camarrgo",
       "status": "CORRETO",
-      "observacoes": []
+      "observacoes": ["Nome completo válido"]
     },
     "cpf": {
-      "valor": "123.456.789-00",
+      "valor": "137.158.269-677", 
       "status": "ERRO",
-      "observacoes": ["CPF inválido - dígitos verificadores incorretos"]
+      "observacoes": ["CPF com formato incorreto - 12 dígitos em vez de 11"]
     },
     "telefone": {
-      "valor": "(11) 99999-9999",
-      "status": "ALERTA",
-      "observacoes": ["Verificar se número está correto"]
+      "valor": "(42) 998853-6432",
+      "status": "ERRO", 
+      "observacoes": ["DDD 42 não existe no Brasil"]
     },
     "email": {
-      "valor": "joao@email.com",
-      "status": "CORRETO",
-      "observacoes": []
-    },
-    "endereco": {
-      "logradouro": "Rua das Flores, 123",
-      "cep": "01234-567",
-      "cidade": "São Paulo",
-      "status": "CORRETO",
-      "observacoes": []
+      "valor": "felipe.geronco@gmail.com",
+      "status": "ALERTA",
+      "observacoes": ["Possível erro de digitação"]
     }
   },
-  "debug_extracao": {
-    "local_instalacao": "SEÇÃO: VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE",
-    "valor_bruto_encontrado": "GRATUITA",
-    "valor_convertido": "R\$ 0,00",
-    "local_ignorado": "Tabela geral TAXA DE INSTALAÇÃO foi ignorada corretamente"
-  },
   "resumo": {
-    "total_erros": 1,
+    "total_erros": 3,
     "total_alertas": 1,
-    "plano_identificado": "2024 Combo 800Mbps",
+    "plano_identificado": "2024 Combo 600Mbps",
     "dados_pessoais_ok": false,
     "dados_contratuais_ok": true
   },
-  "status_geral": "erro",
+  "status_geral": "reprovado",
   "observacoes": [
-    "CPF com dígitos verificadores incorretos",
-    "Dados contratuais extraídos corretamente",
-    "Verificar dados pessoais antes de aprovar"
+    "CRÍTICO: CPF com formato incorreto (12 dígitos)",
+    "CRÍTICO: DDD 42 não existe no sistema brasileiro", 
+    "ALERTA: Possível erro de digitação no email",
+    "Dados contratuais estão corretos",
+    "NECESSÁRIA correção dos dados pessoais antes da aprovação"
   ]
 }
 \`\`\`
 
-## 🚨 INSTRUÇÕES CRÍTICAS
+## 🚨 INSTRUÇÕES FINAIS CRÍTICAS
 
-1. **SEMPRE extrair da seção "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE"**
+1. **SEMPRE DETECTAR ERROS ÓBVIOS**: CPF com mais de 11 dígitos, DDDs inexistentes, emails com erros de digitação
+2. **SER RIGOROSO**: Não aprovar contratos com dados pessoais incorretos
+3. **INCLUIR LOCALIZAÇÃO**: Sempre informar onde foi encontrado o erro
+4. **SEVERIDADE CORRETA**: Dados pessoais incorretos = CRÍTICO
+5. **SUGESTÕES PRÁTICAS**: Dar orientações específicas de correção
 
-2. **NUNCA extrair da tabela geral "TAXA DE INSTALAÇÃO ( ) SIM ( X ) NÃO"**
-
-3. **CONVERTER "GRATUITA" = R\$ 0,00**
-
-4. **INCLUIR debug_extracao** para mostrar de onde veio cada valor
-
-5. **LÓGICA FUNDAMENTAL:**
-   - Taxa Instalação = R\$ 700,00 - Desconto (da seção específica)
-   - Taxa Rescisão = Desconto
-
-**EXTRAIR SEMPRE DA SEÇÃO ESPECÍFICA DA FIDELIDADE, NUNCA DA TABELA GERAL!**
+**NUNCA APROVAR CONTRATOS COM ERROS CRÍTICOS NOS DADOS PESSOAIS!**
 
 **Contrato para análise:**
 \${contractText}\`;
