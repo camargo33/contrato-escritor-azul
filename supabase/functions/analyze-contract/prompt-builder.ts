@@ -6,17 +6,26 @@ Analisar contratos OCR da CIABRASNET, identificar o modelo e validar apenas camp
 
 ## ETAPA 1: IDENTIFICAÇÃO DO MODELO
 
-### Modelos Disponíveis:
-1. **2024 Combo 600Mbps** - R$ 129,99 - RESIDENCIAL - 12 meses - Taxa: R$ 200,00
-2. **1 Gb Empresarial** - R$ 229,90 - CORPORATIVO - 24 meses - Taxa: GRATUITA - IP: INCLUSO
-3. **2024 Combo Giga** - R$ 209,99 - RESIDENCIAL - 12 meses - Taxa: GRATUITA  
-4. **2024 Combo 300Mbps** - R$ 109,99 - RESIDENCIAL - 12 meses - Taxa: R$ 200,00
-5. **2024 Combo 800Mbps** - R$ 159,99 - RESIDENCIAL - 12 meses - Taxa: GRATUITA
+### Modelos Disponíveis (APENAS PARA IDENTIFICAÇÃO - NÃO USAR PARA VALIDAR TAXAS!):
+1. **2024 Combo 600Mbps** - R$ 129,99 - RESIDENCIAL - 12 meses
+2. **1 Gb Empresarial** - R$ 229,90 - CORPORATIVO - 24 meses - IP: INCLUSO
+3. **2024 Combo Giga** - R$ 209,99 - RESIDENCIAL - 12 meses
+4. **2024 Combo 300Mbps** - R$ 109,99 - RESIDENCIAL - 12 meses
+5. **2024 Combo 800Mbps** - R$ 159,99 - RESIDENCIAL - 12 meses
 
 ### Critérios de Identificação:
 - **Valor do plano** (mais confiável)
 - **Nome do plano** no texto
 - **Velocidade mencionada**
+
+### ⚠️ IMPORTANTE: A TABELA ACIMA SERVE APENAS PARA:
+- Identificar qual plano é (pelo valor)
+- Validar prazo de vigência 
+- Validar tipo (residencial/corporativo)
+
+### ⚠️ A TABELA NÃO DEVE SER USADA PARA VALIDAR:
+- Taxa de instalação (varia conforme fidelidade)
+- Taxa de rescisão (calculada pela regra de fidelidade)
 
 ## ETAPA 2: VALIDAÇÃO DE CAMPOS
 
@@ -53,11 +62,11 @@ Analisar contratos OCR da CIABRASNET, identificar o modelo e validar apenas camp
 - **Valores suspeitos**: Taxas de instalação muito altas (>R$ 500,00)
 
 ### Campos de Validação (Erros se diferentes):
-- **Valor do plano** (deve ser exato da tabela)
+- **Valor do plano** (deve ser exato da tabela acima)
 - **Prazo vigência** (CORPORATIVO=24 meses, RESIDENCIAL=12 meses)
 - **Tipo do plano** (apenas "1 Gb Empresarial" é CORPORATIVO)
-- **Taxa instalação** (⚠️ VALIDAÇÃO ESPECIAL - VER REGRA DA FIDELIDADE ABAIXO)
-- **Taxa rescisão** (⚠️ VALIDAÇÃO ESPECIAL - VER REGRA DA FIDELIDADE ABAIXO)
+- **Taxa instalação** (⚠️ USAR APENAS REGRA DA FIDELIDADE - IGNORAR TABELA)
+- **Taxa rescisão** (⚠️ USAR APENAS REGRA DA FIDELIDADE - IGNORAR TABELA)
 - **IP Fixo** (INCLUSO só no empresarial, outros=Variável R$ 50,00)
 
 ### Validação Específica de IP Fixo:
@@ -66,9 +75,15 @@ Analisar contratos OCR da CIABRASNET, identificar o modelo e validar apenas camp
 - **EMPRESARIAL**: IP Fixo INCLUSO (não cobra taxa adicional)
 - **RESIDENCIAL**: IP Fixo opcional com taxa de R$ 50,00
 
-## ETAPA 3: REGRA OFICIAL DAS TAXAS COM FIDELIDADE
+## ETAPA 3: REGRA ÚNICA E EXCLUSIVA DAS TAXAS
 
-### ⚠️ REGRA CRÍTICA - EXTRAIR VALOR DO TEXTO DA FIDELIDADE:
+### ⚠️ REGRA ABSOLUTA - IGNORAR QUALQUER VALOR DA TABELA DE MODELOS!
+
+**INSTRUÇÕES CRÍTICAS:**
+- ❌ NUNCA use valores da tabela de modelos para validar taxas
+- ❌ NUNCA valide taxa de instalação contra R$ 200,00 ou qualquer valor fixo
+- ❌ NUNCA valide taxa de rescisão contra R$ 500,00 ou qualquer valor fixo
+- ✅ USE APENAS a regra da fidelidade explicada abaixo
 
 \\`\\`\\`
 PASSO 1: Verificar se fidelidade está marcada
@@ -93,23 +108,20 @@ SE NÃO TEM FIDELIDADE (NÃO):
   ✅ Taxa_Rescisão_Esperada = R$ 0,00 (sem multa)
 \\`\\`\\`
 
-### Exemplos Práticos da Regra:
+### Exemplos Práticos da Regra CORRETA:
 
 **Cenário 1: Texto da fidelidade menciona "desconto de R$ 580,00"**
-- Taxa_Rescisão_Esperada = R$ 580,00 (valor do desconto)
-- Taxa_Instalação_Esperada = R$ 700,00 - R$ 580,00 = R$ 120,00
-- ✅ CORRETO: Instalação R$ 120,00 + Rescisão R$ 580,00 = R$ 700,00
-- ❌ ERRO: Instalação R$ 120,00 + Rescisão R$ 700,00 = R$ 820,00
+- ✅ Taxa_Rescisão_Esperada = R$ 580,00 (valor do desconto)
+- ✅ Taxa_Instalação_Esperada = R$ 700,00 - R$ 580,00 = R$ 120,00
+- ✅ VALIDAÇÃO: Instalação R$ 120,00 + Rescisão R$ 580,00 = CORRETO
+- ❌ ERRO: Instalação R$ 120,00 + Rescisão R$ 700,00 = ERRO (rescisão incorreta)
 
-**Cenário 2: Texto da fidelidade menciona "desconto de R$ 200,00"**
-- Taxa_Rescisão_Esperada = R$ 200,00 (valor do desconto)
-- Taxa_Instalação_Esperada = R$ 700,00 - R$ 200,00 = R$ 500,00
-- ✅ CORRETO: Instalação R$ 500,00 + Rescisão R$ 200,00 = R$ 700,00
+**❌ EXEMPLO DO QUE NÃO FAZER:**
+- ❌ "Taxa de instalação deveria ser R$ 200,00" (ERRADO - ignorar tabela!)
+- ❌ "Taxa de rescisão deveria ser R$ 500,00" (ERRADO - ignorar tabela!)
 
-**Cenário 3: Texto da fidelidade menciona "desconto de R$ 650,00"**
-- Taxa_Rescisão_Esperada = R$ 650,00 (valor do desconto)
-- Taxa_Instalação_Esperada = R$ 700,00 - R$ 650,00 = R$ 50,00
-- ✅ CORRETO: Instalação R$ 50,00 + Rescisão R$ 650,00 = R$ 700,00
+**✅ EXEMPLO DO QUE FAZER:**
+- ✅ "Com fidelidade e desconto de R$ 580,00: Instalação = R$ 120,00, Rescisão = R$ 580,00"
 
 ## ETAPA 4: ALGORITMO CORRETO DE VALIDAÇÃO
 
@@ -131,10 +143,15 @@ if (fidelidade === "SIM") {
     taxa_instalacao_esperada = 700.00 - valor_desconto
     
     // Validar contra valores esperados baseados no desconto
-    if (taxa_instalacao_contrato !== taxa_instalacao_esperada) {
+    if (taxa_instalacao_contrato === taxa_instalacao_esperada) {
+        // CORRETO - não reportar erro
+    } else {
         // ERRO: Taxa de instalação incorreta
     }
-    if (taxa_rescisao_contrato !== taxa_rescisao_esperada) {
+    
+    if (taxa_rescisao_contrato === taxa_rescisao_esperada) {
+        // CORRETO - não reportar erro
+    } else {
         // ERRO: Taxa de rescisão incorreta
     }
     
@@ -147,6 +164,8 @@ if (fidelidade === "SIM") {
         // ERRO: Taxa de rescisão deve ser R$ 0,00
     }
 }
+
+// ⚠️ CRÍTICO: NUNCA validar contra tabela de modelos!
 \\`\\`\\`
 
 ## FORMATO DE RESPOSTA
@@ -222,25 +241,29 @@ if (fidelidade === "SIM") {
   "observacoes": [
     "Cliente optou pela fidelidade com desconto de R$ 580,00",
     "Taxa de rescisão deve ser igual ao valor do desconto: R$ 580,00",
-    "Taxa de instalação calculada corretamente: R$ 700,00 - R$ 580,00 = R$ 120,00"
+    "Taxa de instalação calculada corretamente: R$ 700,00 - R$ 580,00 = R$ 120,00",
+    "IMPORTANTE: Valores da tabela de modelos NÃO foram usados para validar taxas"
   ]
 }
 \\`\\`\\`
 
-## INSTRUÇÕES FINAIS
+## INSTRUÇÕES FINAIS ABSOLUTAS
 
 1. **IDENTIFIQUE** opção de fidelidade (SIM/NÃO)
 2. **SE COM fidelidade**: Busque o valor do desconto no TEXTO da seção de fidelidade
 3. **EXTRAIA** o valor monetário mencionado (ex: "R$ 580,00", "R$ 200,00", etc.)
 4. **CALCULE**: Taxa_Rescisão = Valor_Desconto, Taxa_Instalação = 700 - Valor_Desconto
 5. **VALIDE** se os valores do contrato coincidem com os calculados
-6. **EXPLIQUE** de onde veio o valor do desconto no JSON de resposta
+6. **NUNCA** use valores da tabela de modelos para validar taxas
+7. **EXPLIQUE** de onde veio o valor do desconto no JSON de resposta
 
-**REGRA PRINCIPAL**: 
-- O valor do desconto mencionado no texto da fidelidade VIRA a taxa de rescisão
-- A taxa de instalação é o complemento para chegar a R$ 700,00
+**REGRAS INQUEBRANTÁVEIS**: 
+- ❌ NUNCA validar taxa de instalação contra R$ 200,00
+- ❌ NUNCA validar taxa de rescisão contra R$ 500,00  
+- ✅ SEMPRE usar apenas a regra da fidelidade
+- ✅ O valor do desconto mencionado no texto da fidelidade VIRA a taxa de rescisão
 
-**CRÍTICO**: Sempre procurar e extrair o valor monetário específico do texto da fidelidade!
+**CRÍTICO**: A tabela de modelos serve APENAS para identificar o plano, NÃO para validar taxas!
 
 **Contrato para análise:**
 ${contractText}`;
