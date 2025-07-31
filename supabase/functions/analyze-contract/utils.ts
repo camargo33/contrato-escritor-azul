@@ -14,21 +14,28 @@ export interface ApiKeyValidationResult {
 export const validateOpenRouterApiKey = (): ApiKeyValidationResult => {
   console.log("=== VERIFICANDO CONFIGURAÇÃO DA API KEY OPENROUTER ===");
   
-  // Buscar pela chave OpenRouter
-  const openRouterApiKey = Deno.env.get('OpenRouter');
+  // Buscar pela chave OpenRouter (tentando ambas as variáveis)
+  let openRouterApiKey = Deno.env.get('OPEN_ROUTER'); // Primeiro tenta OPEN_ROUTER (padrão)
+  let usedVariable = 'OPEN_ROUTER';
+  
+  if (!openRouterApiKey) {
+    openRouterApiKey = Deno.env.get('OpenRouter'); // Fallback para OpenRouter
+    usedVariable = 'OpenRouter';
+  }
   
   // Listar todas as variáveis de ambiente disponíveis (sem mostrar valores)
   const allEnvVars = Object.keys(Deno.env.toObject());
   console.log("Variáveis de ambiente disponíveis:", allEnvVars);
+  console.log("Tentando usar variável:", usedVariable);
   
   if (!openRouterApiKey) {
     console.error("❌ ERRO CRÍTICO: API key do OpenRouter não encontrada");
     return {
       isValid: false,
-      error: "API key do OpenRouter não configurada. Verifique se a variável 'OpenRouter' está definida nos secrets",
+      error: "API key do OpenRouter não configurada. Verifique se a variável 'OPEN_ROUTER' ou 'OpenRouter' está definida nos secrets",
       debug: {
         available_env_vars: allEnvVars,
-        checked_key: 'OpenRouter'
+        checked_keys: ['OPEN_ROUTER', 'OpenRouter']
       }
     };
   }
@@ -40,14 +47,21 @@ export const validateOpenRouterApiKey = (): ApiKeyValidationResult => {
     
     return {
       isValid: false,
-      error: "API key do OpenRouter inválida. A chave deve começar com 'sk-or-'. Verifique se a chave foi copiada corretamente."
+      error: "API key do OpenRouter inválida. A chave deve começar com 'sk-or-'. Verifique se a chave foi copiada corretamente.",
+      debug: {
+        used_variable: usedVariable,
+        key_prefix: openRouterApiKey.substring(0, 10)
+      }
     };
   }
 
-  console.log("✅ API key OpenRouter validada com sucesso");
+  console.log("✅ API key OpenRouter validada com sucesso usando variável:", usedVariable);
   return {
     isValid: true,
-    apiKey: openRouterApiKey
+    apiKey: openRouterApiKey,
+    debug: {
+      used_variable: usedVariable
+    }
   };
 };
 
