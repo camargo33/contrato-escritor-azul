@@ -6,6 +6,8 @@ import ErrorListCard from "./analysis/ErrorListCard";
 import AlertListCard from "./analysis/AlertListCard";
 import FallbackAnalysisView from "./analysis/FallbackAnalysisView";
 import AnalysisFooter from "./analysis/AnalysisFooter";
+import FidelityAnalysisCard from "./analysis/FidelityAnalysisCard";
+import TaxValidationCard from "./analysis/TaxValidationCard";
 
 interface AnalysisReportProps {
   content: string;
@@ -50,6 +52,27 @@ interface AlertItem {
   sugestao: string;
 }
 
+interface FidelityAnalysisData {
+  opcao_fidelidade: string;
+  valor_desconto_extraido?: string;
+  texto_origem?: string;
+  regra_aplicada?: string;
+  marcacao_encontrada?: string;
+  secao_ignorada?: string;
+}
+
+interface TaxValidationData {
+  fidelidade: string;
+  valor_desconto_fidelidade?: string;
+  taxa_instalacao_encontrada: string;
+  taxa_instalacao_status: string;
+  taxa_instalacao_explicacao: string;
+  taxa_rescisao_esperada: string;
+  taxa_rescisao_encontrada: string;
+  taxa_rescisao_status: string;
+  taxa_rescisao_explicacao: string;
+}
+
 interface AnalysisData {
   modelo_identificado: ModeloIdentificado;
   erros: ErrorAnalysis[];
@@ -66,6 +89,8 @@ interface AnalysisData {
   };
   status_geral: 'aprovado' | 'reprovado';
   observacoes: string[];
+  analise_fidelidade?: FidelityAnalysisData;
+  validacao_taxas?: TaxValidationData;
 }
 
 const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: AnalysisReportProps) => {
@@ -295,6 +320,16 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
 
             {/* Status Geral */}
             <StatusBadge status={analysisData.status_geral} />
+
+            {/* Análise da Fidelidade - NOVO COMPONENTE */}
+            {analysisData.analise_fidelidade && (
+              <FidelityAnalysisCard fidelityData={analysisData.analise_fidelidade} />
+            )}
+
+            {/* Validação de Taxas - NOVO COMPONENTE */}
+            {analysisData.validacao_taxas && (
+              <TaxValidationCard taxData={analysisData.validacao_taxas} />
+            )}
 
             {/* Resumo Detalhado */}
             {(analysisData.resumo && (analysisData.resumo.total_erros > 0 || (analysisData.alertas && analysisData.alertas.length > 0))) && (
