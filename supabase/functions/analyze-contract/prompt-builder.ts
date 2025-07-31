@@ -57,7 +57,7 @@ Analisar contratos OCR da CIABRASNET, identificar o modelo e validar apenas camp
 - **Prazo vigência** (CORPORATIVO=24 meses, RESIDENCIAL=12 meses)
 - **Tipo do plano** (apenas "1 Gb Empresarial" é CORPORATIVO)
 - **Taxa instalação** (conforme tabela)
-- **Taxa rescisão** (usar cálculo de fidelidade)
+- **Taxa rescisão** (usar NOVA LÓGICA DE CÁLCULO abaixo)
 - **IP Fixo** (INCLUSO só no empresarial, outros=Variável R$ 50,00)
 
 ### Validação Específica de IP Fixo:
@@ -66,42 +66,59 @@ Analisar contratos OCR da CIABRASNET, identificar o modelo e validar apenas camp
 - **EMPRESARIAL**: IP Fixo INCLUSO (não cobra taxa adicional)
 - **RESIDENCIAL**: IP Fixo opcional com taxa de R$ 50,00
 
-## ETAPA 3: CÁLCULO TAXA DE RESCISÃO
+## ETAPA 3: NOVA LÓGICA DE CÁLCULO DA TAXA DE RESCISÃO
 
-### Regra Simples:
-\`\`\`
-1. Procurar "DA OPÇÃO DE FIDELIDADE" com "SIM (X)"
-2. SE fidelidade marcada:
-   - Extrair valor da linha: "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: R$ X,XX"
-   - Taxa rescisão = 700 - valor_extraído
-3. SE fidelidade NÃO marcada:
-   - Taxa rescisão = R$ 700,00
-\`\`\`
+### ⚠️ REGRA OFICIAL ATUALIZADA (SEGUIR EXATAMENTE):
 
-### Exemplos:
-- Fidelidade SIM + Linha R$ 200,00 → Rescisão = R$ 500,00
-- Fidelidade SIM + GRATUITA → Rescisão = R$ 700,00  
-- Fidelidade NÃO → Rescisão = R$ 700,00
+\\`\\`\\`
+PASSO 1: Verificar se tem fidelidade
+- Procurar por "DA OPÇÃO DE FIDELIDADE" 
+- Se está marcado "SIM (X)" → TEM FIDELIDADE
+- Se está marcado "NÃO (X)" → NÃO TEM FIDELIDADE
+
+PASSO 2: Extrair valor da taxa de instalação do contrato
+- Encontrar o valor real da taxa de instalação no contrato
+- Converter para número (ex: R$ 200,00 → 200)
+
+PASSO 3: Aplicar a lógica oficial
+SE Fidelidade = "SIM":
+  SE Valor_Taxa_Instalacao > 0:
+    Taxa_Rescisao_Esperada = 700 - Valor_Taxa_Instalacao
+  SENÃO:
+    Taxa_Rescisao_Esperada = 700
+SENÃO (Fidelidade = "NÃO"):
+  Taxa_Rescisao_Esperada = 700
+
+PASSO 4: Comparar com valor encontrado no contrato
+- Se Taxa_Rescisao_Encontrada ≠ Taxa_Rescisao_Esperada → É ERRO
+- Se Taxa_Rescisao_Encontrada = Taxa_Rescisao_Esperada → Está CORRETO
+\\`\\`\\`
+
+### Exemplos da Nova Lógica:
+- **Fidelidade SIM + Taxa Instalação R$ 200,00** → Rescisão = 700 - 200 = **R$ 500,00**
+- **Fidelidade SIM + Taxa Instalação R$ 120,00** → Rescisão = 700 - 120 = **R$ 580,00**
+- **Fidelidade SIM + Taxa GRATUITA (R$ 0,00)** → Rescisão = 700 - 0 = **R$ 700,00**
+- **Fidelidade NÃO + Qualquer taxa** → Rescisão = **R$ 700,00**
 
 ## ETAPA 4: REGRA CRÍTICA
 
 **⚠️ SÓ REPORTAR COMO ERRO SE VALORES FOREM DIFERENTES**
 
-\`\`\`javascript
+\\`\\`\\`javascript
 // ALGORITMO DE VALIDAÇÃO
 valor_contrato = extrair_do_contrato()
-valor_esperado = buscar_na_tabela()
+valor_esperado = calcular_usando_nova_logica()
 
 if (valor_contrato === valor_esperado) {
     // NÃO É ERRO - NÃO INCLUIR NO RESULTADO
 } else {
     // É ERRO REAL - INCLUIR NO ARRAY DE ERROS
 }
-\`\`\`
+\\`\\`\\`
 
 ## FORMATO DE RESPOSTA
 
-\`\`\`json
+\\`\\`\\`json
 {
   "modelo_identificado": {
     "nome": "2024 Combo 600Mbps",
@@ -115,17 +132,26 @@ if (valor_contrato === valor_esperado) {
       "tipo": "RESIDENCIAL",
       "vigencia": "12 meses",
       "taxa_instalacao": "R$ 200,00",
-      "rescisao": "R$ 500,00"
+      "rescisao": "Calculada pela nova lógica"
     }
+  },
+  "calculo_rescisao": {
+    "fidelidade_encontrada": "SIM",
+    "taxa_instalacao_encontrada": "R$ 120,00",
+    "calculo_aplicado": "700 - 120 = 580",
+    "taxa_rescisao_esperada": "R$ 580,00",
+    "taxa_rescisao_contrato": "R$ 700,00",
+    "status": "ERRO - Valor incorreto no contrato"
   },
   "erros": [
     // APENAS divergências reais aqui
     {
-      "campo": "Valor do Plano",
-      "valor_encontrado": "R$ 120,00",
-      "valor_esperado": "R$ 129,99",
-      "sugestao_correcao": "Corrigir valor para R$ 129,99",
-      "localizacao": "Seção do contrato onde foi encontrado",
+      "campo": "Taxa de Rescisão",
+      "valor_encontrado": "R$ 700,00",
+      "valor_esperado": "R$ 580,00",
+      "calculo_detalhado": "Fidelidade=SIM, Taxa_Instalação=R$ 120,00, Logo: 700 - 120 = R$ 580,00",
+      "sugestao_correcao": "Corrigir taxa de rescisão para R$ 580,00 conforme cálculo oficial",
+      "localizacao": "Seção da taxa de rescisão",
       "severidade": "critico"
     }
   ],
@@ -136,57 +162,41 @@ if (valor_contrato === valor_esperado) {
       "campo": "Estado Civil",
       "valor_encontrado": "SOOLTEIRO",
       "sugestao": "Verificar se deveria ser 'SOLTEIRO'"
-    },
-    {
-      "tipo": "formato_invalido",
-      "campo": "CPF",
-      "valor_encontrado": "123.456.789-1",
-      "sugestao": "CPF deve ter exatamente 11 dígitos. Encontrado: 10 dígitos"
-    },
-    {
-      "tipo": "formato_invalido",
-      "campo": "Telefone",
-      "valor_encontrado": "11999999999",
-      "sugestao": "Telefone deve estar no formato (XX) XXXXX-XXXX ou (XX) XXXX-XXXX"
-    },
-    {
-      "tipo": "valor_suspeito",
-      "campo": "Taxa de Instalação",
-      "valor_encontrado": "R$ 2000,00",
-      "sugestao": "Valor suspeito - verificar se não deveria ser R$ 200,00"
     }
   ],
   "validacoes_corretas": [
     {
-      "campo": "Tipo do Plano",
-      "valor": "RESIDENCIAL",
+      "campo": "Valor do Plano",
+      "valor": "R$ 129,99",
       "status": "✅ Correto conforme tabela"
     }
   ],
   "resumo": {
     "total_erros": 1,
-    "total_alertas": 2,
-    "plano_identificado": "2024 Combo 600Mbps"
+    "total_alertas": 0,
+    "plano_identificado": "2024 Combo 600Mbps",
+    "calculo_rescisao_aplicado": "700 - 120 = 580"
   },
-  "status_geral": "aprovado|reprovado",
+  "status_geral": "reprovado",
   "observacoes": [
-    "Observações sobre a análise realizada"
+    "Taxa de rescisão calculada incorretamente no contrato",
+    "Deve seguir a fórmula: 700 - valor_taxa_instalacao quando há fidelidade"
   ]
 }
-\`\`\`
+\\`\\`\\`
 
 ## INSTRUÇÕES FINAIS
 
 1. **IDENTIFIQUE primeiro** o modelo baseado no valor
-2. **COMPARE exatamente** valores encontrados vs esperados
-3. **NÃO reporte** valores iguais como erro
-4. **INCLUA alertas** APENAS para erros de formato e digitação (NÃO campos vazios)
-5. **VALIDE CPF/CNPJ** contando dígitos exatos (11 ou 14)
-6. **VALIDE TELEFONE** formato brasileiro com DDD
-7. **USE cálculo simples** para taxa de rescisão
-8. **ARRAY VAZIO []** quando todos valores corretos
+2. **EXTRAIA** valor real da taxa de instalação do contrato
+3. **VERIFIQUE** se tem fidelidade marcada
+4. **CALCULE** taxa de rescisão usando a NOVA LÓGICA OFICIAL
+5. **COMPARE** valor calculado vs valor no contrato
+6. **REPORTE** apenas se forem diferentes
+7. **INCLUA** seção "calculo_rescisao" detalhada
+8. **USE** nova fórmula: 700 - taxa_instalacao (se fidelidade=SIM e taxa>0)
 
-**LEMBRE-SE**: Valores idênticos = ACERTO = Não reportar
+**LEMBRE-SE**: A nova lógica é OBRIGATÓRIA para cálculo da taxa de rescisão!
 
 **Contrato para análise:**
 ${contractText}`;
