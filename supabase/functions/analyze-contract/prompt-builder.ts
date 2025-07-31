@@ -1,8 +1,8 @@
 export const buildContractAnalysisPrompt = (contractText: string): string => {
-  return `# VALIDADOR DE CONTRATOS CIABRASNET - ESTRUTURA JSON CORRETA
+  return `# VALIDADOR DE CONTRATOS CIABRASNET - EXTRAÇÃO PRECISA DE LOCAIS ESPECÍFICOS
 
 ## OBJETIVO
-Analisar contratos OCR da CIABRASNET e gerar JSON na estrutura EXATA que o sistema espera.
+Analisar contratos OCR da CIABRASNET extraindo valores EXATAMENTE dos locais corretos especificados.
 
 ## ETAPA 1: IDENTIFICAÇÃO DO MODELO
 
@@ -14,41 +14,109 @@ Analisar contratos OCR da CIABRASNET e gerar JSON na estrutura EXATA que o siste
 5. **2024 Combo 800Mbps** - R$ 159,99 - RESIDENCIAL - 12 meses
 6. **COMBO 2025 500 MEGAS MATRIZ** - R$ 119,99 - RESIDENCIAL - 12 meses
 
-## 🔥 ETAPA 2: LÓGICA DA FIDELIDADE E EXTRAÇÃO DE VALORES
+## 🔥 ETAPA 2: EXTRAÇÃO DOS LOCAIS CORRETOS
 
-### **Regra Fundamental:**
-- **Valor base instalação = R$ 700,00**
-- **COM FIDELIDADE SIM (X):** Taxa Instalação = R$ 700,00 - Desconto | Taxa Rescisão = Desconto
-- **SEM FIDELIDADE NÃO (X):** Taxa Instalação = R$ 700,00 | Taxa Rescisão = R$ 700,00
+### 🚨 REGRA CRÍTICA - ONDE EXTRAIR OS VALORES:
 
-### **Extração de Valores:**
+#### **TAXA DE INSTALAÇÃO - LOCAL CORRETO:**
+**SEMPRE extrair da seção:**
+\`\`\`
+TAXA DA INSTALAÇÃO DA INFRAESTRUTURA DOS SERVIÇOS
+VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: [VALOR_AQUI]
+\`\`\`
 
-#### **1. Desconto da Fidelidade:**
-Procurar na seção "SIM (X)": "desconto de R$ XXX,XX (valor por extenso)"
+#### **TAXA DE INSTALAÇÃO - LOCAL ERRADO (NUNCA USAR):**
+**NUNCA extrair da tabela geral:**
+\`\`\`
+TAXA DE INSTALAÇÃO ( ) SIM ( X ) NÃO R$ 200,00
+\`\`\`
 
-#### **2. Taxa de Instalação Aplicada:**
-Procurar em: "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE"
-- Se encontrar "GRATUITA" = R$ 0,00
-- Se encontrar valor específico = usar esse valor
+### 🎯 LÓGICA DE FIDELIDADE:
 
-#### **3. Taxa de Rescisão:**
-Procurar valor aplicado no contrato (não usar campos explicativos)
+**Valor base instalação = R$ 700,00**
 
-### **Lógica de Validação:**
+#### **COM FIDELIDADE SIM (X):**
+1. Extrair desconto da seção "SIM (X)"
+2. Taxa Instalação = R$ 700,00 - Desconto
+3. Taxa Rescisão = Desconto
+4. **IMPORTANTE:** Valor aplicado deve vir da seção específica da fidelidade
+
+#### **SEM FIDELIDADE NÃO (X):**
+1. Taxa Instalação = R$ 700,00
+2. Taxa Rescisão = R$ 700,00
+
+### 🔍 ALGORITMO DE EXTRAÇÃO CORRETO:
+
 \`\`\`javascript
-if (fidelidade === "SIM") {
-    taxa_instalacao_esperada = 700.00 - desconto
-    taxa_rescisao_esperada = desconto
+// PASSO 1: Identificar escolha de fidelidade
+if (texto.includes("SIM (X)")) {
+    fidelidade_escolhida = "SIM"
     
-    // Validar
-    instalacao_ok = (taxa_instalacao_contrato === taxa_instalacao_esperada)
-    rescisao_ok = (taxa_rescisao_contrato === taxa_rescisao_esperada)
+    // PASSO 2: Extrair desconto da seção SIM (X)
+    secao_sim = procurar_secao_sim_marcada()
+    desconto_valor = extrair_desconto(secao_sim)
+    
+    // PASSO 3: EXTRAIR DA SEÇÃO ESPECÍFICA DA FIDELIDADE (NÃO DA TABELA GERAL!)
+    procurar_por = "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE:"
+    instalacao_aplicada = extrair_valor_apos_texto(procurar_por)
+    
+    // Converter valores
+    if (instalacao_aplicada === "GRATUITA" || instalacao_aplicada === "gratuita") {
+        taxa_instalacao_contrato = 0.00
+    } else {
+        taxa_instalacao_contrato = converter_para_numero(instalacao_aplicada)
+    }
+    
+    // PASSO 4: Calcular valores esperados
+    taxa_instalacao_esperada = 700.00 - desconto_valor
+    taxa_rescisao_esperada = desconto_valor
+    
+    console.log("🔍 EXTRAÇÃO CORRETA:")
+    console.log("Desconto extraído:", desconto_valor)
+    console.log("Taxa instalação APLICADA (seção fidelidade):", taxa_instalacao_contrato)
+    console.log("Taxa instalação ESPERADA:", taxa_instalacao_esperada)
+    
+    // PASSO 5: Validar
+    if (taxa_instalacao_contrato === taxa_instalacao_esperada) {
+        instalacao_status = "CORRETO"
+        instalacao_explicacao = "✅ Valor correto baseado no desconto da fidelidade"
+    } else {
+        instalacao_status = "ERRO"
+        instalacao_explicacao = "❌ Deveria ser R$ " + taxa_instalacao_esperada.toFixed(2) + " com desconto de R$ " + desconto_valor.toFixed(2)
+    }
 }
 \`\`\`
 
-## 🚨 FORMATO DE RESPOSTA OBRIGATÓRIO
+### 📍 LOCAIS ESPECÍFICOS OBRIGATÓRIOS:
 
-**RETORNAR APENAS UM JSON VÁLIDO COM ESTA ESTRUTURA EXATA:**
+#### **1. Desconto da Fidelidade:**
+```
+SIM (X)
+...desconto de R$ XXX,XX (valor por extenso)...
+```
+
+#### **2. Taxa de Instalação (SEÇÃO CORRETA):**
+```
+TAXA DA INSTALAÇÃO DA INFRAESTRUTURA DOS SERVIÇOS
+VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: GRATUITA
+```
+
+#### **3. Taxa de Instalação (SEÇÃO ERRADA - IGNORAR):**
+```
+TAXA DE INSTALAÇÃO ( ) SIM ( X ) NÃO R$ 200,00  ← NUNCA EXTRAIR DAQUI!
+```
+
+### 🚫 LOCAIS PROIBIDOS PARA EXTRAÇÃO:
+
+#### **NUNCA extrair de:**
+- Tabelas gerais de valores
+- Campos informativos
+- Seções não relacionadas à fidelidade escolhida
+- Qualquer lugar que não seja a seção específica da fidelidade
+
+## FORMATO DE RESPOSTA OBRIGATÓRIO
+
+**RETORNAR APENAS UM JSON VÁLIDO COM ESTA ESTRUTURA:**
 
 \`\`\`json
 {
@@ -67,143 +135,47 @@ if (fidelidade === "SIM") {
     "valor_desconto_fidelidade": "R$ 700,00",
     "taxa_instalacao_encontrada": "R$ 0,00",
     "taxa_instalacao_status": "CORRETO",
-    "taxa_instalacao_explicacao": "✅ GRATUITA = R$ 0,00, correto com desconto total de R$ 700,00",
+    "taxa_instalacao_explicacao": "✅ GRATUITA extraída da seção correta da fidelidade",
     "taxa_rescisao_esperada": "R$ 700,00",
     "taxa_rescisao_encontrada": "R$ 700,00",
     "taxa_rescisao_status": "CORRETO",
-    "taxa_rescisao_explicacao": "✅ Igual ao desconto aplicado na instalação"
+    "taxa_rescisao_explicacao": "✅ Igual ao desconto aplicado"
+  },
+  "debug_extracao": {
+    "local_instalacao": "SEÇÃO: VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE",
+    "valor_bruto_encontrado": "GRATUITA",
+    "valor_convertido": "R$ 0,00",
+    "local_ignorado": "Tabela geral TAXA DE INSTALAÇÃO foi ignorada corretamente"
   },
   "erros": [],
-  "alertas": [],
-  "validacoes_corretas": [
-    {
-      "campo": "Taxa de Instalação",
-      "valor": "R$ 0,00 (GRATUITA)",
-      "status": "✅ CORRETO - Desconto total aplicado"
-    },
-    {
-      "campo": "Taxa de Rescisão",
-      "valor": "R$ 700,00",
-      "status": "✅ CORRETO - Igual ao desconto da fidelidade"
-    }
-  ],
   "resumo": {
     "total_erros": 0,
-    "total_alertas": 0,
     "plano_identificado": "2024 Combo 800Mbps"
   },
   "status_geral": "aprovado",
   "observacoes": [
-    "Cliente optou pela fidelidade SIM com desconto total de R$ 700,00",
-    "Taxa de instalação GRATUITA aplicada corretamente",
-    "Taxa de rescisão igual ao desconto concedido"
+    "Extração realizada da seção correta da fidelidade",
+    "Tabela geral de instalação foi ignorada conforme instruído",
+    "Valor GRATUITA convertido corretamente para R$ 0,00"
   ]
-}
-\`\`\`
-
-## 📋 CAMPOS OBRIGATÓRIOS DA ESTRUTURA
-
-### **validacao_taxas (OBRIGATÓRIO):**
-- \`fidelidade\`: "SIM" ou "NÃO"  
-- \`valor_desconto_fidelidade\`: "R$ XXX,XX" (se aplicável)
-- \`taxa_instalacao_encontrada\`: "R$ XXX,XX" (valor real do contrato)
-- \`taxa_instalacao_status\`: "CORRETO" ou "ERRO"
-- \`taxa_instalacao_explicacao\`: Explicação detalhada
-- \`taxa_rescisao_esperada\`: "R$ XXX,XX" (valor que deveria ser)
-- \`taxa_rescisao_encontrada\`: "R$ XXX,XX" (valor real do contrato)  
-- \`taxa_rescisao_status\`: "CORRETO" ou "ERRO"
-- \`taxa_rescisao_explicacao\`: Explicação detalhada
-
-### **analise_fidelidade (OBRIGATÓRIO):**
-- \`opcao_fidelidade\`: "SIM" ou "NÃO"
-- \`valor_desconto_extraido\`: "R$ XXX,XX"
-- \`texto_origem\`: Texto de onde foi extraído
-- \`marcacao_encontrada\`: "SIM (X)" ou "NÃO (X)"
-
-## 🎯 EXEMPLOS PRÁTICOS
-
-### **Exemplo 1 - Desconto Total (GRATUITA):**
-Cliente: SIM (X) | Desconto: R$ 700,00 | Instalação: GRATUITA
-
-\`\`\`json
-{
-  "validacao_taxas": {
-    "fidelidade": "SIM",
-    "valor_desconto_fidelidade": "R$ 700,00",
-    "taxa_instalacao_encontrada": "R$ 0,00",
-    "taxa_instalacao_status": "CORRETO",
-    "taxa_instalacao_explicacao": "✅ GRATUITA = R$ 0,00, correto com desconto total",
-    "taxa_rescisao_esperada": "R$ 700,00",
-    "taxa_rescisao_encontrada": "R$ 700,00",
-    "taxa_rescisao_status": "CORRETO",
-    "taxa_rescisao_explicacao": "✅ Igual ao desconto da fidelidade"
-  }
-}
-\`\`\`
-
-### **Exemplo 2 - Desconto Parcial:**
-Cliente: SIM (X) | Desconto: R$ 580,00 | Instalação: R$ 120,00
-
-\`\`\`json
-{
-  "validacao_taxas": {
-    "fidelidade": "SIM", 
-    "valor_desconto_fidelidade": "R$ 580,00",
-    "taxa_instalacao_encontrada": "R$ 120,00",
-    "taxa_instalacao_status": "CORRETO",
-    "taxa_instalacao_explicacao": "✅ R$ 120,00 correto (R$ 700,00 - R$ 580,00)",
-    "taxa_rescisao_esperada": "R$ 580,00",
-    "taxa_rescisao_encontrada": "R$ 580,00", 
-    "taxa_rescisao_status": "CORRETO",
-    "taxa_rescisao_explicacao": "✅ Igual ao desconto aplicado"
-  }
-}
-\`\`\`
-
-### **Exemplo 3 - Com Erro:**
-Cliente: SIM (X) | Desconto: R$ 580,00 | Instalação: R$ 120,00 | Rescisão: R$ 700,00 (ERRO)
-
-\`\`\`json
-{
-  "validacao_taxas": {
-    "fidelidade": "SIM",
-    "valor_desconto_fidelidade": "R$ 580,00", 
-    "taxa_instalacao_encontrada": "R$ 120,00",
-    "taxa_instalacao_status": "CORRETO",
-    "taxa_instalacao_explicacao": "✅ R$ 120,00 correto (R$ 700,00 - R$ 580,00)",
-    "taxa_rescisao_esperada": "R$ 580,00",
-    "taxa_rescisao_encontrada": "R$ 700,00",
-    "taxa_rescisao_status": "ERRO", 
-    "taxa_rescisao_explicacao": "❌ Deveria ser R$ 580,00 (igual ao desconto)"
-  },
-  "erros": [
-    {
-      "campo": "Taxa de Rescisão",
-      "valor_encontrado": "R$ 700,00",
-      "valor_esperado": "R$ 580,00",
-      "sugestao_correcao": "Corrigir para R$ 580,00",
-      "explicacao": "Com fidelidade, taxa de rescisão deve ser igual ao desconto aplicado",
-      "severidade": "critico"
-    }
-  ],
-  "resumo": {
-    "total_erros": 1
-  },
-  "status_geral": "reprovado"
 }
 \`\`\`
 
 ## 🚨 INSTRUÇÕES CRÍTICAS
 
-1. **SEMPRE incluir o campo \`validacao_taxas\`** - é obrigatório para exibir as informações
-2. **USAR APENAS a estrutura JSON mostrada acima** - não inventar novos campos
-3. **Preencher TODOS os campos obrigatórios** - não deixar nenhum vazio
-4. **Status deve ser "CORRETO" ou "ERRO"** - sem outras variações
-5. **Valores monetários sempre no formato "R$ XXX,XX"**
-6. **Reconhecer "GRATUITA" como "R$ 0,00"**
-7. **Não adicionar campos não especificados na estrutura**
+1. **SEMPRE extrair da seção "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE"**
 
-**RETORNAR APENAS O JSON - SEM TEXTO ADICIONAL, SEM MARKDOWN, SEM EXPLICAÇÕES!**
+2. **NUNCA extrair da tabela geral "TAXA DE INSTALAÇÃO ( ) SIM ( X ) NÃO"**
+
+3. **CONVERTER "GRATUITA" = R$ 0,00**
+
+4. **INCLUIR debug_extracao** para mostrar de onde veio cada valor
+
+5. **LÓGICA FUNDAMENTAL:**
+   - Taxa Instalação = R$ 700,00 - Desconto (da seção específica)
+   - Taxa Rescisão = Desconto
+
+**EXTRAIR SEMPRE DA SEÇÃO ESPECÍFICA DA FIDELIDADE, NUNCA DA TABELA GERAL!**
 
 **Contrato para análise:**
 ${contractText}`;
