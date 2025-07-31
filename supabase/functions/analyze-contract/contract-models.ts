@@ -21,7 +21,7 @@ export const CONTRACT_MODELS: ContractModel[] = [
     type: 'CORPORATIVO',
     installation_fee: 'GRATUITA (com fidelidade)',
     equipment: 'ONT R$ 350,00 + Conectores/cabos R$ 700,00',
-    cancellation_fee: 'R$ 700,00',
+    cancellation_fee: 'Calculada pela regra de fidelidade',
     fixed_ip: 'INCLUSO (Fixo marcado)',
     clauses: '1 a 11'
   },
@@ -33,7 +33,7 @@ export const CONTRACT_MODELS: ContractModel[] = [
     type: 'RESIDENCIAL',
     installation_fee: 'GRATUITA (com fidelidade)',
     equipment: 'ONT R$ 350,00 + Conectores/cabos R$ 700,00',
-    cancellation_fee: 'R$ 700,00',
+    cancellation_fee: 'Calculada pela regra de fidelidade',
     fixed_ip: 'Variável (R$ 50,00 se fixo marcado)',
     clauses: '1 a 11'
   },
@@ -43,9 +43,9 @@ export const CONTRACT_MODELS: ContractModel[] = [
     value: 'R$ 109,99',
     validity_period: '12 meses',
     type: 'RESIDENCIAL',
-    installation_fee: 'R$ 200,00 (com fidelidade)',
+    installation_fee: 'Varia conforme fidelidade (ver texto do contrato)',
     equipment: 'ONU R$ 350,00 + ROTEADOR R$ 350,00 + Conectores/cabos R$ 700,00',
-    cancellation_fee: 'R$ 500,00',
+    cancellation_fee: 'Calculada pela regra de fidelidade',
     fixed_ip: 'Variável (R$ 50,00 se fixo marcado)',
     clauses: '1 a 11'
   },
@@ -55,9 +55,9 @@ export const CONTRACT_MODELS: ContractModel[] = [
     value: 'R$ 119,99',
     validity_period: '12 meses',
     type: 'RESIDENCIAL',
-    installation_fee: 'R$ 200,00 (com fidelidade)',
+    installation_fee: 'Varia conforme fidelidade (ver texto do contrato)',
     equipment: 'ONU R$ 350,00 + ROTEADOR R$ 350,00 + Conectores/cabos R$ 700,00',
-    cancellation_fee: 'R$ 500,00',
+    cancellation_fee: 'Calculada pela regra de fidelidade',
     fixed_ip: 'Variável (R$ 50,00 se fixo marcado)',
     clauses: '1 a 11'
   },
@@ -67,9 +67,9 @@ export const CONTRACT_MODELS: ContractModel[] = [
     value: 'R$ 129,99',
     validity_period: '12 meses',
     type: 'RESIDENCIAL',
-    installation_fee: 'R$ 200,00 (com fidelidade)',
+    installation_fee: 'Varia conforme fidelidade (ver texto do contrato)',
     equipment: 'ONT R$ 350,00 + Conectores/cabos R$ 700,00',
-    cancellation_fee: 'R$ 500,00',
+    cancellation_fee: 'Calculada pela regra de fidelidade',
     fixed_ip: 'Variável (R$ 50,00 se fixo marcado)',
     clauses: '1 a 11'
   },
@@ -81,7 +81,7 @@ export const CONTRACT_MODELS: ContractModel[] = [
     type: 'RESIDENCIAL',
     installation_fee: 'GRATUITA (com fidelidade)',
     equipment: 'ONT R$ 350,00 + Conectores/cabos R$ 700,00',
-    cancellation_fee: 'R$ 700,00',
+    cancellation_fee: 'Calculada pela regra de fidelidade',
     fixed_ip: 'Variável (R$ 50,00 se fixo marcado)',
     clauses: '1 a 11'
   }
