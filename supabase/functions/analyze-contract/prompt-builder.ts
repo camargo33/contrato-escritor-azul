@@ -1,8 +1,8 @@
 export const buildContractAnalysisPrompt = (contractText: string): string => {
-  return `# VALIDADOR DE CONTRATOS CIABRASNET - EXTRAÇÃO CORRETA DO TEXTO
+  return `# VALIDADOR DE CONTRATOS CIABRASNET - LÓGICA CORRETA DE FIDELIDADE
 
 ## OBJETIVO
-Analisar contratos OCR da CIABRASNET, identificar o modelo e validar taxas extraindo valores APENAS do texto descritivo da opção escolhida pelo cliente.
+Analisar contratos OCR da CIABRASNET, identificar o modelo e validar taxas com base na lógica real de descontos de fidelidade.
 
 ## ETAPA 1: IDENTIFICAÇÃO DO MODELO
 
@@ -14,126 +14,119 @@ Analisar contratos OCR da CIABRASNET, identificar o modelo e validar taxas extra
 5. **2024 Combo 800Mbps** - R$ 159,99 - RESIDENCIAL - 12 meses
 6. **COMBO 2025 500 MEGAS MATRIZ** - R$ 119,99 - RESIDENCIAL - 12 meses
 
-## 🔥 ETAPA 2: EXTRAÇÃO CORRETA DOS VALORES DA FIDELIDADE
+## 🔥 ETAPA 2: LÓGICA REAL DA FIDELIDADE
 
-### 🚨 REGRA FUNDAMENTAL:
+### 🚨 REGRA FUNDAMENTAL - BASEADA EM CONTRATOS REAIS:
 
-**Campos com valores fixos (como "R$ 700,00") são apenas EXPLICATIVOS/INFORMATIVOS!**
+**Valor base da Taxa de Instalação: R$ 700,00**
 
-**Valores reais devem ser extraídos APENAS do TEXTO DESCRITIVO da opção escolhida.**
+#### **CLIENTE ESCOLHEU FIDELIDADE SIM (X):**
+1. **Extrair o valor do desconto** mencionado no texto da seção SIM
+2. **Taxa de Instalação = R$ 700,00 - Desconto**
+3. **Taxa de Rescisão = Valor do desconto**
 
-### 📍 Estrutura do Contrato:
+**Exemplos reais:**
+- Desconto R$ 700,00 → Instalação: GRATUITA (R$ 0,00) | Rescisão: R$ 700,00
+- Desconto R$ 580,00 → Instalação: R$ 120,00 | Rescisão: R$ 580,00
+- Desconto R$ 600,00 → Instalação: R$ 100,00 | Rescisão: R$ 600,00
 
-```
-DA OPÇÃO DE FIDELIDADE
+#### **CLIENTE ESCOLHEU FIDELIDADE NÃO (X):**
+- **Taxa de Instalação = R$ 700,00** (valor integral)
+- **Taxa de Rescisão = R$ 700,00** (valor padrão)
 
-SIM (X) ← Cliente escolheu esta opção
-[TEXTO DESCRITIVO: "...desconto de R$ 580,00 (Quinhentos e Oitenta reais)..."]
-[TEXTO DESCRITIVO: "...multa proporcional equivalente ao valor total..."]
-
-NÃO (__)  ← Cliente NÃO escolheu (ignorar)
-[TEXTO DESCRITIVO sobre R$ 700,00]
-
-CAMPOS EXPLICATIVOS (IGNORAR SE SIM ESCOLHIDO):
-- "VALOR TOTAL... NÃO OPTE PELA OPÇÃO DE FIDELIDADE: R$ 700,00"
-```
-
-### 🎯 ALGORITMO CORRETO DE EXTRAÇÃO:
+### 🎯 ALGORITMO CORRETO:
 
 \`\`\`javascript
 // PASSO 1: Identificar escolha do cliente
 if (texto.includes("SIM (X)")) {
-    console.log("✅ Cliente escolheu fidelidade SIM")
+    fidelidade_escolhida = "SIM"
     
-    // PASSO 2: Extrair APENAS do texto descritivo da seção SIM
-    secao_sim_texto = extrair_texto_entre_SIM_e_NAO()
+    // PASSO 2: Extrair desconto do texto da seção SIM
+    secao_sim = extrair_texto_secao_sim_marcada()
     
-    // PASSO 3: Procurar valores no TEXTO (não em campos fixos)
-    // Exemplo: "desconto de R$ 580,00 (Quinhentos e Oitenta reais)"
-    desconto_match = secao_sim_texto.match(/desconto de R\\$\\s*(\\d+,\\d+)/i)
-    if (desconto_match) {
-        valor_desconto = desconto_match[1] // "580,00"
-    }
+    // Procurar padrões de desconto:
+    // "desconto de R$ 700,00 (Setecentos Reais)"
+    // "desconto de R$ 580,00 (Quinhentos e Oitenta reais)"
     
-    // Ou procurar por extenso: "Quinhentos e Oitenta reais"
-    if (secao_sim_texto.includes("Quinhentos e Oitenta")) {
-        valor_desconto = "580,00"
-    }
+    desconto_valor = extrair_valor_desconto(secao_sim)
     
-    // PASSO 4: Aplicar lógica correta
-    taxa_instalacao_esperada = "QUALQUER_VALOR" // Sempre aceitar
-    taxa_rescisao_esperada = valor_desconto      // Ex: "580,00"
+    // PASSO 3: Calcular taxas corretas
+    taxa_instalacao_esperada = 700.00 - desconto_valor
+    taxa_rescisao_esperada = desconto_valor
     
-    // 🚨 CRÍTICO: IGNORAR campos explicativos como "R$ 700,00"
-    console.log("🚫 Ignorando campos explicativos - usando apenas texto da seção SIM")
+    console.log("✅ Fidelidade SIM:")
+    console.log("Desconto:", desconto_valor)
+    console.log("Taxa Instalação esperada:", taxa_instalacao_esperada) 
+    console.log("Taxa Rescisão esperada:", taxa_rescisao_esperada)
     
 } else if (texto.includes("NÃO (X)")) {
-    console.log("✅ Cliente escolheu NÃO fidelidade")
+    fidelidade_escolhida = "NÃO"
     
-    // Sem fidelidade - usar valores padrão
-    taxa_instalacao_esperada = "700,00"
-    taxa_rescisao_esperada = "700,00"
+    // Sem fidelidade - valores integrais
+    taxa_instalacao_esperada = 700.00
+    taxa_rescisao_esperada = 700.00
+    
+    console.log("✅ Sem fidelidade - valores integrais")
 }
 
-// PASSO 5: Extrair valores REAIS aplicados no contrato
-// (não dos campos explicativos, mas dos campos de taxa efetivamente aplicada)
-taxa_rescisao_real = extrair_taxa_rescisao_aplicada()
-taxa_instalacao_real = extrair_taxa_instalacao_aplicada()
+// PASSO 4: Comparar com valores reais do contrato
+taxa_instalacao_contrato = extrair_taxa_instalacao_aplicada()
+taxa_rescisao_contrato = extrair_taxa_rescisao_aplicada()
 
-// PASSO 6: Comparar e validar
-if (fidelidade === "SIM") {
-    // Taxa instalação sempre OK
-    taxa_instalacao_status = "CORRETO"
-    
-    // Taxa rescisão deve ser igual ao desconto
-    if (taxa_rescisao_real === taxa_rescisao_esperada) {
-        taxa_rescisao_status = "CORRETO"
+// PASSO 5: Validar
+if (fidelidade_escolhida === "SIM") {
+    // Validar instalação
+    if (taxa_instalacao_contrato === taxa_instalacao_esperada) {
+        instalacao_status = "CORRETO"
     } else {
-        taxa_rescisao_status = "ERRO"
-        erro = {
+        instalacao_status = "ERRO"
+        erro_instalacao = {
+            campo: "Taxa de Instalação",
+            valor_encontrado: taxa_instalacao_contrato,
+            valor_esperado: taxa_instalacao_esperada,
+            calculo: "R$ 700,00 - " + desconto_valor + " = " + taxa_instalacao_esperada
+        }
+    }
+    
+    // Validar rescisão
+    if (taxa_rescisao_contrato === taxa_rescisao_esperada) {
+        rescisao_status = "CORRETO"
+    } else {
+        rescisao_status = "ERRO"
+        erro_rescisao = {
             campo: "Taxa de Rescisão",
-            valor_encontrado: taxa_rescisao_real,
+            valor_encontrado: taxa_rescisao_contrato,
             valor_esperado: taxa_rescisao_esperada,
-            explicacao: "Com fidelidade SIM, taxa de rescisão deve ser igual ao desconto: " + taxa_rescisao_esperada
+            explicacao: "Taxa de rescisão deve ser igual ao desconto: " + desconto_valor
         }
     }
 }
 \`\`\`
 
-### 🔍 INSTRUÇÕES ESPECÍFICAS DE EXTRAÇÃO:
+### 🔍 EXTRAÇÃO DO DESCONTO:
 
-#### **Para extrair o valor do desconto da fidelidade:**
+#### **Padrões para encontrar o desconto:**
+- "desconto de R$ XXX,XX"
+- "R$ XXX,XX (valor por extenso)"
+- "Setecentos Reais" = R$ 700,00
+- "Quinhentos e Oitenta reais" = R$ 580,00
+- "Seiscentos reais" = R$ 600,00
 
-1. **Localizar a seção SIM (X)**
-2. **Ler o texto descritivo** (não campos fixos)
-3. **Procurar padrões:**
-   - "desconto de R$ XXX,XX"
-   - "Quinhentos e Oitenta reais" = R$ 580,00
-   - "Setecentos reais" = R$ 700,00
-   - Qualquer valor por extenso
+#### **Local correto:**
+- Extrair APENAS do texto da seção "SIM (X)"
+- **IGNORAR** campos explicativos
+- **IGNORAR** seção "NÃO (__)"
 
-#### **Campos a IGNORAR quando SIM escolhido:**
-- ❌ "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE NÃO OPTE PELA OPÇÃO DE FIDELIDADE: R$ 700,00"
-- ❌ Qualquer campo com "NÃO OPTE" ou "CASO NÃO"
-- ❌ Valores fixos/tabelados
+## ETAPA 3: VALIDAÇÃO DE OUTROS CAMPOS
 
-#### **Campos a USAR:**
-- ✅ Texto descritivo da seção marcada com (X)
-- ✅ Valores mencionados por extenso
-- ✅ Descrições de desconto/multa da opção escolhida
-
-## ETAPA 3: VALIDAÇÃO FINAL
-
-### 🎯 REGRAS CORRETAS:
-
-**CLIENTE ESCOLHEU SIM (X):**
-- Taxa de Instalação: QUALQUER VALOR = CORRETO
-- Taxa de Rescisão: DEVE SER = Desconto extraído do texto da seção SIM
-- Exemplo: Se texto diz "R$ 580,00", taxa rescisão deve ser R$ 580,00
-
-**CLIENTE ESCOLHEU NÃO (X):**
-- Taxa de Instalação: DEVE SER R$ 700,00
-- Taxa de Rescisão: DEVE SER R$ 700,00
+### Campos de Validação:
+- **Valor do plano** (deve ser exato da tabela)
+- **Prazo vigência** (CORPORATIVO=24 meses, RESIDENCIAL=12 meses)  
+- **Tipo do plano** (apenas "1 Gb Empresarial" é CORPORATIVO)
+- **IP Fixo** (INCLUSO só no empresarial, outros=Variável R$ 50,00)
+- **CPF/CNPJ** (validação de dígitos)
+- **Email** (verificar erros de digitação)
+- **Telefone** (formato brasileiro)
 
 ## FORMATO DE RESPOSTA
 
@@ -146,80 +139,80 @@ if (fidelidade === "SIM") {
   "analise_fidelidade": {
     "opcao_escolhida": "SIM",
     "marcacao_encontrada": "SIM (X)",
-    "texto_secao_sim": "...desconto de R$ 580,00 (Quinhentos e Oitenta reais) da Taxa de Instalação...",
-    "valor_desconto_extraido": "R$ 580,00",
-    "metodo_extracao": "Texto descritivo da seção SIM escolhida",
-    "campos_ignorados": ["VALOR TOTAL... NÃO OPTE: R$ 700,00 - campo explicativo ignorado"]
+    "texto_desconto": "desconto de R$ 580,00 (Quinhentos e Oitenta reais)",
+    "valor_desconto": "R$ 580,00",
+    "calculo_instalacao": "R$ 700,00 - R$ 580,00 = R$ 120,00",
+    "logica_rescisao": "Taxa rescisão = desconto aplicado"
   },
   "validacao_taxas": {
-    "fidelidade_escolhida": "SIM",
+    "valor_base_instalacao": "R$ 700,00",
     "desconto_aplicado": "R$ 580,00",
     
     "taxa_instalacao": {
       "encontrada": "R$ 120,00",
-      "esperada": "QUALQUER VALOR",
+      "esperada": "R$ 120,00",
+      "calculo": "R$ 700,00 - R$ 580,00 = R$ 120,00",
       "status": "CORRETO",
-      "explicacao": "✅ Com fidelidade SIM, qualquer valor de instalação é aceito"
+      "explicacao": "✅ Valor correto baseado no desconto de fidelidade"
     },
     
     "taxa_rescisao": {
       "encontrada": "R$ 580,00",
-      "esperada": "R$ 580,00", 
-      "status": "CORRETO",
-      "explicacao": "✅ Taxa rescisão igual ao desconto da fidelidade (extraído do texto da seção SIM)",
-      "origem_valor": "Texto: 'desconto de R$ 580,00 (Quinhentos e Oitenta reais)'"
+      "esperada": "R$ 580,00",
+      "logica": "Taxa rescisão = desconto da fidelidade",
+      "status": "CORRETO", 
+      "explicacao": "✅ Igual ao desconto aplicado na instalação"
     }
   },
   "validacoes_corretas": [
     {
       "campo": "Taxa de Instalação",
       "valor": "R$ 120,00",
-      "status": "✅ CORRETO - Com fidelidade, qualquer valor é aceito"
+      "status": "✅ CORRETO - Cálculo: R$ 700,00 - R$ 580,00"
     },
     {
-      "campo": "Taxa de Rescisão", 
-      "valor": "R$ 580,00",
-      "status": "✅ CORRETO - Igual ao desconto extraído do texto da fidelidade"
+      "campo": "Taxa de Rescisão",
+      "valor": "R$ 580,00", 
+      "status": "✅ CORRETO - Igual ao desconto da fidelidade"
     }
   ],
   "erros": [],
   "resumo": {
     "total_erros": 0,
     "fidelidade_escolhida": "SIM",
-    "valor_desconto": "R$ 580,00",
-    "metodo_extracao": "Texto descritivo da opção escolhida (ignorando campos explicativos)",
-    "regra_aplicada": "Extrair valores apenas do texto da seção SIM, ignorar campos informativos"
+    "desconto_concedido": "R$ 580,00",
+    "instalacao_final": "R$ 120,00",
+    "rescisao_devida": "R$ 580,00",
+    "logica_aplicada": "Taxa rescisão = desconto da instalação"
   },
   "observacoes": [
-    "✅ Cliente optou pela fidelidade SIM - extraindo valores do texto desta seção",
-    "🚫 Campos explicativos (como R$ 700,00 para 'NÃO OPTE') foram ignorados",
-    "📝 Taxa de rescisão baseada no desconto mencionado no texto: R$ 580,00",
-    "⚖️ Validação feita apenas contra valores da opção efetivamente escolhida"
+    "✅ Cliente optou pela fidelidade e recebeu desconto de R$ 580,00",
+    "🧮 Taxa instalação calculada: R$ 700,00 - R$ 580,00 = R$ 120,00", 
+    "⚖️ Taxa rescisão igual ao desconto (lógica: deve devolver o desconto se cancelar)",
+    "📋 Validação baseada em contratos reais da CIABRASNET"
   ]
 }
 \`\`\`
 
 ## 🚨 REGRAS INQUEBRANTÁVEIS
 
-1. **IDENTIFICAR** qual opção foi marcada: SIM (X) ou NÃO (X)
+1. **Valor base instalação = R$ 700,00** (sempre)
 
-2. **EXTRAIR valores APENAS do TEXTO DESCRITIVO** da opção escolhida
+2. **COM FIDELIDADE SIM (X):**
+   - Taxa Instalação = R$ 700,00 - Desconto
+   - Taxa Rescisão = Desconto
+   - Extrair desconto do texto da seção SIM
 
-3. **IGNORAR COMPLETAMENTE** campos explicativos/informativos
-
-4. **SE SIM (X) escolhido:**
-   - Ler texto da seção SIM
-   - Extrair valor do desconto mencionado
-   - Taxa Rescisão = Valor do desconto
-   - Taxa Instalação = ACEITAR QUALQUER VALOR
-
-5. **SE NÃO (X) escolhido:**
+3. **SEM FIDELIDADE NÃO (X):**
    - Taxa Instalação = R$ 700,00
    - Taxa Rescisão = R$ 700,00
 
-6. **NUNCA usar campos com "NÃO OPTE" ou "CASO NÃO"** quando cliente escolheu SIM
+4. **LÓGICA FUNDAMENTAL:**
+   **Taxa de Rescisão = Desconto aplicado na instalação**
+   
+5. **NUNCA usar campos explicativos** - extrair apenas do texto descritivo
 
-**Os campos explicativos existem apenas para informação, os valores reais vêm do texto descritivo da opção escolhida!**
+**A taxa de rescisão é o valor que o cliente deve devolver se cancelar antes do prazo, ou seja, o desconto que ele recebeu!**
 
 **Contrato para análise:**
 ${contractText}`;
