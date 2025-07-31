@@ -93,23 +93,45 @@ export const openaiService = {
         const endTime = Date.now();
         const duration = endTime - startTime;
 
-        // Salvar no histórico (não bloquear se falhar)
+        // 🔄 SALVAMENTO ROBUSTO NO HISTÓRICO
+        console.log("💾 Iniciando salvamento no histórico...");
+        
+        let historySaved = false;
+        let historyError = null;
+        
         try {
-          await this.saveAnalysisToHistory(
+          const saveResult = await this.saveAnalysisToHistory(
             filename,
             analysisResult.content,
             duration
           );
-          console.log("💾 Salvo no histórico");
-        } catch (historyError) {
-          console.warn("⚠️ Erro ao salvar (continuando):", historyError);
+          
+          if (saveResult) {
+            console.log("✅ Salvo no histórico com sucesso!");
+            historySaved = true;
+          } else {
+            console.warn("⚠️ Falha ao salvar no histórico (continuando)");
+            historyError = "Falha no salvamento";
+          }
+          
+        } catch (saveError) {
+          console.error("❌ Erro ao salvar no histórico:", saveError);
+          historyError = saveError;
+        }
+
+        // Aguardar um pouco para garantir que foi salvo
+        if (historySaved) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          console.log("⏱️ Aguardado 500ms para garantir salvamento");
         }
 
         return {
           ...analysisResult,
           debug: {
             duration_ms: duration,
-            saved_to_history: true
+            saved_to_history: historySaved,
+            history_error: historyError,
+            save_timestamp: new Date().toISOString()
           }
         };
       } else {
@@ -154,52 +176,107 @@ export const openaiService = {
     }
   },
 
-  async saveAnalysisToHistory(filename: string, analysisContent: string, duration: number) {
+  async saveAnalysisToHistory(filename: string, analysisContent: string, duration: number): Promise<boolean> {
     try {
-      console.log("💾 Salvando no histórico...");
+      console.log("💾 Salvando análise no histórico...");
+      console.log("📁 Arquivo:", filename);
+      console.log("⏱️ Duração:", duration, "ms");
       
-      // Extrair número de erros
+      // Extrair número de erros com múltiplas estratégias
       let errorsFound = 0;
+      
       try {
+        // Estratégia 1: JSON block
         const jsonMatch = analysisContent.match(/```json\n([\s\S]*?)\n```/);
         if (jsonMatch) {
           const analysisData = JSON.parse(jsonMatch[1]);
-          errorsFound = analysisData.resumo?.total_erros || analysisData.erros?.length || 0;
-          console.log("📊 Erros extraídos:", errorsFound);
+          errorsFound = analysisData.resumo?.total_erros || 
+                       analysisData.erros?.length || 
+                       analysisData.total_erros || 
+                       analysisData.errors?.length || 0;
+          console.log("📊 Erros extraídos (JSON block):", errorsFound);
         } else {
-          const errorPattern = /"total_erros":\s*(\d+)/;
-          const match = analysisContent.match(errorPattern);
-          if (match) {
-            errorsFound = parseInt(match[1]);
-            console.log("📊 Erros (alt):", errorsFound);
+          // Estratégia 2: Regex patterns
+          const patterns = [
+            /"total_erros":\s*(\d+)/,
+            /"errors_found":\s*(\d+)/,
+            /total de erros:\s*(\d+)/i,
+            /erros encontrados:\s*(\d+)/i
+          ];
+          
+          for (const pattern of patterns) {
+            const match = analysisContent.match(pattern);
+            if (match) {
+              errorsFound = parseInt(match[1]);
+              console.log("📊 Erros extraídos (regex):", errorsFound);
+              break;
+            }
           }
         }
       } catch (parseError) {
-        console.log("⚠️ Não foi possível extrair erros, usando 0");
+        console.warn("⚠️ Não foi possível extrair erros automaticamente, usando 0");
+        errorsFound = 0;
       }
 
-      const result = await contractService.saveAnalysisHistory({
+      // Dados para salvar
+      const historyData = {
         analyzed_filename: filename,
         analysis_content: {
           raw_content: analysisContent,
           parsed_at: new Date().toISOString(),
-          analysis_duration_ms: duration
+          analysis_duration_ms: duration,
+          errors_extracted: errorsFound
         },
         errors_found: errorsFound,
-        base_contracts_used: [],
+        base_contracts_used: [], // TODO: implementar tracking de contratos base usados
         analysis_duration_ms: duration,
-        openai_tokens_used: 0
+        openai_tokens_used: 0 // TODO: implementar tracking de tokens
+      };
+
+      console.log("💾 Dados para salvar:", {
+        filename: historyData.analyzed_filename,
+        errors_found: historyData.errors_found,
+        duration: historyData.analysis_duration_ms
       });
 
-      if (result.success) {
-        console.log("✅ Salvo no histórico!");
-        return true;
-      } else {
-        console.error("❌ Erro ao salvar:", result.error);
-        return false;
+      // Tentar salvar com retry
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (attempts < maxAttempts) {
+        attempts++;
+        console.log(`💾 Tentativa ${attempts}/${maxAttempts} de salvamento...`);
+        
+        try {
+          const result = await contractService.saveAnalysisHistory(historyData);
+
+          if (result.success) {
+            console.log(`✅ Salvo no histórico na tentativa ${attempts}!`);
+            console.log("📊 ID salvo:", result.data?.id);
+            return true;
+          } else {
+            console.error(`❌ Erro na tentativa ${attempts}:`, result.error);
+            
+            if (attempts < maxAttempts) {
+              console.log(`⏱️ Aguardando 1s antes da próxima tentativa...`);
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
+        } catch (attemptError) {
+          console.error(`❌ Erro crítico na tentativa ${attempts}:`, attemptError);
+          
+          if (attempts < maxAttempts) {
+            console.log(`⏱️ Aguardando 1s antes da próxima tentativa...`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
       }
+      
+      console.error("❌ Falha em todas as tentativas de salvamento");
+      return false;
+      
     } catch (error) {
-      console.error("❌ Erro crítico ao salvar:", error);
+      console.error("❌ Erro crítico no salvamento:", error);
       return false;
     }
   },
