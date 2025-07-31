@@ -10,6 +10,7 @@ interface ErrorAnalysis {
   sugestao_correcao: string;
   explicacao?: string;
   localizacao?: string;
+  local_origem?: string;
   confianca?: number;
   origem_erro?: string;
   correcao_necessaria?: string;
@@ -187,10 +188,10 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
 
                 {/* Informações Adicionais */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                  {erro.localizacao && (
+                  {(erro.localizacao || erro.local_origem) && (
                     <div className="p-2 bg-white border border-gray-200 rounded">
                       <span className="font-medium text-gray-700">📍 Localização:</span>
-                      <div className="text-gray-800 mt-1">{erro.localizacao}</div>
+                      <div className="text-gray-800 mt-1">{erro.local_origem || erro.localizacao}</div>
                     </div>
                   )}
                   

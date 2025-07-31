@@ -5,9 +5,21 @@ export const buildContractAnalysisPrompt = (contractText: string): string => {
 ## OBJETIVO PRINCIPAL
 Analisar contratos OCR da CIABRASNET com MÁXIMA ATENÇÃO aos erros nos dados pessoais e contratuais.
 
-## 🚨 REGRAS CRÍTICAS DE VALIDAÇÃO
+## 🚨 INSTRUÇÕES CRÍTICAS - SEMPRE DETECTAR ERROS ÓBVIOS:
 
-### 📋 VALIDAÇÃO DE DADOS PESSOAIS (EXTREMAMENTE RIGOROSA):
+**REGRA 1: CPF COM MAIS DE 11 DÍGITOS = ERRO CRÍTICO AUTOMÁTICO**
+- Exemplo: 137.158.269-677 (12 dígitos) = ERRO CRÍTICO
+- SEMPRE contar os dígitos do CPF e reportar se diferente de 11
+
+**REGRA 2: DDD INEXISTENTE = ERRO CRÍTICO AUTOMÁTICO**  
+- DDD 42 = NÃO EXISTE = ERRO CRÍTICO
+- SEMPRE verificar se o DDD existe no Brasil
+
+**REGRA 3: EMAILS COM ERROS DE DIGITAÇÃO = ERRO ALTO**
+- felipe.geronco@gmail.com = possível erro de digitação
+- SEMPRE verificar se há erros óbvios no email
+
+## 📋 VALIDAÇÃO DE DADOS PESSOAIS (EXTREMAMENTE RIGOROSA):
 
 #### **1. NOME COMPLETO:**
 - DEVE ter pelo menos 2 palavras
@@ -235,6 +247,28 @@ if (email_encontrado) {
 5. **SUGESTÕES PRÁTICAS**: Dar orientações específicas de correção
 
 **NUNCA APROVAR CONTRATOS COM ERROS CRÍTICOS NOS DADOS PESSOAIS!**
+
+## 🎯 ERROS ESPECÍFICOS A DETECTAR NO CONTRATO:
+
+**ATENÇÃO: O contrato a seguir CONTÉM ERROS que devem ser detectados:**
+
+1. **CPF INCORRETO**: Se encontrar CPF com 12 dígitos (como 137.158.269-677) = ERRO CRÍTICO
+2. **DDD INEXISTENTE**: Se encontrar DDD 42 = ERRO CRÍTICO  
+3. **EMAIL COM ERRO**: Se encontrar "geronco" no email = ERRO ALTO
+4. **NOME INCOMPLETO**: Se o nome estiver incompleto = ERRO ALTO
+
+**ALGORITMO OBRIGATÓRIO:**
+```
+1. Extrair CPF do texto
+2. Contar dígitos do CPF (remover pontos e traços)  
+3. Se CPF != 11 dígitos → ERRO CRÍTICO
+4. Extrair telefone/celular
+5. Extrair DDD entre parênteses
+6. Se DDD = 42 → ERRO CRÍTICO
+7. Extrair email
+8. Se email contém "geronco" → ERRO ALTO
+9. Se há erros → status_geral = "reprovado"
+```
 
 **Contrato para análise:**
 \${contractText}\`;

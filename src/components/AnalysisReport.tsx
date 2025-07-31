@@ -23,6 +23,7 @@ interface ErrorAnalysis {
   sugestao_correcao: string;
   explicacao?: string;
   localizacao?: string;
+  local_origem?: string;
   severidade?: 'critico' | 'alto' | 'medio' | 'baixo';
   origem_erro?: string;
   correcao_necessaria?: string;
