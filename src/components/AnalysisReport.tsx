@@ -98,51 +98,11 @@ interface AnalysisData {
 }
 
 const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: AnalysisReportProps) => {
-  // 🚨 FUNÇÃO ATUALIZADA - NÃO FILTRAR ERROS CRÍTICOS!
-  const isRealError = (erro: ErrorAnalysis): boolean => {
-    // NUNCA filtrar erros com severidade crítica ou alta
-    if (erro.severidade === 'critico' || erro.severidade === 'alto') {
-      console.log("✅ Mantendo erro crítico/alto:", erro.campo, erro.valor_encontrado);
-      return true;
-    }
-
-    // Para outros erros, fazer validação básica
-    const encontrado = erro.valor_encontrado?.toString().trim() || '';
-    const esperado = erro.valor_esperado?.toString().trim() || '';
-    
-    if (encontrado === esperado) return false;
-    
-    const normalizeMoney = (value: string) => {
-      return value.replace(/[R$\s]/g, '').replace(',', '.');
-    };
-    
-    if (encontrado.includes('R$') && esperado.includes('R$')) {
-      const encontradoNum = normalizeMoney(encontrado);
-      const esperadoNum = normalizeMoney(esperado);
-      if (encontradoNum === esperadoNum) return false;
-    }
-    
-    const normalizeText = (text: string) => {
-      return text.toLowerCase().replace(/\s+/g, ' ').trim();
-    };
-    
-    return normalizeText(encontrado) !== normalizeText(esperado);
-  };
-
-  // Função para verificar se é um alerta válido - MAIS PERMISSIVA
-  const isValidAlert = (alerta: AlertItem): boolean => {
-    // Manter todos os alertas, não filtrar agressivamente
-    const valorEncontrado = alerta.valor_encontrado?.trim() || '';
-    
-    // Só filtrar se for obviamente incorreto
-    if (!valorEncontrado || valorEncontrado === '(vazio)') return false;
-    
-    return true;
-  };
+  console.log("🔍 [AnalysisReport] Iniciando processamento do content:", content?.substring(0, 200));
 
   const parseAnalysisContent = (content: string): { analysisData: AnalysisData | null; errorCount: number; fullContent: string } => {
     console.log("🔍 [DEBUG] Iniciando parseAnalysisContent...");
-    console.log("📄 Content recebido:", content?.substring(0, 200) + "...");
+    console.log("📄 Content recebido (primeiros 300 chars):", content?.substring(0, 300));
     
     try {
       let jsonData: any = null;
@@ -167,7 +127,7 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
         
         if (jsonMatch) {
           const jsonStr = jsonMatch[1] || jsonMatch[0];
-          console.log("📋 JSON extraído:", jsonStr.substring(0, 200) + "...");
+          console.log("📋 JSON extraído (primeiros 200 chars):", jsonStr.substring(0, 200));
           
           // Limpar caracteres de escape
           let cleanJsonStr = jsonStr
@@ -182,20 +142,30 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
       }
       
       if (jsonData) {
-        console.log("📊 Dados parseados:", {
+        console.log("📊 Estrutura dos dados parseados:", {
           hasModelo: !!jsonData.modelo_identificado,
           hasAnalyseFidelidade: !!jsonData.analise_fidelidade,
           hasValidacaoTaxas: !!jsonData.validacao_taxas,
           hasErros: !!jsonData.erros,
           numErros: jsonData.erros?.length || 0,
-          errosOriginais: jsonData.erros
+          hasAlertas: !!jsonData.alertas,
+          numAlertas: jsonData.alertas?.length || 0,
+          statusGeral: jsonData.status_geral
         });
         
-        // Criar dados padronizados
+        // 🚨 CORREÇÃO CRÍTICA: NÃO FILTRAR NENHUM ERRO!
+        // Aceitar TODOS os erros que vieram do backend
+        const errosOriginais = jsonData.erros || [];
+        const alertasOriginais = jsonData.alertas || [];
+        
+        console.log("🔍 ERROS ORIGINAIS (SEM FILTRAGEM):", errosOriginais);
+        console.log("🔍 ALERTAS ORIGINAIS (SEM FILTRAGEM):", alertasOriginais);
+        
+        // Criar dados padronizados SEM FILTRAGEM
         const analysisData: AnalysisData = {
           modelo_identificado: jsonData.modelo_identificado,
-          erros: jsonData.erros || [],
-          alertas: jsonData.alertas || [],
+          erros: errosOriginais, // 🚨 USAR TODOS OS ERROS ORIGINAIS
+          alertas: alertasOriginais, // 🚨 USAR TODOS OS ALERTAS ORIGINAIS
           validacoes_corretas: jsonData.validacoes_corretas || [],
           resumo: jsonData.resumo || { total_erros: 0 },
           status_geral: jsonData.status_geral || 'aprovado',
@@ -204,61 +174,48 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
           validacao_taxas: jsonData.validacao_taxas
         };
         
-        console.log("🔍 ANTES da filtragem - Erros originais:", analysisData.erros);
-        
-        // Filtrar erros reais (MAS NUNCA REMOVER CRÍTICOS!)
-        const errosReais = analysisData.erros?.filter(isRealError) || [];
-        const alertasReais = analysisData.alertas?.filter(isValidAlert) || [];
-        
-        console.log("🔍 DEPOIS da filtragem - Erros reais:", errosReais);
-        console.log("📊 Comparação:", {
-          antes: analysisData.erros?.length || 0,
-          depois: errosReais.length,
-          removidos: (analysisData.erros?.length || 0) - errosReais.length
-        });
-        
-        // Atualizar contadores
-        analysisData.erros = errosReais;
-        analysisData.alertas = alertasReais;
-        
-        // Calcular contadores por severidade
-        const contadores = errosReais.reduce((acc, erro) => {
+        // Calcular contadores por severidade (usando erros originais)
+        const contadores = errosOriginais.reduce((acc: Record<string, number>, erro: ErrorAnalysis) => {
           const sev = erro.severidade || 'medio';
           acc[sev] = (acc[sev] || 0) + 1;
           return acc;
-        }, {} as Record<string, number>);
+        }, {});
         
+        // Atualizar resumo com dados reais
         analysisData.resumo = {
           ...analysisData.resumo,
-          total_erros: errosReais.length,
-          total_alertas: alertasReais.length,
+          total_erros: errosOriginais.length,
+          total_alertas: alertasOriginais.length,
           criticos: contadores.critico || 0,
           altos: contadores.alto || 0,
           medios: contadores.medio || 0,
           baixos: contadores.baixo || 0
         };
         
-        // Status baseado apenas em erros críticos e altos
-        analysisData.status_geral = (contadores.critico || 0) > 0 || (contadores.alto || 0) > 0 ? 'reprovado' : 'aprovado';
+        // Status baseado em erros críticos e altos
+        const temErrosCriticos = (contadores.critico || 0) > 0 || (contadores.alto || 0) > 0;
+        analysisData.status_geral = temErrosCriticos ? 'reprovado' : (jsonData.status_geral || 'aprovado');
         
-        console.log("✅ Análise processada com sucesso!");
+        console.log("✅ Análise processada SEM FILTRAGEM!");
         console.log("📈 Estatísticas finais:", {
-          errosReais: errosReais.length,
-          alertasReais: alertasReais.length,
+          erros: errosOriginais.length,
+          alertas: alertasOriginais.length,
           status: analysisData.status_geral,
           criticos: contadores.critico || 0,
-          altos: contadores.alto || 0
+          altos: contadores.alto || 0,
+          medios: contadores.medio || 0,
+          baixos: contadores.baixo || 0
         });
         
         return {
           analysisData,
-          errorCount: errosReais.length,
+          errorCount: errosOriginais.length,
           fullContent: content
         };
       }
     } catch (error) {
       console.error("❌ Erro no parsing:", error);
-      console.log("📄 Content que falhou:", content?.substring(0, 500));
+      console.log("📄 Content que falhou (primeiros 500 chars):", content?.substring(0, 500));
     }
 
     // Fallback
@@ -274,6 +231,14 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
   };
 
   const { analysisData, errorCount, fullContent } = parseAnalysisContent(content);
+
+  console.log("🔍 [AnalysisReport] Dados finais para renderização:", {
+    hasAnalysisData: !!analysisData,
+    numErros: analysisData?.erros?.length || 0,
+    numAlertas: analysisData?.alertas?.length || 0,
+    statusGeral: analysisData?.status_geral,
+    errorCount
+  });
 
   return (
     <Card className="mt-6 bg-white border-2">
@@ -292,12 +257,12 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
               <StatusBadge status={analysisData.status_geral} />
             )}
 
-            {/* Análise da Fidelidade - NOVO COMPONENTE */}
+            {/* Análise da Fidelidade */}
             {analysisData.analise_fidelidade && (
               <FidelityAnalysisCard fidelityData={analysisData.analise_fidelidade} />
             )}
 
-            {/* Validação de Taxas - NOVO COMPONENTE */}
+            {/* Validação de Taxas */}
             {analysisData.validacao_taxas && (
               <TaxValidationCard taxData={analysisData.validacao_taxas} />
             )}
@@ -345,12 +310,12 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
               </div>
             )}
 
-            {/* Lista de Erros */}
+            {/* Lista de Erros - SEMPRE MOSTRAR SE EXISTIR */}
             {analysisData.erros && analysisData.erros.length > 0 && (
               <ErrorListCard erros={analysisData.erros} />
             )}
 
-            {/* Lista de Alertas */}
+            {/* Lista de Alertas - SEMPRE MOSTRAR SE EXISTIR */}
             {analysisData.alertas && analysisData.alertas.length > 0 && (
               <AlertListCard alertas={analysisData.alertas} />
             )}
