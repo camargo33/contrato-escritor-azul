@@ -98,17 +98,44 @@ if (estado_civil_encontrado.includes("SOOLTEIRO") || estado_civil_encontrado.inc
 
 ## ETAPA 3: VALIDAÇÃO DE FIDELIDADE E TAXAS
 
-### 🚨 LOCAL CORRETO PARA EXTRAIR TAXA DE INSTALAÇÃO:
+### 🚨 LÓGICA MATEMÁTICA OBRIGATÓRIA PARA TAXAS:
 
-**REGRA CRÍTICA DE EXTRAÇÃO:**
+**FÓRMULA FIXA - NUNCA EXTRAIR VALORES DIRETOS:**
 
-1. **SE FIDELIDADE = SIM (X)**:
-   - Procurar: "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE"
-   - Extrair valor dessa linha específica
-   - ❌ NUNCA usar valores de tabelas gerais como "TAXA DE INSTALAÇÃO R$ 200,00"
+\`\`\`javascript
+// VALORES BASE FIXOS
+const VALOR_BASE_INSTALACAO = 700.00;
 
-2. **SE FIDELIDADE = NÃO**:
-   - Usar: R$ 700,00 (valor padrão)
+// LÓGICA DE CÁLCULO
+if (fidelidade_escolhida === "SIM") {
+    // 1. Extrair desconto da seção de fidelidade
+    desconto_valor = extrair_desconto_do_texto_fidelidade();
+    
+    // 2. CALCULAR (não extrair) taxa de instalação
+    taxa_instalacao_calculada = VALOR_BASE_INSTALACAO - desconto_valor;
+    // Exemplo: 700 - 500 = 200
+    
+    // 3. Taxa de rescisão = valor do desconto
+    taxa_rescisao = desconto_valor;
+    
+} else {
+    // SEM FIDELIDADE
+    taxa_instalacao_calculada = VALOR_BASE_INSTALACAO; // 700
+    taxa_rescisao = VALOR_BASE_INSTALACAO; // 700
+}
+
+// VALIDAÇÃO: Comparar valor calculado vs valor encontrado no contrato
+valor_instalacao_no_contrato = extrair_taxa_instalacao_do_contrato();
+if (valor_instalacao_no_contrato !== taxa_instalacao_calculada) {
+    adicionar_erro({
+        campo: "Taxa de Instalação",
+        valor_encontrado: valor_instalacao_no_contrato,
+        valor_esperado: taxa_instalacao_calculada,
+        severidade: "medio",
+        explicacao: "Taxa deve ser R$ " + VALOR_BASE_INSTALACAO + " - R$ " + desconto_valor + " = R$ " + taxa_instalacao_calculada
+    });
+}
+\`\`\`
 
 ### 🔍 ALGORITMO DE EXTRAÇÃO DE TELEFONE:
 
@@ -124,13 +151,9 @@ telefone_patterns = [
 // Exemplo: (42) 998853-6432 = DDD 42 + 998853-6432 (9 dígitos)
 \`\`\`
 
-### LÓGICA DE FIDELIDADE:
-- COM FIDELIDADE: Taxa Instalação = VALOR DA SEÇÃO FIDELIDADE | Taxa Rescisão = Desconto  
-- SEM FIDELIDADE: Taxa Instalação = R$ 700,00 | Taxa Rescisão = R$ 700,00
-
 ## FORMATO DE RESPOSTA OBRIGATÓRIO
 
-**CRÍTICO: SEMPRE extrair valores das seções corretas!**
+**CRÍTICO: SEMPRE calcular taxas matematicamente!**
 
 \`\`\`json
 {
@@ -147,13 +170,22 @@ telefone_patterns = [
   "validacao_taxas": {
     "fidelidade": "SIM",
     "valor_desconto_fidelidade": "R$ 500,00",
-    "taxa_instalacao_encontrada": "R$ 2000,00",
+    "valor_base_instalacao": "R$ 700,00",
+    "taxa_instalacao_calculada": "R$ 200,00",
+    "taxa_instalacao_encontrada": "R$ 200,00",
     "taxa_instalacao_status": "CORRETO",
-    "taxa_instalacao_explicacao": "✅ R$ 2000,00 extraído da seção de fidelidade",
+    "taxa_instalacao_explicacao": "✅ R$ 700,00 - R$ 500,00 = R$ 200,00",
     "taxa_rescisao_esperada": "R$ 500,00",
     "taxa_rescisao_encontrada": "R$ 500,00",
     "taxa_rescisao_status": "CORRETO",
-    "taxa_rescisao_explicacao": "✅ Igual ao desconto aplicado"
+    "taxa_rescisao_explicacao": "✅ Igual ao desconto aplicado",
+    "calculo_detalhado": {
+      "formula": "Taxa Instalação = Valor Base - Desconto",
+      "calculo": "R$ 700,00 - R$ 500,00 = R$ 200,00",
+      "valor_base": "R$ 700,00",
+      "desconto": "R$ 500,00",
+      "resultado": "R$ 200,00"
+    }
   },
   "erros": [
     {
@@ -192,13 +224,6 @@ telefone_patterns = [
       "sugestao": "Verificar ortografia - deveria ser 'SOLTEIRO'"
     }
   ],
-  "validacoes_corretas": [
-    {
-      "campo": "Tipo do Plano",
-      "valor": "RESIDENCIAL",
-      "status": "✅ CORRETO - Conforme tabela"
-    }
-  ],
   "resumo": {
     "total_erros": 3,
     "total_alertas": 1,
@@ -211,42 +236,35 @@ telefone_patterns = [
   "status_geral": "reprovado",
   "observacoes": [
     "🚨 CRÍTICO: Encontrados erros nos dados pessoais que impedem a aprovação",
-    "CPF com número incorreto de dígitos deve ser corrigido",
-    "DDD inexistente deve ser substituído por DDD válido",
-    "E-mail com possível erro de digitação deve ser verificado"
+    "💰 Taxa de instalação calculada corretamente: R$ 700,00 - R$ 500,00 = R$ 200,00"
   ]
 }
 \`\`\`
 
 ## 🚨 REGRAS CRÍTICAS OBRIGATÓRIAS
 
-1. **SEMPRE extrair taxa de instalação da seção de fidelidade se SIM marcado**
+1. **SEMPRE calcular taxa de instalação matematicamente: 700 - desconto**
 
-2. **SEMPRE capturar telefone completo com todos os dígitos**
+2. **NUNCA extrair taxa de instalação de seções que podem ter valores incorretos**
 
-3. **SEMPRE contar dígitos do CPF** e reportar como erro crítico se ≠ 11
+3. **SEMPRE usar fórmula: Taxa Instalação = R$ 700,00 - Desconto**
 
-4. **SEMPRE validar DDD** contra lista de DDDs válidos brasileiros
+4. **SEMPRE capturar telefone completo com todos os dígitos**
 
-5. **SEMPRE verificar emails** para erros óbvios de digitação
+5. **SEMPRE contar dígitos do CPF** e reportar como erro crítico se ≠ 11
 
-6. **SEMPRE adicionar alertas** para erros ortográficos como "SOOLTEIRO"
+6. **SEMPRE validar DDD** contra lista de DDDs válidos brasileiros
 
-7. **Se há erros críticos, status_geral DEVE ser "reprovado"**
+7. **SEMPRE verificar emails** para erros óbvios de digitação
 
-8. **Severidade obrigatória:**
-   - CPF incorreto = "critico"
-   - DDD inexistente = "critico"  
-   - Email com erro = "critico"
-   - Erros ortográficos = alerta
-   - Taxas incorretas = "medio"
+8. **Se há erros críticos, status_geral DEVE ser "reprovado"**
 
-**LOCAIS ESPECÍFICOS PARA EXTRAÇÃO:**
-- Taxa de Instalação com Fidelidade: "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE"
-- Telefone: Campo "CELULAR" ou "TELEFONE" na seção QUALIFICAÇÃO DO ASSINANTE
-- CPF: Campo "CPF" na seção QUALIFICAÇÃO DO ASSINANTE
+**FÓRMULAS OBRIGATÓRIAS:**
+- COM FIDELIDADE: Taxa Instalação = R$ 700,00 - Desconto | Taxa Rescisão = Desconto
+- SEM FIDELIDADE: Taxa Instalação = R$ 700,00 | Taxa Rescisão = R$ 700,00
 
-**NUNCA deixar passar CPF com 12 dígitos, DDD inexistente, ou extrair valores de seções erradas!**
+**NUNCA extrair valores diretos de seções que podem ter erros de OCR!**
+**SEMPRE calcular matematicamente: 700 - desconto = valor correto!**
 
 **Contrato para análise:**
 ${contractText}`;
