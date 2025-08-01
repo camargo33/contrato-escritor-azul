@@ -21,42 +21,6 @@ interface ErrorListCardProps {
 }
 
 const ErrorListCard = ({ erros }: ErrorListCardProps) => {
-  // Função para verificar se é um erro real (valores diferentes)
-  const isRealError = (erro: ErrorAnalysis): boolean => {
-    const encontrado = erro.valor_encontrado?.toString().trim() || '';
-    const esperado = erro.valor_esperado?.toString().trim() || '';
-    
-    // Se os valores são idênticos, não é um erro real
-    if (encontrado === esperado) {
-      return false;
-    }
-    
-    // Normalizar valores monetários para comparação
-    const normalizeMoney = (value: string) => {
-      return value.replace(/[R$\s]/g, '').replace(',', '.');
-    };
-    
-    // Se ambos parecem ser valores monetários, comparar numericamente
-    if (encontrado.includes('R$') && esperado.includes('R$')) {
-      const encontradoNum = normalizeMoney(encontrado);
-      const esperadoNum = normalizeMoney(esperado);
-      if (encontradoNum === esperadoNum) {
-        return false;
-      }
-    }
-    
-    // Normalizar texto (maiúsculas, espaços)
-    const normalizeText = (text: string) => {
-      return text.toLowerCase().replace(/\s+/g, ' ').trim();
-    };
-    
-    if (normalizeText(encontrado) === normalizeText(esperado)) {
-      return false;
-    }
-    
-    return true;
-  };
-
   // Função para obter ícone baseado na severidade
   const getSeverityIcon = (severidade?: string) => {
     switch (severidade?.toLowerCase()) {
@@ -114,11 +78,13 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
     }
   };
 
-  // Filtrar apenas erros reais
-  const errosReais = erros.filter(isRealError);
-
-  // Se não há erros reais, não mostrar a seção
-  if (!errosReais || errosReais.length === 0) {
+  // 🚨 MUDANÇA CRÍTICA: NUNCA FILTRAR ERROS AQUI!
+  // Mostrar TODOS os erros que chegaram até aqui
+  console.log("🔍 ErrorListCard recebeu", erros.length, "erros para exibir");
+  
+  // Se não há erros, não mostrar a seção
+  if (!erros || erros.length === 0) {
+    console.log("⚠️ Nenhum erro para exibir no ErrorListCard");
     return null;
   }
 
@@ -126,12 +92,19 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
     <div className="mb-6">
       <div className="flex items-center gap-3 mb-3">
         <XCircle className="h-5 w-5 text-red-600" />
-        <h3 className="text-lg font-semibold text-slate-700">Erros Detectados ({errosReais.length})</h3>
+        <h3 className="text-lg font-semibold text-slate-700">Erros Detectados ({erros.length})</h3>
       </div>
       
       <div className="space-y-4">
-        {errosReais.map((erro, index) => {
+        {erros.map((erro, index) => {
           const colors = getSeverityColors(erro.severidade);
+          
+          console.log(`📋 Exibindo erro ${index + 1}:`, {
+            campo: erro.campo,
+            severidade: erro.severidade,
+            valor_encontrado: erro.valor_encontrado,
+            local_origem: erro.local_origem
+          });
           
           return (
             <Card key={index} className={`border-2 ${colors.border} ${colors.bg}`}>
@@ -215,10 +188,10 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
           <span className="font-medium text-gray-800">📋 Próximos Passos</span>
         </div>
         <div className="text-sm text-gray-700">
-          {errosReais.length === 1 ? (
+          {erros.length === 1 ? (
             'Corrija o erro identificado acima antes de aprovar o contrato.'
           ) : (
-            `Corrija os ${errosReais.length} erros identificados acima antes de aprovar o contrato.`
+            `Corrija os ${erros.length} erros identificados acima antes de aprovar o contrato.`
           )}
         </div>
         <div className="text-xs text-gray-600 mt-1">
