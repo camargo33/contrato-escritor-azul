@@ -23,6 +23,10 @@ Analisar contratos OCR da CIABRASNET detectando ERROS CRÍTICOS que impedem a ap
 - (42) 988853-6432 com DDD inexistente = ERRO CRÍTICO
 - Telefones fora do padrão brasileiro = ERRO CRÍTICO
 
+**REGRA 5: ERROS ORTOGRÁFICOS = ALERTA OBRIGATÓRIO**
+- "SOLTEIRO" ao invés de "SOLTEIRO" = ALERTA
+- Qualquer erro de digitação óbvio = ALERTA
+
 ## ETAPA 1: IDENTIFICAÇÃO DO MODELO
 
 ### Modelos Disponíveis:
@@ -35,10 +39,10 @@ Analisar contratos OCR da CIABRASNET detectando ERROS CRÍTICOS que impedem a ap
 
 ## ETAPA 2: VALIDAÇÃO RIGOROSA DE DADOS PESSOAIS
 
-### 🔍 ALGORITMO DE VALIDAÇÃO:
+### 🔍 ALGORITMO DE VALIDAÇÃO OBRIGATÓRIA:
 
 \`\`\`javascript
-// VALIDAÇÃO DE CPF
+// VALIDAÇÃO DE CPF - SEMPRE EXECUTAR
 cpf_numeros = extrair_apenas_numeros_do_cpf(cpf_encontrado)
 if (cpf_numeros.length !== 11) {
     adicionar_erro_critico({
@@ -47,34 +51,47 @@ if (cpf_numeros.length !== 11) {
         valor_esperado: "CPF com exatamente 11 dígitos",
         sugestao_correcao: "Corrigir o CPF para ter exatamente 11 dígitos",
         severidade: "critico",
-        explicacao: "CPF encontrado tem " + cpf_numeros.length + " dígitos, mas deve ter exatamente 11"
+        explicacao: "CPF encontrado tem " + cpf_numeros.length + " dígitos, mas deve ter exatamente 11",
+        local_origem: "Seção QUALIFICAÇÃO DO ASSINANTE"
     })
 }
 
-// VALIDAÇÃO DE DDD
+// VALIDAÇÃO DE DDD - SEMPRE EXECUTAR
 ddd_extraido = extrair_ddd_do_telefone(telefone_encontrado)
 ddds_validos = ["11","12","13","14","15","16","17","18","19","21","22","24","27","28","31","32","33","34","35","37","38","41","43","44","45","46","47","48","49","51","53","54","55","61","62","63","64","65","66","67","68","69","71","73","74","75","77","79","81","82","83","84","85","86","87","88","89","91","92","93","94","95","96","97","98","99"]
 
 if (!ddds_validos.includes(ddd_extraido)) {
     adicionar_erro_critico({
-        campo: "DDD do Telefone",
-        valor_encontrado: "(" + ddd_extraido + ")",
-        valor_esperado: "DDD válido brasileiro",
+        campo: "TELEFONE",
+        valor_encontrado: telefone_encontrado,
+        valor_esperado: "Telefone com DDD válido brasileiro",
         sugestao_correcao: "Corrigir para um DDD válido (ex: (41), (11), (21))",
         severidade: "critico",
-        explicacao: "DDD " + ddd_extraido + " não existe no Brasil"
+        explicacao: "DDD " + ddd_extraido + " não existe no Brasil",
+        local_origem: "Seção QUALIFICAÇÃO DO ASSINANTE"
     })
 }
 
-// VALIDAÇÃO DE EMAIL
+// VALIDAÇÃO DE EMAIL - SEMPRE EXECUTAR
 if (email_encontrado.includes("geronco") || email_suspeito(email_encontrado)) {
     adicionar_erro_critico({
-        campo: "E-mail",
+        campo: "EMAIL",
         valor_encontrado: email_encontrado,
         valor_esperado: "E-mail correto sem erros de digitação",
         sugestao_correcao: "Verificar e corrigir possíveis erros de digitação",
         severidade: "critico",
-        explicacao: "E-mail contém possível erro de digitação"
+        explicacao: "E-mail contém possível erro de digitação",
+        local_origem: "Seção QUALIFICAÇÃO DO ASSINANTE"
+    })
+}
+
+// VALIDAÇÃO DE ESTADO CIVIL - SEMPRE VERIFICAR
+if (estado_civil_encontrado.toUpperCase() === "SOLTEIRO") {
+    adicionar_alerta({
+        campo: "Estado Civil",
+        valor_encontrado: estado_civil_encontrado,
+        sugestao: "Verificar se deveria ser 'SOLTEIRO'",
+        tipo: "erro_digitacao"
     })
 }
 \`\`\`
@@ -93,7 +110,7 @@ VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELI
 
 ## FORMATO DE RESPOSTA OBRIGATÓRIO
 
-**CRÍTICO: Classificar problemas graves como ERROS, não como alertas!**
+**CRÍTICO: NUNCA deixar de detectar erros óbvios como CPF com 12 dígitos ou DDD 42!**
 
 \`\`\`json
 {
@@ -129,25 +146,31 @@ VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELI
       "local_origem": "Seção QUALIFICAÇÃO DO ASSINANTE"
     },
     {
-      "campo": "DDD do Telefone",
+      "campo": "TELEFONE",
       "valor_encontrado": "(42) 98853-6432",
-      "valor_esperado": "DDD válido brasileiro",
+      "valor_esperado": "Telefone com DDD válido brasileiro",
       "sugestao_correcao": "Corrigir para um DDD válido (ex: (41), (11), (21))",
       "explicacao": "DDD 42 não existe no Brasil",
       "severidade": "critico",
       "local_origem": "Seção QUALIFICAÇÃO DO ASSINANTE"
     },
     {
-      "campo": "E-mail",
+      "campo": "EMAIL",
       "valor_encontrado": "felipe.geronco@gmail.com",
       "valor_esperado": "E-mail correto sem erros de digitação",
       "sugestao_correcao": "Verificar e corrigir possíveis erros de digitação no sobrenome",
       "explicacao": "E-mail contém possível erro de digitação ('geronco')",
-      "severidade": "alto",
+      "severidade": "critico",
       "local_origem": "Seção QUALIFICAÇÃO DO ASSINANTE"
     }
   ],
   "alertas": [
+    {
+      "tipo": "erro_digitacao",
+      "campo": "Estado Civil",
+      "valor_encontrado": "SOLTEIRO",
+      "sugestao": "Verificar se deveria ser 'SOLTEIRO'"
+    },
     {
       "tipo": "valor_suspeito",
       "campo": "Taxa de Instalação Geral",
@@ -169,14 +192,16 @@ VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELI
   ],
   "resumo": {
     "total_erros": 3,
-    "total_alertas": 1,
-    "criticos": 2,
-    "altos": 1,
+    "total_alertas": 2,
+    "criticos": 3,
+    "altos": 0,
+    "medios": 0,
+    "baixos": 0,
     "plano_identificado": "2024 Combo 600Mbps"
   },
   "status_geral": "reprovado",
   "observacoes": [
-    "CRÍTICO: Encontrados erros nos dados pessoais que impedem a aprovação",
+    "🚨 CRÍTICO: Encontrados erros nos dados pessoais que impedem a aprovação",
     "CPF com número incorreto de dígitos deve ser corrigido",
     "DDD inexistente deve ser substituído por DDD válido",
     "E-mail com possível erro de digitação deve ser verificado"
@@ -194,15 +219,19 @@ VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELI
 
 4. **SEMPRE verificar emails** para erros óbvios de digitação
 
-5. **Se há erros críticos, status_geral DEVE ser "reprovado"**
+5. **SEMPRE adicionar alertas** para erros ortográficos como "SOLTEIRO"
 
-6. **Severidade obrigatória:**
+6. **Se há erros críticos, status_geral DEVE ser "reprovado"**
+
+7. **Severidade obrigatória:**
    - CPF incorreto = "critico"
    - DDD inexistente = "critico"  
-   - Email com erro = "alto"
+   - Email com erro = "critico"
+   - Erros ortográficos = alerta
    - Taxas incorretas = "medio"
 
 **NUNCA deixar passar CPF com 12 dígitos ou DDD inexistente como apenas "alerta"!**
+**SEMPRE detectar erros ortográficos como "SOLTEIRO" e colocar em alertas!**
 
 **Contrato para análise:**
 ${contractText}`;
