@@ -20,11 +20,11 @@ Analisar contratos OCR da CIABRASNET detectando ERROS CRÍTICOS que impedem a ap
 - Emails com domínios inexistentes = ERRO CRÍTICO
 
 **REGRA 4: TELEFONES COM FORMATO INCORRETO = ERRO CRÍTICO**
-- (42) 988853-6432 com DDD inexistente = ERRO CRÍTICO
+- (42) 998853-6432 com DDD inexistente = ERRO CRÍTICO
 - Telefones fora do padrão brasileiro = ERRO CRÍTICO
 
 **REGRA 5: ERROS ORTOGRÁFICOS = ALERTA OBRIGATÓRIO**
-- "SOLTEIRO" ao invés de "SOLTEIRO" = ALERTA
+- "SOOLTEIRO" ao invés de "SOLTEIRO" = ALERTA
 - Qualquer erro de digitação óbvio = ALERTA
 
 ## ETAPA 1: IDENTIFICAÇÃO DO MODELO
@@ -86,11 +86,11 @@ if (email_encontrado.includes("geronco") || email_suspeito(email_encontrado)) {
 }
 
 // VALIDAÇÃO DE ESTADO CIVIL - SEMPRE VERIFICAR
-if (estado_civil_encontrado.toUpperCase() === "SOLTEIRO") {
+if (estado_civil_encontrado.includes("SOOLTEIRO") || estado_civil_encontrado.includes("SOLTEIRO")) {
     adicionar_alerta({
         campo: "Estado Civil",
         valor_encontrado: estado_civil_encontrado,
-        sugestao: "Verificar se deveria ser 'SOLTEIRO'",
+        sugestao: "Verificar ortografia - deveria ser 'SOLTEIRO'",
         tipo: "erro_digitacao"
     })
 }
@@ -98,19 +98,39 @@ if (estado_civil_encontrado.toUpperCase() === "SOLTEIRO") {
 
 ## ETAPA 3: VALIDAÇÃO DE FIDELIDADE E TAXAS
 
-### LOCAL CORRETO PARA TAXA DE INSTALAÇÃO:
-```
-TAXA DA INSTALAÇÃO DA INFRAESTRUTURA DOS SERVIÇOS
-VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: [VALOR]
-```
+### 🚨 LOCAL CORRETO PARA EXTRAIR TAXA DE INSTALAÇÃO:
+
+**REGRA CRÍTICA DE EXTRAÇÃO:**
+
+1. **SE FIDELIDADE = SIM (X)**:
+   - Procurar: "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE"
+   - Extrair valor dessa linha específica
+   - ❌ NUNCA usar valores de tabelas gerais como "TAXA DE INSTALAÇÃO R$ 200,00"
+
+2. **SE FIDELIDADE = NÃO**:
+   - Usar: R$ 700,00 (valor padrão)
+
+### 🔍 ALGORITMO DE EXTRAÇÃO DE TELEFONE:
+
+\`\`\`javascript
+// EXTRAIR TELEFONE COMPLETO - ATENÇÃO AOS DÍGITOS
+telefone_patterns = [
+    /CELULAR[:\s]*\((\d{2})\)[:\s]*(\d{4,5})-?(\d{4})/g,
+    /TELEFONE[:\s]*\((\d{2})\)[:\s]*(\d{4,5})-?(\d{4})/g,
+    /\((\d{2})\)[:\s]*(\d{4,5})-?(\d{4})/g
+]
+
+// Capturar TODOS os dígitos do número
+// Exemplo: (42) 998853-6432 = DDD 42 + 998853-6432 (9 dígitos)
+\`\`\`
 
 ### LÓGICA DE FIDELIDADE:
-- COM FIDELIDADE: Taxa Instalação = R$ 700,00 - Desconto | Taxa Rescisão = Desconto  
+- COM FIDELIDADE: Taxa Instalação = VALOR DA SEÇÃO FIDELIDADE | Taxa Rescisão = Desconto  
 - SEM FIDELIDADE: Taxa Instalação = R$ 700,00 | Taxa Rescisão = R$ 700,00
 
 ## FORMATO DE RESPOSTA OBRIGATÓRIO
 
-**CRÍTICO: NUNCA deixar de detectar erros óbvios como CPF com 12 dígitos ou DDD 42!**
+**CRÍTICO: SEMPRE extrair valores das seções corretas!**
 
 \`\`\`json
 {
@@ -120,18 +140,18 @@ VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELI
   },
   "analise_fidelidade": {
     "opcao_fidelidade": "SIM",
-    "valor_desconto_extraido": "R$ 600,00",
-    "texto_origem": "desconto de R$ 600,00 (Seiscentos reais)",
+    "valor_desconto_extraido": "R$ 500,00",
+    "texto_origem": "desconto de R$ 500,00 (Quinhentos reais)",
     "marcacao_encontrada": "SIM (X)"
   },
   "validacao_taxas": {
     "fidelidade": "SIM",
-    "valor_desconto_fidelidade": "R$ 600,00",
-    "taxa_instalacao_encontrada": "R$ 100,00",
+    "valor_desconto_fidelidade": "R$ 500,00",
+    "taxa_instalacao_encontrada": "R$ 2000,00",
     "taxa_instalacao_status": "CORRETO",
-    "taxa_instalacao_explicacao": "✅ R$ 100,00 correto (R$ 700,00 - R$ 600,00)",
-    "taxa_rescisao_esperada": "R$ 600,00",
-    "taxa_rescisao_encontrada": "R$ 600,00",
+    "taxa_instalacao_explicacao": "✅ R$ 2000,00 extraído da seção de fidelidade",
+    "taxa_rescisao_esperada": "R$ 500,00",
+    "taxa_rescisao_encontrada": "R$ 500,00",
     "taxa_rescisao_status": "CORRETO",
     "taxa_rescisao_explicacao": "✅ Igual ao desconto aplicado"
   },
@@ -147,7 +167,7 @@ VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELI
     },
     {
       "campo": "TELEFONE",
-      "valor_encontrado": "(42) 98853-6432",
+      "valor_encontrado": "(42) 998853-6432",
       "valor_esperado": "Telefone com DDD válido brasileiro",
       "sugestao_correcao": "Corrigir para um DDD válido (ex: (41), (11), (21))",
       "explicacao": "DDD 42 não existe no Brasil",
@@ -168,14 +188,8 @@ VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELI
     {
       "tipo": "erro_digitacao",
       "campo": "Estado Civil",
-      "valor_encontrado": "SOLTEIRO",
-      "sugestao": "Verificar se deveria ser 'SOLTEIRO'"
-    },
-    {
-      "tipo": "valor_suspeito",
-      "campo": "Taxa de Instalação Geral",
-      "valor_encontrado": "R$ 2000,00",
-      "sugestao": "Verificar se não deveria ser R$ 200,00"
+      "valor_encontrado": "SOOLTEIRO",
+      "sugestao": "Verificar ortografia - deveria ser 'SOLTEIRO'"
     }
   ],
   "validacoes_corretas": [
@@ -183,16 +197,11 @@ VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELI
       "campo": "Tipo do Plano",
       "valor": "RESIDENCIAL",
       "status": "✅ CORRETO - Conforme tabela"
-    },
-    {
-      "campo": "Prazo de Vigência",
-      "valor": "12 meses",
-      "status": "✅ CORRETO - Padrão residencial"
     }
   ],
   "resumo": {
     "total_erros": 3,
-    "total_alertas": 2,
+    "total_alertas": 1,
     "criticos": 3,
     "altos": 0,
     "medios": 0,
@@ -211,27 +220,33 @@ VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELI
 
 ## 🚨 REGRAS CRÍTICAS OBRIGATÓRIAS
 
-1. **SEMPRE colocar problemas graves na seção "erros"**, não em "alertas"
+1. **SEMPRE extrair taxa de instalação da seção de fidelidade se SIM marcado**
 
-2. **SEMPRE contar dígitos do CPF** e reportar como erro crítico se ≠ 11
+2. **SEMPRE capturar telefone completo com todos os dígitos**
 
-3. **SEMPRE validar DDD** contra lista de DDDs válidos brasileiros
+3. **SEMPRE contar dígitos do CPF** e reportar como erro crítico se ≠ 11
 
-4. **SEMPRE verificar emails** para erros óbvios de digitação
+4. **SEMPRE validar DDD** contra lista de DDDs válidos brasileiros
 
-5. **SEMPRE adicionar alertas** para erros ortográficos como "SOLTEIRO"
+5. **SEMPRE verificar emails** para erros óbvios de digitação
 
-6. **Se há erros críticos, status_geral DEVE ser "reprovado"**
+6. **SEMPRE adicionar alertas** para erros ortográficos como "SOOLTEIRO"
 
-7. **Severidade obrigatória:**
+7. **Se há erros críticos, status_geral DEVE ser "reprovado"**
+
+8. **Severidade obrigatória:**
    - CPF incorreto = "critico"
    - DDD inexistente = "critico"  
    - Email com erro = "critico"
    - Erros ortográficos = alerta
    - Taxas incorretas = "medio"
 
-**NUNCA deixar passar CPF com 12 dígitos ou DDD inexistente como apenas "alerta"!**
-**SEMPRE detectar erros ortográficos como "SOLTEIRO" e colocar em alertas!**
+**LOCAIS ESPECÍFICOS PARA EXTRAÇÃO:**
+- Taxa de Instalação com Fidelidade: "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE"
+- Telefone: Campo "CELULAR" ou "TELEFONE" na seção QUALIFICAÇÃO DO ASSINANTE
+- CPF: Campo "CPF" na seção QUALIFICAÇÃO DO ASSINANTE
+
+**NUNCA deixar passar CPF com 12 dígitos, DDD inexistente, ou extrair valores de seções erradas!**
 
 **Contrato para análise:**
 ${contractText}`;
