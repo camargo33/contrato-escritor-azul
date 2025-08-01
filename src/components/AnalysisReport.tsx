@@ -98,8 +98,15 @@ interface AnalysisData {
 }
 
 const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: AnalysisReportProps) => {
-  // Função para verificar se é um erro real
+  // 🚨 FUNÇÃO ATUALIZADA - NÃO FILTRAR ERROS CRÍTICOS!
   const isRealError = (erro: ErrorAnalysis): boolean => {
+    // NUNCA filtrar erros com severidade crítica ou alta
+    if (erro.severidade === 'critico' || erro.severidade === 'alto') {
+      console.log("✅ Mantendo erro crítico/alto:", erro.campo, erro.valor_encontrado);
+      return true;
+    }
+
+    // Para outros erros, fazer validação básica
     const encontrado = erro.valor_encontrado?.toString().trim() || '';
     const esperado = erro.valor_esperado?.toString().trim() || '';
     
@@ -122,25 +129,13 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
     return normalizeText(encontrado) !== normalizeText(esperado);
   };
 
-  // Função para verificar se é um alerta válido
+  // Função para verificar se é um alerta válido - MAIS PERMISSIVA
   const isValidAlert = (alerta: AlertItem): boolean => {
+    // Manter todos os alertas, não filtrar agressivamente
     const valorEncontrado = alerta.valor_encontrado?.trim() || '';
-    const campo = alerta.campo?.toLowerCase() || '';
     
-    if (campo.includes('nome') && valorEncontrado && valorEncontrado !== '(vazio)') return false;
-    if (campo.includes('telefone') || campo.includes('celular')) {
-      const telefoneRegex = /^\(\d{2}\)\s?\d{4,5}-?\d{4}$/;
-      if (telefoneRegex.test(valorEncontrado.replace(/\s/g, ''))) return false;
-    }
-    if (campo.includes('cpf')) {
-      const cpfRegex = /^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/;
-      if (cpfRegex.test(valorEncontrado.replace(/\s/g, ''))) return false;
-    }
-    if (campo.includes('email') || campo.includes('e-mail')) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (emailRegex.test(valorEncontrado)) return false;
-    }
-    if (valorEncontrado && valorEncontrado !== '(vazio)' && alerta.tipo === 'campo_vazio') return false;
+    // Só filtrar se for obviamente incorreto
+    if (!valorEncontrado || valorEncontrado === '(vazio)') return false;
     
     return true;
   };
@@ -192,7 +187,8 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
           hasAnalyseFidelidade: !!jsonData.analise_fidelidade,
           hasValidacaoTaxas: !!jsonData.validacao_taxas,
           hasErros: !!jsonData.erros,
-          numErros: jsonData.erros?.length || 0
+          numErros: jsonData.erros?.length || 0,
+          errosOriginais: jsonData.erros
         });
         
         // Criar dados padronizados
@@ -208,25 +204,50 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
           validacao_taxas: jsonData.validacao_taxas
         };
         
-        // Filtrar erros reais
+        console.log("🔍 ANTES da filtragem - Erros originais:", analysisData.erros);
+        
+        // Filtrar erros reais (MAS NUNCA REMOVER CRÍTICOS!)
         const errosReais = analysisData.erros?.filter(isRealError) || [];
         const alertasReais = analysisData.alertas?.filter(isValidAlert) || [];
+        
+        console.log("🔍 DEPOIS da filtragem - Erros reais:", errosReais);
+        console.log("📊 Comparação:", {
+          antes: analysisData.erros?.length || 0,
+          depois: errosReais.length,
+          removidos: (analysisData.erros?.length || 0) - errosReais.length
+        });
         
         // Atualizar contadores
         analysisData.erros = errosReais;
         analysisData.alertas = alertasReais;
+        
+        // Calcular contadores por severidade
+        const contadores = errosReais.reduce((acc, erro) => {
+          const sev = erro.severidade || 'medio';
+          acc[sev] = (acc[sev] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        
         analysisData.resumo = {
           ...analysisData.resumo,
           total_erros: errosReais.length,
           total_alertas: alertasReais.length,
+          criticos: contadores.critico || 0,
+          altos: contadores.alto || 0,
+          medios: contadores.medio || 0,
+          baixos: contadores.baixo || 0
         };
-        analysisData.status_geral = errosReais.length === 0 ? 'aprovado' : 'reprovado';
+        
+        // Status baseado apenas em erros críticos e altos
+        analysisData.status_geral = (contadores.critico || 0) > 0 || (contadores.alto || 0) > 0 ? 'reprovado' : 'aprovado';
         
         console.log("✅ Análise processada com sucesso!");
         console.log("📈 Estatísticas finais:", {
           errosReais: errosReais.length,
           alertasReais: alertasReais.length,
-          status: analysisData.status_geral
+          status: analysisData.status_geral,
+          criticos: contadores.critico || 0,
+          altos: contadores.alto || 0
         });
         
         return {
