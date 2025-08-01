@@ -96,21 +96,22 @@ serve(async (req) => {
       });
     }
 
-    // 🚨 VALIDAÇÃO CRÍTICA MANUAL CORRIGIDA
-    console.log("🔍 EXECUTANDO PRÉ-VALIDAÇÃO CORRIGIDA...");
+    // 🚨 VALIDAÇÃO CRÍTICA MANUAL CORRIGIDA - MAIS CONSERVADORA
+    console.log("🔍 EXECUTANDO PRÉ-VALIDAÇÃO CONSERVADORA...");
     
     const errosCriticosObrigatorios = [];
     
-    // 1. 🔧 CORREÇÃO: Verificação de CPF com contagem correta
+    // 1. 🔧 CORREÇÃO: Verificação de CPF mais rigorosa
     console.log("🔍 Verificando CPFs...");
-    const cpfMatches = contractText.match(/\d{3}\.?\d{3}\.?\d{3}-?\d{2}/g);
+    const cpfMatches = contractText.match(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g);
     if (cpfMatches) {
       for (const cpf of cpfMatches) {
-        const apenasNumeros = cpf.replace(/[^\d]/g, '');
+        const apenasNumeros = cpf.replace(/[^0-9]/g, '');
         console.log(`📋 CPF encontrado: ${cpf} → Apenas números: ${apenasNumeros} (${apenasNumeros.length} dígitos)`);
         
+        // ✅ CORREÇÃO: Só reportar erro se REALMENTE tem problema
         if (apenasNumeros.length !== 11) {
-          console.log(`❌ ERRO CRÍTICO: CPF com ${apenasNumeros.length} dígitos!`);
+          console.log(`❌ ERRO CRÍTICO: CPF com ${apenasNumeros.length} dígitos - deveria ter 11!`);
           errosCriticosObrigatorios.push({
             campo: "CPF",
             valor_encontrado: cpf,
@@ -126,7 +127,7 @@ serve(async (req) => {
       }
     }
     
-    // 2. 🔧 CORREÇÃO: Verificação de DDD mais precisa
+    // 2. 🔧 CORREÇÃO: Verificação de DDD mais precisa - LISTA COMPLETA
     console.log("🔍 Verificando DDDs...");
     const telefoneMatches = contractText.match(/\((\d{2})\)\s*\d{4,5}-?\d{4}/g);
     if (telefoneMatches) {
@@ -136,39 +137,39 @@ serve(async (req) => {
           const ddd = parseInt(dddMatch[1]);
           console.log(`📋 Telefone encontrado: ${telefone} → DDD: ${ddd}`);
           
-          // Lista de DDDs válidos no Brasil (simplificada)
+          // ✅ LISTA COMPLETA E CORRETA DE DDDs VÁLIDOS NO BRASIL
           const dddsValidos = [
-            11, 12, 13, 14, 15, 16, 17, 18, 19, // SP
-            21, 22, 24, // RJ/ES
-            27, 28, // ES
-            31, 32, 33, 34, 35, 37, 38, // MG
-            41, 42, 43, 44, 45, 46, // PR ⚠️ INCLUINDO 42!
-            47, 48, 49, // SC
-            51, 53, 54, 55, // RS
-            61, // DF
-            62, 64, // GO
-            63, // TO
-            65, 66, // MT
-            67, // MS
-            68, // AC
-            69, // RO
-            71, 73, 74, 75, 77, // BA
-            79, // SE
-            81, 87, // PE
-            82, // AL
-            83, // PB
-            84, // RN
-            85, 88, // CE
-            86, 89, // PI
-            91, 93, 94, // PA
-            92, 97, // AM
-            95, // RR
-            96, // AP
-            98, 99 // MA
+            11, 12, 13, 14, 15, 16, 17, 18, 19, // São Paulo
+            21, 22, 24, // Rio de Janeiro/Espírito Santo
+            27, 28, // Espírito Santo
+            31, 32, 33, 34, 35, 37, 38, // Minas Gerais
+            41, 42, 43, 44, 45, 46, // Paraná - ✅ DDD 42 É VÁLIDO (Ponta Grossa)
+            47, 48, 49, // Santa Catarina
+            51, 53, 54, 55, // Rio Grande do Sul
+            61, // Distrito Federal
+            62, 64, // Goiás
+            63, // Tocantins
+            65, 66, // Mato Grosso
+            67, // Mato Grosso do Sul
+            68, // Acre
+            69, // Rondônia
+            71, 73, 74, 75, 77, // Bahia
+            79, // Sergipe
+            81, 87, // Pernambuco
+            82, // Alagoas
+            83, // Paraíba
+            84, // Rio Grande do Norte
+            85, 88, // Ceará
+            86, 89, // Piauí
+            91, 93, 94, // Pará
+            92, 97, // Amazonas
+            95, // Roraima
+            96, // Amapá
+            98, 99 // Maranhão
           ];
           
           if (!dddsValidos.includes(ddd)) {
-            console.log(`❌ ERRO CRÍTICO: DDD ${ddd} não existe!`);
+            console.log(`❌ ERRO CRÍTICO: DDD ${ddd} não existe no Brasil!`);
             errosCriticosObrigatorios.push({
               campo: "TELEFONE",
               valor_encontrado: telefone.trim(),
@@ -185,39 +186,43 @@ serve(async (req) => {
       }
     }
     
-    // 3. 🔧 CORREÇÃO: Verificação de email mais inteligente
+    // 3. 🔧 CORREÇÃO: Verificação de email MAIS CONSERVADORA - Só erros ÓBVIOS
     console.log("🔍 Verificando emails...");
     const emailMatches = contractText.match(/[\w\.-]+@[\w\.-]+\.\w+/g);
     if (emailMatches) {
       for (const email of emailMatches) {
         console.log(`📋 Email encontrado: ${email}`);
         
-        // Lista de erros comuns conhecidos (mais específica)
-        const errosConhecidos = [
-          'geronco', // era 'gueronco'
-          'gmial', // era 'gmail'
-          'hotmial', // era 'hotmail'
-          'yahhoo', // era 'yahoo'
-          'outlokk', // era 'outlook'
+        // ✅ LISTA MUITO ESPECÍFICA DE ERROS ÓBVIOS CONHECIDOS
+        const errosObvios = [
+          'gmial', // erro óbvio: gmail
+          'gmaiil', // erro óbvio: gmail  
+          'gmai.com', // erro óbvio: gmail.com
+          'hotmial', // erro óbvio: hotmail
+          'hotmeil', // erro óbvio: hotmail
+          'yahhoo', // erro óbvio: yahoo
+          'yahho', // erro óbvio: yahoo
+          'outlokk', // erro óbvio: outlook
+          'outlok' // erro óbvio: outlook
         ];
         
-        const temErroDigitacao = errosConhecidos.some(erro => 
+        const temErroObvio = errosObvios.some(erro => 
           email.toLowerCase().includes(erro)
         );
         
-        if (temErroDigitacao) {
-          console.log("❌ ERRO CRÍTICO: Email com erro de digitação conhecido!");
+        if (temErroObvio) {
+          console.log("❌ ERRO CRÍTICO: Email com erro ÓBVIO de digitação!");
           errosCriticosObrigatorios.push({
             campo: "EMAIL",
             valor_encontrado: email,
-            valor_esperado: "Email com grafia correta e sem erros de digitação",
+            valor_esperado: "Email com grafia correta de provedor conhecido",
             severidade: "critico",
-            explicacao: "Erro de digitação detectado em provedor de email conhecido",
+            explicacao: "Erro óbvio de digitação detectado em provedor de email",
             sugestao_correcao: "Verificar a grafia do provedor de email",
             local_origem: "Campo E-MAIL na seção QUALIFICAÇÃO DO ASSINANTE"
           });
         } else {
-          console.log(`✅ Email sem erros detectados: ${email}`);
+          console.log(`✅ Email sem erros óbvios detectados: ${email}`);
         }
       }
     }
@@ -235,32 +240,7 @@ serve(async (req) => {
       }
     }
 
-    // 5. Taxa de Instalação com Fidelidade (mantida)
-    console.log("🔍 Verificando taxa de instalação com fidelidade...");
-    const fidelidadeMatch = contractText.match(/SIM\s*\(X\)/);
-    if (fidelidadeMatch) {
-      console.log("📋 Cliente optou por fidelidade SIM (X)");
-      
-      const taxaFidelidadeMatch = contractText.match(/VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE[:\s]*R\$\s*([\d.,]+)/i);
-      if (taxaFidelidadeMatch) {
-        const valorFidelidade = taxaFidelidadeMatch[1];
-        console.log(`📋 Taxa de instalação com fidelidade encontrada: R$ ${valorFidelidade}`);
-      }
-    }
-
-    // 6. Telefone com dígitos corretos (mantida)
-    console.log("🔍 Verificando extração completa de telefone...");
-    const telefoneCompletoMatch = contractText.match(/(?:CELULAR|TELEFONE)[:\s]*\((\d{2})\)\s*(\d{4,5})-?(\d{4})/i);
-    if (telefoneCompletoMatch) {
-      const ddd = telefoneCompletoMatch[1];
-      const parte1 = telefoneCompletoMatch[2];
-      const parte2 = telefoneCompletoMatch[3];
-      const telefoneCompleto = `(${ddd}) ${parte1}-${parte2}`;
-      console.log(`📋 Telefone completo extraído: ${telefoneCompleto}`);
-      console.log(`📊 Dígitos: DDD=${ddd}, Número=${parte1}${parte2} (${parte1.length + parte2.length} dígitos)`);
-    }
-
-    console.log(`🚨 PRÉ-VALIDAÇÃO CORRIGIDA CONCLUÍDA: ${errosCriticosObrigatorios.length} erros críticos detectados`);
+    console.log(`🚨 PRÉ-VALIDAÇÃO CONSERVADORA CONCLUÍDA: ${errosCriticosObrigatorios.length} erros críticos detectados`);
 
     // Validar API key do OpenRouter/OpenAI
     const apiKeyValidation = validateOpenRouterApiKey();
@@ -311,7 +291,7 @@ serve(async (req) => {
       const errosExistentes = analysisData.erros || [];
       const todosErros = [...errosExistentes];
       
-      // Adicionar erros críticos obrigatórios que não foram detectados pela IA
+      // ✅ CONSERVADOR: Só adicionar se FOR REALMENTE um erro crítico
       for (const erroObrigatorio of errosCriticosObrigatorios) {
         const jaExiste = errosExistentes.some(erro => 
           erro.campo?.toLowerCase().includes(erroObrigatorio.campo.toLowerCase()) && 
@@ -326,10 +306,10 @@ serve(async (req) => {
         }
       }
       
-      // Adicionar alertas para problemas menores
+      // Adicionar alertas para problemas menores (não erros críticos)
       const alertasAdicionais = [];
       
-      // Estado civil com possível erro
+      // Estado civil com possível erro (ALERTA, não erro crítico)
       if (estadoCivilMatch && estadoCivilMatch[1]?.includes("SOOLTEIRO")) {
         alertasAdicionais.push({
           tipo: "erro_digitacao",
@@ -381,11 +361,14 @@ serve(async (req) => {
           `📊 Encontrados ${contadores.critico || 0} erros críticos e ${contadores.alto || 0} erros altos`,
           ...(errosCriticosObrigatorios.length > 0 ? ["⚠️ Dados pessoais com erros críticos devem ser corrigidos imediatamente"] : [])
         ];
+      } else {
+        // ✅ Se não há erros críticos, contrato pode ser aprovado
+        analysisData.status_geral = "aprovado";
       }
       
       finalContent = JSON.stringify(analysisData, null, 2);
       
-      console.log("✅ VALIDAÇÃO FINAL CONCLUÍDA:");
+      console.log("✅ VALIDAÇÃO CONSERVADORA CONCLUÍDA:");
       console.log(`📈 Total de erros: ${todosErros.length}`);
       console.log(`📈 Críticos: ${contadores.critico || 0}`);
       console.log(`📈 Altos: ${contadores.alto || 0}`);
