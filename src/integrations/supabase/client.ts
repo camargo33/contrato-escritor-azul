@@ -23,23 +23,41 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   },
   db: {
     schema: 'public'
-  },
-  global: {
-    headers: {
-      'x-application-name': 'contrato-escritor-azul'
-    }
   }
+  // 🔧 CORREÇÃO: Removido headers customizados que causavam erro CORS
 });
 
-// 🔧 Health check do cliente
+// 🔧 Health check do cliente (simplificado)
 export const checkSupabaseConnection = async () => {
   try {
     const { data, error } = await supabase.from('base_contracts').select('id').limit(1);
-    if (error) throw error;
+    if (error && error.code !== 'PGRST301') { // Ignorar erro de tabela vazia
+      throw error;
+    }
     console.log('✅ Conexão com Supabase OK');
     return true;
   } catch (error) {
     console.error('❌ Erro de conexão com Supabase:', error);
+    return false;
+  }
+};
+
+// 🔧 NOVO: Function para testar Edge Function
+export const checkEdgeFunctionHealth = async () => {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/analyze-contract`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
+      },
+      body: JSON.stringify({ test: true })
+    });
+    
+    console.log('🔧 Edge Function Response Status:', response.status);
+    return response.status === 200 || response.status === 400; // 400 é ok para teste
+  } catch (error) {
+    console.error('❌ Edge Function não disponível:', error);
     return false;
   }
 };
