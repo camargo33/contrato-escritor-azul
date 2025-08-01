@@ -1,7 +1,10 @@
 
+// 🔧 CORREÇÃO CRÍTICA: CORS mais permissivo para resolver problemas de headers
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-application-name, accept, accept-language, cache-control, pragma',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 };
 
 export interface ApiKeyValidationResult {
@@ -23,31 +26,39 @@ export const validateOpenRouterApiKey = (): ApiKeyValidationResult => {
     usedVariable = 'OpenRouter';
   }
   
+  if (!openRouterApiKey) {
+    openRouterApiKey = Deno.env.get('OPENAI_API_KEY'); // Fallback para OpenAI
+    usedVariable = 'OPENAI_API_KEY';
+  }
+  
   // Listar todas as variáveis de ambiente disponíveis (sem mostrar valores)
   const allEnvVars = Object.keys(Deno.env.toObject());
   console.log("Variáveis de ambiente disponíveis:", allEnvVars);
   console.log("Tentando usar variável:", usedVariable);
   
   if (!openRouterApiKey) {
-    console.error("❌ ERRO CRÍTICO: API key do OpenRouter não encontrada");
+    console.error("❌ ERRO CRÍTICO: API key não encontrada");
     return {
       isValid: false,
-      error: "API key do OpenRouter não configurada. Verifique se a variável 'OPEN_ROUTER' ou 'OpenRouter' está definida nos secrets",
+      error: "API key não configurada. Verifique se 'OPEN_ROUTER', 'OpenRouter' ou 'OPENAI_API_KEY' está definida nos secrets",
       debug: {
         available_env_vars: allEnvVars,
-        checked_keys: ['OPEN_ROUTER', 'OpenRouter']
+        checked_keys: ['OPEN_ROUTER', 'OpenRouter', 'OPENAI_API_KEY']
       }
     };
   }
 
-  // Validar formato da API key OpenRouter
-  if (!openRouterApiKey.startsWith('sk-or-')) {
-    console.error("❌ ERRO: API key OpenRouter não tem o formato correto");
+  // Validar formato da API key (mais flexível)
+  const isOpenRouterKey = openRouterApiKey.startsWith('sk-or-');
+  const isOpenAIKey = openRouterApiKey.startsWith('sk-');
+  
+  if (!isOpenRouterKey && !isOpenAIKey) {
+    console.error("❌ ERRO: API key não tem formato reconhecido");
     console.log("Formato atual:", openRouterApiKey.substring(0, 15) + "...");
     
     return {
       isValid: false,
-      error: "API key do OpenRouter inválida. A chave deve começar com 'sk-or-'. Verifique se a chave foi copiada corretamente.",
+      error: "API key inválida. A chave deve começar com 'sk-or-' (OpenRouter) ou 'sk-' (OpenAI).",
       debug: {
         used_variable: usedVariable,
         key_prefix: openRouterApiKey.substring(0, 10)
@@ -55,12 +66,13 @@ export const validateOpenRouterApiKey = (): ApiKeyValidationResult => {
     };
   }
 
-  console.log("✅ API key OpenRouter validada com sucesso usando variável:", usedVariable);
+  console.log(`✅ API key validada com sucesso usando variável: ${usedVariable} (tipo: ${isOpenRouterKey ? 'OpenRouter' : 'OpenAI'})`);
   return {
     isValid: true,
     apiKey: openRouterApiKey,
     debug: {
-      used_variable: usedVariable
+      used_variable: usedVariable,
+      key_type: isOpenRouterKey ? 'OpenRouter' : 'OpenAI'
     }
   };
 };
@@ -88,15 +100,15 @@ export const handleOpenRouterError = (response: Response, errorText: string) => 
   let errorMessage = "Erro na comunicação com OpenRouter";
   
   if (response.status === 401) {
-    errorMessage = 'API key do OpenRouter inválida ou expirada. Verifique se a chave está correta e ativa em sua conta OpenRouter.';
+    errorMessage = 'API key inválida ou expirada. Verifique se a chave está correta e ativa.';
   } else if (response.status === 429) {
-    errorMessage = 'Limite de uso da API OpenRouter atingido. Tente novamente em alguns minutos ou verifique seu plano OpenRouter.';
+    errorMessage = 'Limite de uso da API atingido. Tente novamente em alguns minutos.';
   } else if (response.status === 400) {
-    errorMessage = 'Erro na requisição para OpenRouter. O formato dos dados pode estar incorreto.';
+    errorMessage = 'Erro na requisição. O formato dos dados pode estar incorreto.';
   } else if (response.status === 503) {
-    errorMessage = 'Serviço do OpenRouter temporariamente indisponível. Tente novamente em alguns minutos.';
+    errorMessage = 'Serviço temporariamente indisponível. Tente novamente em alguns minutos.';
   } else {
-    errorMessage = `Erro na API OpenRouter: ${response.status} - ${response.statusText}`;
+    errorMessage = `Erro na API: ${response.status} - ${response.statusText}`;
   }
   
   return {
@@ -113,10 +125,10 @@ export const handleGenericError = (error: any) => {
   
   if (error.name === 'AbortError') {
     errorMessage = "Timeout na análise (60s). Tente novamente com um arquivo menor.";
-  } else if (error.message.includes('API key do OpenRouter não configurada')) {
-    errorMessage = "API key do OpenRouter não configurada. Verifique os secrets do Supabase.";
+  } else if (error.message.includes('API key')) {
+    errorMessage = "API key não configurada ou inválida. Verifique os secrets do Supabase.";
   } else if (error.message.includes('401') || error.message.includes('inválida')) {
-    errorMessage = "API key do OpenRouter inválida. Verifique sua chave do OpenRouter nos secrets do Supabase.";
+    errorMessage = "API key inválida. Verifique sua chave nos secrets do Supabase.";
   } else if (error.message.includes('429')) {
     errorMessage = "Limite de uso da API atingido. Tente novamente em alguns minutos.";
   } else if (error.message.includes('400')) {
@@ -124,14 +136,29 @@ export const handleGenericError = (error: any) => {
   } else if (error.message.includes('network') || error.message.includes('fetch')) {
     errorMessage = "Erro de conexão. Verifique sua internet e tente novamente.";
   } else {
-    errorMessage = error.message || "Erro na comunicação com OpenRouter";
+    errorMessage = error.message || "Erro na comunicação com o serviço de IA";
   }
 
   return {
     message: errorMessage,
     debug: {
       error_name: error.name,
-      error_message: error.message
+      error_message: error.message,
+      error_stack: error.stack?.substring(0, 500)
     }
+  };
+};
+
+// 🔧 NOVA FUNÇÃO: Teste de conectividade da Edge Function
+export const createHealthCheckResponse = () => {
+  return {
+    success: true,
+    message: "Edge Function está funcionando corretamente",
+    timestamp: new Date().toISOString(),
+    version: "1.0.0",
+    available_endpoints: [
+      "POST /analyze-contract - Analisar contrato PDF"
+    ],
+    status: "healthy"
   };
 };
