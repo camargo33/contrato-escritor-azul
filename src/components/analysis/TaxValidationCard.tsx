@@ -5,6 +5,8 @@ import { Calculator, CheckCircle, XCircle, DollarSign, AlertTriangle } from "luc
 interface TaxValidationData {
   fidelidade: string;
   valor_desconto_fidelidade?: string;
+  valor_base_instalacao?: string;
+  taxa_instalacao_calculada?: string;
   
   taxa_instalacao_encontrada: string;
   taxa_instalacao_status: string;
@@ -14,6 +16,14 @@ interface TaxValidationData {
   taxa_rescisao_encontrada: string;
   taxa_rescisao_status: string;
   taxa_rescisao_explicacao: string;
+  
+  calculo_detalhado?: {
+    formula: string;
+    calculo: string;
+    valor_base: string;
+    desconto: string;
+    resultado: string;
+  };
 }
 
 interface TaxValidationCardProps {
@@ -21,9 +31,22 @@ interface TaxValidationCardProps {
 }
 
 const TaxValidationCard = ({ taxData }: TaxValidationCardProps) => {
+  // Função para extrair valor numérico de string com R$
+  const extractValue = (valueStr: string): number => {
+    if (!valueStr) return 0;
+    const numStr = valueStr.replace(/[R$\s.,]/g, '').replace(',', '.');
+    return parseFloat(numStr) || 0;
+  };
+
+  // Função para formatar valor para exibição
+  const formatValue = (value: number): string => {
+    return `R$ ${value.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
+  };
+
   // Fallbacks para dados ausentes
   const fidelidade = taxData?.fidelidade || "Não identificado";
   const descontoFidelidade = taxData?.valor_desconto_fidelidade || "";
+  const valorBase = taxData?.valor_base_instalacao || "R$ 700,00";
   const instalacaoEncontrada = taxData?.taxa_instalacao_encontrada || "Não identificado";
   const instalacaoStatus = taxData?.taxa_instalacao_status || "PENDENTE";
   const instalacaoExplicacao = taxData?.taxa_instalacao_explicacao || "Aguardando análise...";
@@ -35,6 +58,15 @@ const TaxValidationCard = ({ taxData }: TaxValidationCardProps) => {
   const isFidelityYes = fidelidade === "SIM";
   const installationOk = instalacaoStatus === "CORRETO";
   const cancellationOk = rescisaoStatus === "CORRETO";
+
+  // 🔧 CÁLCULO CORRETO: Sempre calcular 700 - desconto
+  let taxaInstalacaoCalculada = instalacaoEncontrada;
+  if (isFidelityYes && descontoFidelidade) {
+    const valorBaseNum = extractValue(valorBase);
+    const descontoNum = extractValue(descontoFidelidade);
+    const resultado = valorBaseNum - descontoNum;
+    taxaInstalacaoCalculada = formatValue(resultado);
+  }
   
   return (
     <div className="mb-6">
@@ -175,7 +207,7 @@ const TaxValidationCard = ({ taxData }: TaxValidationCardProps) => {
             </Card>
           </div>
 
-          {/* Cálculo Visual (se há desconto) */}
+          {/* 🔧 CÁLCULO VISUAL CORRIGIDO */}
           {isFidelityYes && descontoFidelidade && (
             <div className="p-4 bg-white border border-blue-200 rounded-lg">
               <div className="flex items-center gap-2 mb-3">
@@ -186,7 +218,7 @@ const TaxValidationCard = ({ taxData }: TaxValidationCardProps) => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
                 <div className="p-3 bg-blue-50 rounded-lg border">
                   <div className="text-xs text-blue-600 mb-1">Valor Base</div>
-                  <div className="font-bold text-blue-800">R$ 700,00</div>
+                  <div className="font-bold text-blue-800">{valorBase}</div>
                 </div>
                 
                 <div className="p-3 bg-purple-50 rounded-lg border">
@@ -196,15 +228,25 @@ const TaxValidationCard = ({ taxData }: TaxValidationCardProps) => {
                 
                 <div className="p-3 bg-green-50 rounded-lg border">
                   <div className="text-xs text-green-600 mb-1">Taxa Instalação</div>
-                  <div className="font-bold text-green-800">{instalacaoEncontrada}</div>
+                  <div className="font-bold text-green-800">{taxaInstalacaoCalculada}</div>
                 </div>
               </div>
               
               <div className="mt-3 text-xs text-center text-gray-600 bg-gray-50 p-2 rounded">
-                💡 <strong>Lógica:</strong> R$ 700,00 - {descontoFidelidade} = {instalacaoEncontrada} (instalação)
+                💡 <strong>Lógica:</strong> {valorBase} - {descontoFidelidade} = {taxaInstalacaoCalculada} (instalação)
                 <br />
                 🔄 <strong>Rescisão:</strong> {descontoFidelidade} (o desconto vira multa se cancelar)
               </div>
+              
+              {/* Debug: Mostra o cálculo detalhado se disponível */}
+              {taxData?.calculo_detalhado && (
+                <div className="mt-2 p-2 bg-blue-100 rounded text-xs">
+                  <strong>🔧 Cálculo Detalhado:</strong><br />
+                  Fórmula: {taxData.calculo_detalhado.formula}<br />
+                  Cálculo: {taxData.calculo_detalhado.calculo}<br />
+                  Resultado: {taxData.calculo_detalhado.resultado}
+                </div>
+              )}
             </div>
           )}
 
