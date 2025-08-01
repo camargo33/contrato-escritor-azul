@@ -78,13 +78,17 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
     }
   };
 
-  // 🚨 MUDANÇA CRÍTICA: NUNCA FILTRAR ERROS AQUI!
-  // Mostrar TODOS os erros que chegaram até aqui
-  console.log("🔍 ErrorListCard recebeu", erros.length, "erros para exibir");
+  // 🚨 GARANTIA: MOSTRAR TODOS OS ERROS QUE CHEGARAM ATÉ AQUI
+  console.log("🔍 [ErrorListCard] Recebeu", erros?.length || 0, "erros para exibir");
+  console.log("📋 [ErrorListCard] Lista de erros:", erros?.map(e => ({
+    campo: e.campo,
+    severidade: e.severidade,
+    valor_encontrado: e.valor_encontrado
+  })));
   
   // Se não há erros, não mostrar a seção
   if (!erros || erros.length === 0) {
-    console.log("⚠️ Nenhum erro para exibir no ErrorListCard");
+    console.log("⚠️ [ErrorListCard] Nenhum erro para exibir");
     return null;
   }
 
@@ -92,17 +96,18 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
     <div className="mb-6">
       <div className="flex items-center gap-3 mb-3">
         <XCircle className="h-5 w-5 text-red-600" />
-        <h3 className="text-lg font-semibold text-slate-700">Erros Detectados ({erros.length})</h3>
+        <h3 className="text-lg font-semibold text-slate-700">🚨 Erros Detectados ({erros.length})</h3>
       </div>
       
       <div className="space-y-4">
         {erros.map((erro, index) => {
           const colors = getSeverityColors(erro.severidade);
           
-          console.log(`📋 Exibindo erro ${index + 1}:`, {
+          console.log(`📋 [ErrorListCard] Exibindo erro ${index + 1}:`, {
             campo: erro.campo,
             severidade: erro.severidade,
             valor_encontrado: erro.valor_encontrado,
+            valor_esperado: erro.valor_esperado,
             local_origem: erro.local_origem
           });
           
@@ -134,12 +139,12 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-3 bg-white border border-red-200 rounded-lg">
                     <div className="text-sm font-medium text-red-700 mb-1">❌ Valor Encontrado</div>
-                    <div className="text-lg font-semibold text-red-800">{erro.valor_encontrado}</div>
+                    <div className="text-lg font-semibold text-red-800 break-words">{erro.valor_encontrado}</div>
                   </div>
                   
                   <div className="p-3 bg-white border border-green-200 rounded-lg">
                     <div className="text-sm font-medium text-green-700 mb-1">✅ Valor Esperado</div>
-                    <div className="text-lg font-semibold text-green-800">{erro.valor_esperado}</div>
+                    <div className="text-lg font-semibold text-green-800 break-words">{erro.valor_esperado}</div>
                   </div>
                 </div>
 
@@ -175,6 +180,19 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
                     </div>
                   )}
                 </div>
+
+                {/* Destaque para Erros Críticos */}
+                {erro.severidade === 'critico' && (
+                  <div className="p-3 bg-red-100 border border-red-300 rounded-lg">
+                    <div className="flex items-center gap-2 text-red-800">
+                      <XCircle className="h-4 w-4" />
+                      <span className="font-bold text-sm">ERRO CRÍTICO - CORREÇÃO OBRIGATÓRIA</span>
+                    </div>
+                    <div className="text-red-700 text-xs mt-1">
+                      Este erro impede a aprovação do contrato e deve ser corrigido imediatamente.
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           );
@@ -197,6 +215,30 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
         <div className="text-xs text-gray-600 mt-1">
           💡 Dica: Use as sugestões de correção para ajustar os valores no contrato.
         </div>
+        
+        {/* Estatísticas de Severidade */}
+        {erros.length > 1 && (
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <div className="text-xs text-gray-600 mb-2">Distribuição por severidade:</div>
+            <div className="flex gap-4 text-xs">
+              {['critico', 'alto', 'medio', 'baixo'].map(sev => {
+                const count = erros.filter(e => e.severidade === sev).length;
+                if (count > 0) {
+                  const colors = getSeverityColors(sev);
+                  return (
+                    <div key={sev} className="flex items-center gap-1">
+                      <div className={`w-2 h-2 rounded-full ${colors.badge === 'bg-red-600 text-white' ? 'bg-red-600' : 
+                        colors.badge === 'bg-orange-600 text-white' ? 'bg-orange-600' :
+                        colors.badge === 'bg-yellow-600 text-white' ? 'bg-yellow-600' : 'bg-blue-600'}`}></div>
+                      <span>{count} {sev}</span>
+                    </div>
+                  );
+                }
+                return null;
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
