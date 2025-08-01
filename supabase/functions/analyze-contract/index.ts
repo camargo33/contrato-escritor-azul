@@ -96,78 +96,133 @@ serve(async (req) => {
       });
     }
 
-    // 🚨 VALIDAÇÃO CRÍTICA MANUAL ANTES DA IA
-    console.log("🔍 EXECUTANDO PRÉ-VALIDAÇÃO OBRIGATÓRIA...");
+    // 🚨 VALIDAÇÃO CRÍTICA MANUAL CORRIGIDA
+    console.log("🔍 EXECUTANDO PRÉ-VALIDAÇÃO CORRIGIDA...");
     
     const errosCriticosObrigatorios = [];
     
-    // 1. VERIFICAÇÃO OBRIGATÓRIA: CPF com 12 dígitos
+    // 1. 🔧 CORREÇÃO: Verificação de CPF com contagem correta
     console.log("🔍 Verificando CPFs...");
-    const cpfMatches = contractText.match(/\d{3}\.?\d{3}\.?\d{3}-?\d{2,3}/g);
+    const cpfMatches = contractText.match(/\d{3}\.?\d{3}\.?\d{3}-?\d{2}/g);
     if (cpfMatches) {
       for (const cpf of cpfMatches) {
         const apenasNumeros = cpf.replace(/[^\d]/g, '');
-        console.log(`📋 CPF encontrado: ${cpf} (${apenasNumeros.length} dígitos)`);
+        console.log(`📋 CPF encontrado: ${cpf} → Apenas números: ${apenasNumeros} (${apenasNumeros.length} dígitos)`);
         
-        if (apenasNumeros.length === 12) {
-          console.log("❌ ERRO CRÍTICO OBRIGATÓRIO: CPF com 12 dígitos!");
+        if (apenasNumeros.length !== 11) {
+          console.log(`❌ ERRO CRÍTICO: CPF com ${apenasNumeros.length} dígitos!`);
           errosCriticosObrigatorios.push({
             campo: "CPF",
             valor_encontrado: cpf,
-            valor_esperado: "CPF válido com 11 dígitos no formato XXX.XXX.XXX-XX",
+            valor_esperado: "CPF válido com exatamente 11 dígitos no formato XXX.XXX.XXX-XX",
             severidade: "critico",
             explicacao: `CPF contém ${apenasNumeros.length} dígitos quando deveria ter exatamente 11`,
-            sugestao_correcao: `Remover o último dígito: ${cpf.substring(0, cpf.length - 1)}`,
+            sugestao_correcao: apenasNumeros.length < 11 ? "Adicionar dígitos faltantes" : "Remover dígitos extras",
             local_origem: "Campo CPF na seção QUALIFICAÇÃO DO ASSINANTE"
           });
+        } else {
+          console.log(`✅ CPF com 11 dígitos correto: ${cpf}`);
         }
       }
     }
     
-    // 2. VERIFICAÇÃO OBRIGATÓRIA: DDD 42 (inexistente)
+    // 2. 🔧 CORREÇÃO: Verificação de DDD mais precisa
     console.log("🔍 Verificando DDDs...");
-    // 🔧 CORREÇÃO: Melhorar regex para capturar telefones completos
-    const telefoneMatches = contractText.match(/\(42\)\s*\d{4,5}-?\d{4}/g);
+    const telefoneMatches = contractText.match(/\((\d{2})\)\s*\d{4,5}-?\d{4}/g);
     if (telefoneMatches) {
       for (const telefone of telefoneMatches) {
-        console.log(`📋 Telefone com DDD 42 encontrado: ${telefone}`);
-        console.log("❌ ERRO CRÍTICO OBRIGATÓRIO: DDD 42 não existe!");
-        errosCriticosObrigatorios.push({
-          campo: "TELEFONE",
-          valor_encontrado: telefone.trim(),
-          valor_esperado: "Telefone com DDD válido brasileiro",
-          severidade: "critico",
-          explicacao: "DDD 42 não existe no sistema de numeração telefônica brasileiro",
-          sugestao_correcao: "Verificar o DDD correto da região (ex: 41, 47, 49 para região Sul)",
-          local_origem: "Campo TELEFONE/CELULAR na seção QUALIFICAÇÃO DO ASSINANTE"
-        });
+        const dddMatch = telefone.match(/\((\d{2})\)/);
+        if (dddMatch) {
+          const ddd = parseInt(dddMatch[1]);
+          console.log(`📋 Telefone encontrado: ${telefone} → DDD: ${ddd}`);
+          
+          // Lista de DDDs válidos no Brasil (simplificada)
+          const dddsValidos = [
+            11, 12, 13, 14, 15, 16, 17, 18, 19, // SP
+            21, 22, 24, // RJ/ES
+            27, 28, // ES
+            31, 32, 33, 34, 35, 37, 38, // MG
+            41, 42, 43, 44, 45, 46, // PR ⚠️ INCLUINDO 42!
+            47, 48, 49, // SC
+            51, 53, 54, 55, // RS
+            61, // DF
+            62, 64, // GO
+            63, // TO
+            65, 66, // MT
+            67, // MS
+            68, // AC
+            69, // RO
+            71, 73, 74, 75, 77, // BA
+            79, // SE
+            81, 87, // PE
+            82, // AL
+            83, // PB
+            84, // RN
+            85, 88, // CE
+            86, 89, // PI
+            91, 93, 94, // PA
+            92, 97, // AM
+            95, // RR
+            96, // AP
+            98, 99 // MA
+          ];
+          
+          if (!dddsValidos.includes(ddd)) {
+            console.log(`❌ ERRO CRÍTICO: DDD ${ddd} não existe!`);
+            errosCriticosObrigatorios.push({
+              campo: "TELEFONE",
+              valor_encontrado: telefone.trim(),
+              valor_esperado: "Telefone com DDD válido brasileiro",
+              severidade: "critico",
+              explicacao: `DDD ${ddd} não existe no sistema de numeração telefônica brasileiro`,
+              sugestao_correcao: "Verificar o DDD correto da região",
+              local_origem: "Campo TELEFONE/CELULAR na seção QUALIFICAÇÃO DO ASSINANTE"
+            });
+          } else {
+            console.log(`✅ DDD ${ddd} válido`);
+          }
+        }
       }
     }
     
-    // 3. VERIFICAÇÃO OBRIGATÓRIA: Emails com erros de digitação
+    // 3. 🔧 CORREÇÃO: Verificação de email mais inteligente
     console.log("🔍 Verificando emails...");
     const emailMatches = contractText.match(/[\w\.-]+@[\w\.-]+\.\w+/g);
     if (emailMatches) {
       for (const email of emailMatches) {
         console.log(`📋 Email encontrado: ${email}`);
         
-        // Verificar erros comuns de digitação
-        if (email.toLowerCase().includes("geronco")) {
-          console.log("❌ ERRO CRÍTICO OBRIGATÓRIO: Email com erro de digitação!");
+        // Lista de erros comuns conhecidos (mais específica)
+        const errosConhecidos = [
+          'geronco', // era 'gueronco'
+          'gmial', // era 'gmail'
+          'hotmial', // era 'hotmail'
+          'yahhoo', // era 'yahoo'
+          'outlokk', // era 'outlook'
+        ];
+        
+        const temErroDigitacao = errosConhecidos.some(erro => 
+          email.toLowerCase().includes(erro)
+        );
+        
+        if (temErroDigitacao) {
+          console.log("❌ ERRO CRÍTICO: Email com erro de digitação conhecido!");
           errosCriticosObrigatorios.push({
             campo: "EMAIL",
             valor_encontrado: email,
             valor_esperado: "Email com grafia correta e sem erros de digitação",
             severidade: "critico",
-            explicacao: "Possível erro de digitação em 'geronco' - verificar se está correto",
-            sugestao_correcao: "Confirmar com o cliente se o email está correto ou corrigir a grafia",
+            explicacao: "Erro de digitação detectado em provedor de email conhecido",
+            sugestao_correcao: "Verificar a grafia do provedor de email",
             local_origem: "Campo E-MAIL na seção QUALIFICAÇÃO DO ASSINANTE"
           });
+        } else {
+          console.log(`✅ Email sem erros detectados: ${email}`);
         }
       }
     }
     
-    // 4. VERIFICAÇÃO: Estados civis com erros
+    // 4. VERIFICAÇÃO: Estados civis com erros (mantida)
     console.log("🔍 Verificando estado civil...");
     const estadoCivilMatch = contractText.match(/ESTADO CIVIL[:\s]*([A-Z\s]+)/i);
     if (estadoCivilMatch) {
@@ -180,34 +235,22 @@ serve(async (req) => {
       }
     }
 
-    // 5. 🔧 NOVA VERIFICAÇÃO: Taxa de Instalação com Fidelidade
+    // 5. Taxa de Instalação com Fidelidade (mantida)
     console.log("🔍 Verificando taxa de instalação com fidelidade...");
     const fidelidadeMatch = contractText.match(/SIM\s*\(X\)/);
     if (fidelidadeMatch) {
       console.log("📋 Cliente optou por fidelidade SIM (X)");
       
-      // Procurar valor da seção de fidelidade
       const taxaFidelidadeMatch = contractText.match(/VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE[:\s]*R\$\s*([\d.,]+)/i);
       if (taxaFidelidadeMatch) {
         const valorFidelidade = taxaFidelidadeMatch[1];
         console.log(`📋 Taxa de instalação com fidelidade encontrada: R$ ${valorFidelidade}`);
-        
-        // Verificar se há discrepância com valor geral
-        const taxaGeralMatch = contractText.match(/TAXA DE INSTALAÇÃO[^R]*R\$\s*([\d.,]+)/i);
-        if (taxaGeralMatch) {
-          const valorGeral = taxaGeralMatch[1];
-          console.log(`📋 Taxa de instalação geral encontrada: R$ ${valorGeral}`);
-          
-          if (valorFidelidade !== valorGeral) {
-            console.log("⚠️ Discrepância entre taxa de fidelidade e taxa geral - isso é normal");
-          }
-        }
       }
     }
 
-    // 6. 🔧 NOVA VERIFICAÇÃO: Telefone com dígitos corretos
+    // 6. Telefone com dígitos corretos (mantida)
     console.log("🔍 Verificando extração completa de telefone...");
-    const telefoneCompletoMatch = contractText.match(/CELULAR[:\s]*\((\d{2})\)\s*(\d{4,5})-?(\d{4})/i);
+    const telefoneCompletoMatch = contractText.match(/(?:CELULAR|TELEFONE)[:\s]*\((\d{2})\)\s*(\d{4,5})-?(\d{4})/i);
     if (telefoneCompletoMatch) {
       const ddd = telefoneCompletoMatch[1];
       const parte1 = telefoneCompletoMatch[2];
@@ -217,7 +260,7 @@ serve(async (req) => {
       console.log(`📊 Dígitos: DDD=${ddd}, Número=${parte1}${parte2} (${parte1.length + parte2.length} dígitos)`);
     }
 
-    console.log(`🚨 PRÉ-VALIDAÇÃO CONCLUÍDA: ${errosCriticosObrigatorios.length} erros críticos obrigatórios detectados`);
+    console.log(`🚨 PRÉ-VALIDAÇÃO CORRIGIDA CONCLUÍDA: ${errosCriticosObrigatorios.length} erros críticos detectados`);
 
     // Validar API key do OpenRouter/OpenAI
     const apiKeyValidation = validateOpenRouterApiKey();
@@ -252,7 +295,7 @@ serve(async (req) => {
       });
     }
 
-    // Processar resposta da IA e garantir que inclui os erros críticos obrigatórios
+    // Processar resposta da IA
     let finalContent = analysisResult.content!;
     try {
       const analysisData = JSON.parse(finalContent);
@@ -287,7 +330,7 @@ serve(async (req) => {
       const alertasAdicionais = [];
       
       // Estado civil com possível erro
-      if (estadoCivilMatch && (estadoCivilMatch[1]?.includes("SOOLTEIRO") || estadoCivilMatch[1]?.includes("SOLTEIRO"))) {
+      if (estadoCivilMatch && estadoCivilMatch[1]?.includes("SOOLTEIRO")) {
         alertasAdicionais.push({
           tipo: "erro_digitacao",
           campo: "Estado Civil",
