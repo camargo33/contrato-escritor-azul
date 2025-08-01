@@ -129,58 +129,66 @@ serve(async (req) => {
     
     // 2. 🔧 CORREÇÃO: Verificação de DDD mais precisa - LISTA COMPLETA
     console.log("🔍 Verificando DDDs...");
-    const telefoneMatches = contractText.match(/\((\d{2})\)\s*\d{4,5}-?\d{4}/g);
+    const telefoneMatches = contractText.match(/\((\d{2})\)\s*(\d{4,5})-?(\d{4})/g);
     if (telefoneMatches) {
       for (const telefone of telefoneMatches) {
         const dddMatch = telefone.match(/\((\d{2})\)/);
-        if (dddMatch) {
+        const numeroMatch = telefone.match(/\((\d{2})\)\s*(\d{4,5})-?(\d{4})/);
+        
+        if (dddMatch && numeroMatch) {
           const ddd = parseInt(dddMatch[1]);
-          console.log(`📋 Telefone encontrado: ${telefone} → DDD: ${ddd}`);
+          const parte1 = numeroMatch[2];
+          const parte2 = numeroMatch[3];
+          const numeroCompleto = parte1 + parte2;
+          const totalDigitos = numeroCompleto.length;
           
-          // ✅ LISTA COMPLETA E CORRETA DE DDDs VÁLIDOS NO BRASIL
-          const dddsValidos = [
-            11, 12, 13, 14, 15, 16, 17, 18, 19, // São Paulo
-            21, 22, 24, // Rio de Janeiro/Espírito Santo
-            27, 28, // Espírito Santo
-            31, 32, 33, 34, 35, 37, 38, // Minas Gerais
-            41, 42, 43, 44, 45, 46, // Paraná - ✅ DDD 42 É VÁLIDO (Ponta Grossa)
-            47, 48, 49, // Santa Catarina
-            51, 53, 54, 55, // Rio Grande do Sul
-            61, // Distrito Federal
-            62, 64, // Goiás
-            63, // Tocantins
-            65, 66, // Mato Grosso
-            67, // Mato Grosso do Sul
-            68, // Acre
-            69, // Rondônia
-            71, 73, 74, 75, 77, // Bahia
-            79, // Sergipe
-            81, 87, // Pernambuco
-            82, // Alagoas
-            83, // Paraíba
-            84, // Rio Grande do Norte
-            85, 88, // Ceará
-            86, 89, // Piauí
-            91, 93, 94, // Pará
-            92, 97, // Amazonas
-            95, // Roraima
-            96, // Amapá
-            98, 99 // Maranhão
-          ];
+          console.log(`📋 Telefone encontrado: ${telefone}`);
+          console.log(`  - DDD: ${ddd}`);
+          console.log(`  - Número: ${parte1}-${parte2} (${totalDigitos} dígitos)`);
           
-          if (!dddsValidos.includes(ddd)) {
-            console.log(`❌ ERRO CRÍTICO: DDD ${ddd} não existe no Brasil!`);
+          // ✅ VALIDAÇÃO DE DDD (conservadora - apenas fora da faixa 11-99)
+          if (ddd < 11 || ddd > 99) {
+            console.log(`❌ ERRO CRÍTICO: DDD ${ddd} fora da faixa válida (11-99)!`);
             errosCriticosObrigatorios.push({
-              campo: "TELEFONE",
+              campo: "TELEFONE - DDD",
               valor_encontrado: telefone.trim(),
-              valor_esperado: "Telefone com DDD válido brasileiro",
+              valor_esperado: "Telefone com DDD válido brasileiro (11-99)",
               severidade: "critico",
-              explicacao: `DDD ${ddd} não existe no sistema de numeração telefônica brasileiro`,
+              explicacao: `DDD ${ddd} está fora da faixa válida brasileira (11-99)`,
               sugestao_correcao: "Verificar o DDD correto da região",
               local_origem: "Campo TELEFONE/CELULAR na seção QUALIFICAÇÃO DO ASSINANTE"
             });
           } else {
             console.log(`✅ DDD ${ddd} válido`);
+          }
+          
+          // ✅ NOVA VALIDAÇÃO: CONTAGEM DE DÍGITOS DO NÚMERO
+          if (totalDigitos !== 8 && totalDigitos !== 9) {
+            console.log(`❌ ERRO CRÍTICO: Número com ${totalDigitos} dígitos - deveria ter 8 (fixo) ou 9 (celular)!`);
+            
+            let sugestaoCorrecao = "";
+            if (totalDigitos < 8) {
+              sugestaoCorrecao = `Adicionar ${8 - totalDigitos} dígito(s) ao número`;
+            } else if (totalDigitos > 9) {
+              sugestaoCorrecao = `Remover ${totalDigitos - 9} dígito(s) do número`;
+            } else if (totalDigitos === 8) {
+              sugestaoCorrecao = "Número correto para telefone fixo";
+            } else if (totalDigitos === 9) {
+              sugestaoCorrecao = "Número correto para celular";
+            }
+            
+            errosCriticosObrigatorios.push({
+              campo: "TELEFONE - DÍGITOS",
+              valor_encontrado: telefone.trim(),
+              valor_esperado: "Telefone com 8 dígitos (fixo) ou 9 dígitos (celular)",
+              severidade: "critico",
+              explicacao: `Número tem ${totalDigitos} dígitos, mas deve ter 8 (fixo) ou 9 (celular)`,
+              sugestao_correcao: sugestaoCorrecao,
+              local_origem: "Campo TELEFONE/CELULAR na seção QUALIFICAÇÃO DO ASSINANTE"
+            });
+          } else {
+            const tipoTelefone = totalDigitos === 9 ? "celular" : "fixo";
+            console.log(`✅ Número com ${totalDigitos} dígitos correto para ${tipoTelefone}`);
           }
         }
       }
@@ -215,7 +223,7 @@ serve(async (req) => {
           errosCriticosObrigatorios.push({
             campo: "EMAIL",
             valor_encontrado: email,
-            valor_esperado: "Email com grafia correta de provedor conhecido",
+            valor_esperado: "Email com provedor correto (gmail, hotmail, yahoo, outlook)",
             severidade: "critico",
             explicacao: "Erro óbvio de digitação detectado em provedor de email",
             sugestao_correcao: "Verificar a grafia do provedor de email",
