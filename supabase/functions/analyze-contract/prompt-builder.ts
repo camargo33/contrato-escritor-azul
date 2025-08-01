@@ -1,159 +1,99 @@
-
 export const buildContractAnalysisPrompt = (contractText: string): string => {
-  return `# VALIDADOR DE CONTRATOS CIABRASNET - DETECÇÃO RIGOROSA DE ERROS
+  return `# VALIDADOR DE CONTRATOS CIABRASNET - DETECÇÃO RIGOROSA DE ERROS CRÍTICOS
 
 ## OBJETIVO PRINCIPAL
-Analisar contratos OCR da CIABRASNET com MÁXIMA ATENÇÃO aos erros nos dados pessoais e contratuais.
+Analisar contratos OCR da CIABRASNET detectando ERROS CRÍTICOS que impedem a aprovação do contrato.
 
 ## 🚨 INSTRUÇÕES CRÍTICAS - SEMPRE DETECTAR ERROS ÓBVIOS:
 
-**REGRA 1: CPF COM MAIS DE 11 DÍGITOS = ERRO CRÍTICO AUTOMÁTICO**
+**REGRA 1: CPF COM MAIS OU MENOS DE 11 DÍGITOS = ERRO CRÍTICO**
 - Exemplo: 137.158.269-677 (12 dígitos) = ERRO CRÍTICO
-- SEMPRE contar os dígitos do CPF e reportar se diferente de 11
+- Exemplo: 137.158.269-4 (10 dígitos) = ERRO CRÍTICO
+- SEMPRE contar os dígitos do CPF (ignorar pontos e hífens)
 
-**REGRA 2: DDD INEXISTENTE = ERRO CRÍTICO AUTOMÁTICO**  
-- DDD 42 = NÃO EXISTE = ERRO CRÍTICO
-- SEMPRE verificar se o DDD existe no Brasil
+**REGRA 2: DDD INEXISTENTE = ERRO CRÍTICO**  
+- DDD 42 = NÃO EXISTE no Brasil = ERRO CRÍTICO
+- SEMPRE verificar se o DDD é válido no Brasil
 
-**REGRA 3: EMAILS COM ERROS DE DIGITAÇÃO = ERRO ALTO**
-- felipe.geronco@gmail.com = possível erro de digitação
-- SEMPRE verificar se há erros óbvios no email
+**REGRA 3: EMAILS COM ERROS ÓBVIOS = ERRO CRÍTICO**
+- felipe.geronco@gmail.com = possível erro de digitação = ERRO CRÍTICO
+- Emails com domínios inexistentes = ERRO CRÍTICO
 
-## 📋 VALIDAÇÃO DE DADOS PESSOAIS (EXTREMAMENTE RIGOROSA):
+**REGRA 4: TELEFONES COM FORMATO INCORRETO = ERRO CRÍTICO**
+- (42) 988853-6432 com DDD inexistente = ERRO CRÍTICO
+- Telefones fora do padrão brasileiro = ERRO CRÍTICO
 
-#### **1. NOME COMPLETO:**
-- DEVE ter pelo menos 2 palavras
-- DEVE ter entre 2 e 100 caracteres
-- NÃO pode conter números ou caracteres especiais
-- NÃO pode ser "NOME", "Cliente", "Assinante" ou similar
-- DEVE ser um nome real de pessoa
-- **ERRO se**: nome incompleto, com números, ou genérico
+## ETAPA 1: IDENTIFICAÇÃO DO MODELO
 
-#### **2. CPF - VALIDAÇÃO CRÍTICA:**
-- FORMATO OBRIGATÓRIO: XXX.XXX.XXX-XX (exatamente 11 dígitos)
-- **ERRO AUTOMÁTICO se**:
-  - Tiver mais ou menos de 11 dígitos
-  - Formato: 137.158.269-677 (3 dígitos no final) = ERRO CRÍTICO
-  - Sequências: 111.111.111-11, 000.000.000-00 = ERRO
-  - Dígitos verificadores incorretos = ERRO
-- **SEMPRE validar os dígitos verificadores matematicamente**
+### Modelos Disponíveis:
+1. **2024 Combo 600Mbps** - R$ 129,99 - RESIDENCIAL - 12 meses
+2. **1 Gb Empresarial** - R$ 229,90 - CORPORATIVO - 24 meses - IP: INCLUSO
+3. **2024 Combo Giga** - R$ 209,99 - RESIDENCIAL - 12 meses
+4. **2024 Combo 300Mbps** - R$ 109,99 - RESIDENCIAL - 12 meses
+5. **2024 Combo 800Mbps** - R$ 159,99 - RESIDENCIAL - 12 meses
+6. **COMBO 2025 500 MEGAS MATRIZ** - R$ 119,99 - RESIDENCIAL - 12 meses
 
-#### **3. TELEFONE/CELULAR - VALIDAÇÃO RIGOROSA:**
-- **DDD VÁLIDOS**: 11-19 (SP/RJ/MG), 21-28 (RJ/ES), 31-38 (MG/GO), 41-49 (Sul), 51-55 (RS), 61-69 (Centro-Oeste), 71-79 (Nordeste), 81-89 (Nordeste), 91-99 (Norte)
-- **ERRO AUTOMÁTICO se**:
-  - DDD 42 = NÃO EXISTE (ERRO CRÍTICO)
-  - DDD acima de 99 ou abaixo de 11
-  - Formato incorreto: deve ser (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
-- **CELULAR**: 9º dígito obrigatório (9XXXX-XXXX)
-- **FIXO**: 8 dígitos (XXXX-XXXX)
+## ETAPA 2: VALIDAÇÃO RIGOROSA DE DADOS PESSOAIS
 
-#### **4. EMAIL - VALIDAÇÃO CRÍTICA:**
-- DEVE conter @ e domínio válido
-- **ERRO se**:
-  - felipe.geronco@gmail.com (erro de digitação óbvio)
-  - Domínios inexistentes ou com erros
-  - Caracteres especiais inválidos
-  - Espaços ou caracteres proibidos
+### 🔍 ALGORITMO DE VALIDAÇÃO:
 
-#### **5. ENDEREÇO:**
-- Logradouro deve estar completo
-- CEP formato: XXXXX-XXX (8 dígitos)
-- Cidade e estado devem existir
-- **ERRO se**: dados incompletos ou inconsistentes
-
-### 🎯 VALIDAÇÃO CONTRATUAL (LÓGICA EXISTENTE):
-
-#### **MODELOS DISPONÍVEIS:**
-1. **2024 Combo 600Mbps** - R\$ 129,99 - RESIDENCIAL - 12 meses
-2. **1 Gb Empresarial** - R\$ 229,90 - CORPORATIVO - 24 meses - IP: INCLUSO
-3. **2024 Combo Giga** - R\$ 209,99 - RESIDENCIAL - 12 meses
-4. **2024 Combo 300Mbps** - R\$ 109,99 - RESIDENCIAL - 12 meses
-5. **2024 Combo 800Mbps** - R\$ 159,99 - RESIDENCIAL - 12 meses
-6. **COMBO 2025 500 MEGAS MATRIZ** - R\$ 119,99 - RESIDENCIAL - 12 meses
-
-#### **EXTRAÇÃO DE FIDELIDADE:**
-- **COM FIDELIDADE SIM (X)**: Extrair desconto da seção específica
-- **Taxa Instalação**: SEMPRE da seção "VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE"
-- **NUNCA** da tabela geral "TAXA DE INSTALAÇÃO ( ) SIM ( X ) NÃO"
-
-## 🔍 ALGORITMO DE DETECÇÃO DE ERROS
-
-### **PASSO 1: VERIFICAR TODOS OS DADOS PESSOAIS**
-```javascript
-// CPF - Verificação rigorosa
-if (cpf_encontrado) {
-    // Extrair apenas números
-    const cpf_numeros = cpf.replace(/[^0-9]/g, '');
-    
-    // Verificar se tem exatamente 11 dígitos
-    if (cpf_numeros.length !== 11) {
-        erros.push({
-            campo: "CPF",
-            valor_encontrado: cpf_original,
-            valor_esperado: "CPF com exatamente 11 dígitos no formato XXX.XXX.XXX-XX",
-            severidade: "critico",
-            explicacao: "CPF deve ter exatamente 11 dígitos. Encontrado: " + cpf_numeros.length + " dígitos",
-            sugestao_correcao: "Corrigir o CPF para formato válido"
-        });
-    }
-    
-    // Verificar sequências inválidas
-    if (cpf_numeros === "11111111111" || cpf_numeros === "00000000000") {
-        erros.push({
-            campo: "CPF", 
-            severidade: "critico",
-            explicacao: "CPF com sequência inválida"
-        });
-    }
-    
-    // Validar dígitos verificadores
-    // [implementar algoritmo de validação do CPF]
+\`\`\`javascript
+// VALIDAÇÃO DE CPF
+cpf_numeros = extrair_apenas_numeros_do_cpf(cpf_encontrado)
+if (cpf_numeros.length !== 11) {
+    adicionar_erro_critico({
+        campo: "CPF",
+        valor_encontrado: cpf_encontrado,
+        valor_esperado: "CPF com exatamente 11 dígitos",
+        sugestao_correcao: "Corrigir o CPF para ter exatamente 11 dígitos",
+        severidade: "critico",
+        explicacao: "CPF encontrado tem " + cpf_numeros.length + " dígitos, mas deve ter exatamente 11"
+    })
 }
 
-// TELEFONE - Verificação de DDD
-if (telefone_encontrado) {
-    const ddd_match = telefone.match(/\\((\\d{2})\\)/);
-    if (ddd_match) {
-        const ddd = parseInt(ddd_match[1]);
-        
-        // DDDs inválidos conhecidos
-        if (ddd === 42 || ddd < 11 || ddd > 99) {
-            erros.push({
-                campo: "TELEFONE",
-                valor_encontrado: telefone,
-                valor_esperado: "DDD válido (11-99, exceto alguns como 42)",
-                severidade: "critico",
-                explicacao: "DDD " + ddd + " não existe no Brasil",
-                sugestao_correcao: "Verificar o DDD correto da região"
-            });
-        }
-    }
+// VALIDAÇÃO DE DDD
+ddd_extraido = extrair_ddd_do_telefone(telefone_encontrado)
+ddds_validos = ["11","12","13","14","15","16","17","18","19","21","22","24","27","28","31","32","33","34","35","37","38","41","43","44","45","46","47","48","49","51","53","54","55","61","62","63","64","65","66","67","68","69","71","73","74","75","77","79","81","82","83","84","85","86","87","88","89","91","92","93","94","95","96","97","98","99"]
+
+if (!ddds_validos.includes(ddd_extraido)) {
+    adicionar_erro_critico({
+        campo: "DDD do Telefone",
+        valor_encontrado: "(" + ddd_extraido + ")",
+        valor_esperado: "DDD válido brasileiro",
+        sugestao_correcao: "Corrigir para um DDD válido (ex: (41), (11), (21))",
+        severidade: "critico",
+        explicacao: "DDD " + ddd_extraido + " não existe no Brasil"
+    })
 }
 
-// EMAIL - Verificação de erros comuns
-if (email_encontrado) {
-    // Verificar domínios com erros de digitação
-    if (email.includes("geronco")) {
-        erros.push({
-            campo: "EMAIL",
-            valor_encontrado: email,
-            valor_esperado: email.replace("geronco", "geronimo") + " (sugestão)",
-            severidade: "alto",
-            explicacao: "Possível erro de digitação no email",
-            sugestao_correcao: "Verificar se o email está correto"
-        });
-    }
+// VALIDAÇÃO DE EMAIL
+if (email_encontrado.includes("geronco") || email_suspeito(email_encontrado)) {
+    adicionar_erro_critico({
+        campo: "E-mail",
+        valor_encontrado: email_encontrado,
+        valor_esperado: "E-mail correto sem erros de digitação",
+        sugestao_correcao: "Verificar e corrigir possíveis erros de digitação",
+        severidade: "critico",
+        explicacao: "E-mail contém possível erro de digitação"
+    })
 }
+\`\`\`
+
+## ETAPA 3: VALIDAÇÃO DE FIDELIDADE E TAXAS
+
+### LOCAL CORRETO PARA TAXA DE INSTALAÇÃO:
+```
+TAXA DA INSTALAÇÃO DA INFRAESTRUTURA DOS SERVIÇOS
+VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE: [VALOR]
 ```
 
-### **PASSO 2: ANALISAR DADOS CONTRATUAIS**
-- Identificar modelo do contrato
-- Verificar valores e taxas
-- Validar fidelidade e descontos
+### LÓGICA DE FIDELIDADE:
+- COM FIDELIDADE: Taxa Instalação = R$ 700,00 - Desconto | Taxa Rescisão = Desconto  
+- SEM FIDELIDADE: Taxa Instalação = R$ 700,00 | Taxa Rescisão = R$ 700,00
 
 ## FORMATO DE RESPOSTA OBRIGATÓRIO
 
-**RETORNAR APENAS UM JSON VÁLIDO:**
+**CRÍTICO: Classificar problemas graves como ERROS, não como alertas!**
 
 \`\`\`json
 {
@@ -161,115 +101,109 @@ if (email_encontrado) {
     "nome": "2024 Combo 600Mbps",
     "confianca": 95
   },
+  "analise_fidelidade": {
+    "opcao_fidelidade": "SIM",
+    "valor_desconto_extraido": "R$ 600,00",
+    "texto_origem": "desconto de R$ 600,00 (Seiscentos reais)",
+    "marcacao_encontrada": "SIM (X)"
+  },
+  "validacao_taxas": {
+    "fidelidade": "SIM",
+    "valor_desconto_fidelidade": "R$ 600,00",
+    "taxa_instalacao_encontrada": "R$ 100,00",
+    "taxa_instalacao_status": "CORRETO",
+    "taxa_instalacao_explicacao": "✅ R$ 100,00 correto (R$ 700,00 - R$ 600,00)",
+    "taxa_rescisao_esperada": "R$ 600,00",
+    "taxa_rescisao_encontrada": "R$ 600,00",
+    "taxa_rescisao_status": "CORRETO",
+    "taxa_rescisao_explicacao": "✅ Igual ao desconto aplicado"
+  },
   "erros": [
     {
       "campo": "CPF",
       "valor_encontrado": "137.158.269-677",
-      "valor_esperado": "CPF válido no formato XXX.XXX.XXX-XX com 11 dígitos",
+      "valor_esperado": "CPF com exatamente 11 dígitos",
+      "sugestao_correcao": "Corrigir o CPF para ter exatamente 11 dígitos",
+      "explicacao": "CPF encontrado tem 12 dígitos, mas deve ter exatamente 11",
       "severidade": "critico",
-      "explicacao": "CPF contém 12 dígitos (677 no final) quando deveria ter apenas 11",
-      "sugestao_correcao": "Corrigir para formato XXX.XXX.XXX-XX com apenas 2 dígitos finais",
       "local_origem": "Seção QUALIFICAÇÃO DO ASSINANTE"
     },
     {
-      "campo": "TELEFONE",
-      "valor_encontrado": "(42) 998853-6432",
-      "valor_esperado": "DDD válido do Brasil",
-      "severidade": "critico", 
-      "explicacao": "DDD 42 não existe no sistema de numeração brasileiro",
-      "sugestao_correcao": "Verificar o DDD correto da região do cliente",
-      "local_origem": "Campo CELULAR"
+      "campo": "DDD do Telefone",
+      "valor_encontrado": "(42) 98853-6432",
+      "valor_esperado": "DDD válido brasileiro",
+      "sugestao_correcao": "Corrigir para um DDD válido (ex: (41), (11), (21))",
+      "explicacao": "DDD 42 não existe no Brasil",
+      "severidade": "critico",
+      "local_origem": "Seção QUALIFICAÇÃO DO ASSINANTE"
     },
     {
-      "campo": "EMAIL",
+      "campo": "E-mail",
       "valor_encontrado": "felipe.geronco@gmail.com",
-      "valor_esperado": "Email com grafia correta",
+      "valor_esperado": "E-mail correto sem erros de digitação",
+      "sugestao_correcao": "Verificar e corrigir possíveis erros de digitação no sobrenome",
+      "explicacao": "E-mail contém possível erro de digitação ('geronco')",
       "severidade": "alto",
-      "explicacao": "Possível erro de digitação em 'geronco'",
-      "sugestao_correcao": "Confirmar se o email está correto ou se deveria ser outro nome",
-      "local_origem": "Campo E-MAIL"
+      "local_origem": "Seção QUALIFICAÇÃO DO ASSINANTE"
     }
   ],
   "alertas": [
     {
-      "tipo": "verificacao_necessaria",
-      "campo": "dados_pessoais",
-      "valor_encontrado": "Múltiplos erros detectados",
-      "sugestao": "Revisar todos os dados pessoais antes de aprovar o contrato"
+      "tipo": "valor_suspeito",
+      "campo": "Taxa de Instalação Geral",
+      "valor_encontrado": "R$ 2000,00",
+      "sugestao": "Verificar se não deveria ser R$ 200,00"
     }
   ],
-  "validacao_dados_pessoais": {
-    "nome": {
-      "valor": "Felipe Camarrgo",
-      "status": "CORRETO",
-      "observacoes": ["Nome completo válido"]
+  "validacoes_corretas": [
+    {
+      "campo": "Tipo do Plano",
+      "valor": "RESIDENCIAL",
+      "status": "✅ CORRETO - Conforme tabela"
     },
-    "cpf": {
-      "valor": "137.158.269-677", 
-      "status": "ERRO",
-      "observacoes": ["CPF com formato incorreto - 12 dígitos em vez de 11"]
-    },
-    "telefone": {
-      "valor": "(42) 998853-6432",
-      "status": "ERRO", 
-      "observacoes": ["DDD 42 não existe no Brasil"]
-    },
-    "email": {
-      "valor": "felipe.geronco@gmail.com",
-      "status": "ALERTA",
-      "observacoes": ["Possível erro de digitação"]
+    {
+      "campo": "Prazo de Vigência",
+      "valor": "12 meses",
+      "status": "✅ CORRETO - Padrão residencial"
     }
-  },
+  ],
   "resumo": {
     "total_erros": 3,
     "total_alertas": 1,
-    "plano_identificado": "2024 Combo 600Mbps",
-    "dados_pessoais_ok": false,
-    "dados_contratuais_ok": true
+    "criticos": 2,
+    "altos": 1,
+    "plano_identificado": "2024 Combo 600Mbps"
   },
   "status_geral": "reprovado",
   "observacoes": [
-    "CRÍTICO: CPF com formato incorreto (12 dígitos)",
-    "CRÍTICO: DDD 42 não existe no sistema brasileiro", 
-    "ALERTA: Possível erro de digitação no email",
-    "Dados contratuais estão corretos",
-    "NECESSÁRIA correção dos dados pessoais antes da aprovação"
+    "CRÍTICO: Encontrados erros nos dados pessoais que impedem a aprovação",
+    "CPF com número incorreto de dígitos deve ser corrigido",
+    "DDD inexistente deve ser substituído por DDD válido",
+    "E-mail com possível erro de digitação deve ser verificado"
   ]
 }
 \`\`\`
 
-## 🚨 INSTRUÇÕES FINAIS CRÍTICAS
+## 🚨 REGRAS CRÍTICAS OBRIGATÓRIAS
 
-1. **SEMPRE DETECTAR ERROS ÓBVIOS**: CPF com mais de 11 dígitos, DDDs inexistentes, emails com erros de digitação
-2. **SER RIGOROSO**: Não aprovar contratos com dados pessoais incorretos
-3. **INCLUIR LOCALIZAÇÃO**: Sempre informar onde foi encontrado o erro
-4. **SEVERIDADE CORRETA**: Dados pessoais incorretos = CRÍTICO
-5. **SUGESTÕES PRÁTICAS**: Dar orientações específicas de correção
+1. **SEMPRE colocar problemas graves na seção "erros"**, não em "alertas"
 
-**NUNCA APROVAR CONTRATOS COM ERROS CRÍTICOS NOS DADOS PESSOAIS!**
+2. **SEMPRE contar dígitos do CPF** e reportar como erro crítico se ≠ 11
 
-## 🎯 ERROS ESPECÍFICOS A DETECTAR NO CONTRATO:
+3. **SEMPRE validar DDD** contra lista de DDDs válidos brasileiros
 
-**ATENÇÃO: O contrato a seguir CONTÉM ERROS que devem ser detectados:**
+4. **SEMPRE verificar emails** para erros óbvios de digitação
 
-1. **CPF INCORRETO**: Se encontrar CPF com 12 dígitos (como 137.158.269-677) = ERRO CRÍTICO
-2. **DDD INEXISTENTE**: Se encontrar DDD 42 = ERRO CRÍTICO  
-3. **EMAIL COM ERRO**: Se encontrar "geronco" no email = ERRO ALTO
-4. **NOME INCOMPLETO**: Se o nome estiver incompleto = ERRO ALTO
+5. **Se há erros críticos, status_geral DEVE ser "reprovado"**
 
-**ALGORITMO OBRIGATÓRIO:**
-```
-1. Extrair CPF do texto
-2. Contar dígitos do CPF (remover pontos e traços)  
-3. Se CPF != 11 dígitos → ERRO CRÍTICO
-4. Extrair telefone/celular
-5. Extrair DDD entre parênteses
-6. Se DDD = 42 → ERRO CRÍTICO
-7. Extrair email
-8. Se email contém "geronco" → ERRO ALTO
-9. Se há erros → status_geral = "reprovado"
-```
+6. **Severidade obrigatória:**
+   - CPF incorreto = "critico"
+   - DDD inexistente = "critico"  
+   - Email com erro = "alto"
+   - Taxas incorretas = "medio"
+
+**NUNCA deixar passar CPF com 12 dígitos ou DDD inexistente como apenas "alerta"!**
 
 **Contrato para análise:**
-\${contractText}\`;
+${contractText}`;
 };
