@@ -60,7 +60,8 @@ serve(async (req) => {
     
     // 2. VERIFICAÇÃO OBRIGATÓRIA: DDD 42 (inexistente)
     console.log("🔍 Verificando DDDs...");
-    const telefoneMatches = contractText.match(/\(42\)\s*[\d\s\-]+/g);
+    // 🔧 CORREÇÃO: Melhorar regex para capturar telefones completos
+    const telefoneMatches = contractText.match(/\(42\)\s*\d{4,5}-?\d{4}/g);
     if (telefoneMatches) {
       for (const telefone of telefoneMatches) {
         console.log(`📋 Telefone com DDD 42 encontrado: ${telefone}`);
@@ -102,15 +103,52 @@ serve(async (req) => {
     
     // 4. VERIFICAÇÃO: Estados civis com erros
     console.log("🔍 Verificando estado civil...");
-    const estadoCivilMatch = contractText.match(/ESTADO CIVIL[:\s]*([\w\s]+)/i);
+    const estadoCivilMatch = contractText.match(/ESTADO CIVIL[:\s]*([A-Z\s]+)/i);
     if (estadoCivilMatch) {
       const estadoCivil = estadoCivilMatch[1]?.trim();
       console.log(`📋 Estado civil encontrado: "${estadoCivil}"`);
       
-      if (estadoCivil && estadoCivil.toUpperCase() === "SOLTEIRO") {
+      if (estadoCivil && (estadoCivil.includes("SOOLTEIRO") || estadoCivil.includes("SOLTEIRO"))) {
         console.log("⚠️ Possível erro de digitação em estado civil");
         // Este será um alerta, não erro crítico
       }
+    }
+
+    // 5. 🔧 NOVA VERIFICAÇÃO: Taxa de Instalação com Fidelidade
+    console.log("🔍 Verificando taxa de instalação com fidelidade...");
+    const fidelidadeMatch = contractText.match(/SIM\s*\(X\)/);
+    if (fidelidadeMatch) {
+      console.log("📋 Cliente optou por fidelidade SIM (X)");
+      
+      // Procurar valor da seção de fidelidade
+      const taxaFidelidadeMatch = contractText.match(/VALOR TOTAL DA TAXA DE INSTALAÇÃO CASO O ASSINANTE OPTE PELA OPÇÃO DE FIDELIDADE[:\s]*R\$\s*([\d.,]+)/i);
+      if (taxaFidelidadeMatch) {
+        const valorFidelidade = taxaFidelidadeMatch[1];
+        console.log(`📋 Taxa de instalação com fidelidade encontrada: R$ ${valorFidelidade}`);
+        
+        // Verificar se há discrepância com valor geral
+        const taxaGeralMatch = contractText.match(/TAXA DE INSTALAÇÃO[^R]*R\$\s*([\d.,]+)/i);
+        if (taxaGeralMatch) {
+          const valorGeral = taxaGeralMatch[1];
+          console.log(`📋 Taxa de instalação geral encontrada: R$ ${valorGeral}`);
+          
+          if (valorFidelidade !== valorGeral) {
+            console.log("⚠️ Discrepância entre taxa de fidelidade e taxa geral - isso é normal");
+          }
+        }
+      }
+    }
+
+    // 6. 🔧 NOVA VERIFICAÇÃO: Telefone com dígitos corretos
+    console.log("🔍 Verificando extração completa de telefone...");
+    const telefoneCompletoMatch = contractText.match(/CELULAR[:\s]*\((\d{2})\)\s*(\d{4,5})-?(\d{4})/i);
+    if (telefoneCompletoMatch) {
+      const ddd = telefoneCompletoMatch[1];
+      const parte1 = telefoneCompletoMatch[2];
+      const parte2 = telefoneCompletoMatch[3];
+      const telefoneCompleto = `(${ddd}) ${parte1}-${parte2}`;
+      console.log(`📋 Telefone completo extraído: ${telefoneCompleto}`);
+      console.log(`📊 Dígitos: DDD=${ddd}, Número=${parte1}${parte2} (${parte1.length + parte2.length} dígitos)`);
     }
 
     console.log(`🚨 PRÉ-VALIDAÇÃO CONCLUÍDA: ${errosCriticosObrigatorios.length} erros críticos obrigatórios detectados`);
@@ -183,12 +221,12 @@ serve(async (req) => {
       const alertasAdicionais = [];
       
       // Estado civil com possível erro
-      if (estadoCivilMatch && estadoCivilMatch[1]?.trim().toUpperCase() === "SOLTEIRO") {
+      if (estadoCivilMatch && (estadoCivilMatch[1]?.includes("SOOLTEIRO") || estadoCivilMatch[1]?.includes("SOLTEIRO"))) {
         alertasAdicionais.push({
           tipo: "erro_digitacao",
           campo: "Estado Civil",
           valor_encontrado: estadoCivilMatch[1].trim(),
-          sugestao: "Verificar se deveria ser 'SOLTEIRO'"
+          sugestao: "Verificar ortografia - deveria ser 'SOLTEIRO'"
         });
       }
       
