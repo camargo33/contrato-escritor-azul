@@ -2,10 +2,44 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://kwwqyfvkpjatckvngtur.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3d3F5ZnZrcGphdGNrdm5ndHVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODk2NzAsImV4cCI6MjA2NjM2NTY3MH0.DE84x3wpGTDKIc4VCaOHQUI5hj76OWqC2Vk7tzKpYEA";
+// 🔐 CORREÇÃO CRÍTICA: Usar variáveis de ambiente
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://kwwqyfvkpjatckvngtur.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3d3F5ZnZrcGphdGNrdm5ndHVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODk2NzAsImV4cCI6MjA2NjM2NTY3MH0.DE84x3wpGTDKIc4VCaOHQUI5hj76OWqC2Vk7tzKpYEA";
+
+// Validação de configuração
+if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  console.error('🚨 ERRO: Variáveis de ambiente do Supabase não configuradas');
+  throw new Error('Configuração do Supabase inválida. Verifique as variáveis de ambiente.');
+}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  },
+  db: {
+    schema: 'public'
+  },
+  global: {
+    headers: {
+      'x-application-name': 'contrato-escritor-azul'
+    }
+  }
+});
+
+// 🔧 Health check do cliente
+export const checkSupabaseConnection = async () => {
+  try {
+    const { data, error } = await supabase.from('base_contracts').select('id').limit(1);
+    if (error) throw error;
+    console.log('✅ Conexão com Supabase OK');
+    return true;
+  } catch (error) {
+    console.error('❌ Erro de conexão com Supabase:', error);
+    return false;
+  }
+};
