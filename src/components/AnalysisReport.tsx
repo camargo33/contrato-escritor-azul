@@ -98,11 +98,12 @@ interface AnalysisData {
 }
 
 const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: AnalysisReportProps) => {
-  console.log("🔍 [AnalysisReport] Iniciando processamento do content:", content?.substring(0, 200));
+  console.log("🔍 [AnalysisReport] Iniciando processamento - VERSÃO CORRIGIDA");
+  console.log("📄 Content recebido:", content?.substring(0, 200));
 
   const parseAnalysisContent = (content: string): { analysisData: AnalysisData | null; errorCount: number; fullContent: string } => {
-    console.log("🔍 [DEBUG] Iniciando parseAnalysisContent...");
-    console.log("📄 Content recebido (primeiros 300 chars):", content?.substring(0, 300));
+    console.log("🔍 [FRONTEND] Parsing content - ACEITA TODOS OS ERROS");
+    console.log("📄 Content (300 chars):", content?.substring(0, 300));
     
     try {
       let jsonData: any = null;
@@ -127,7 +128,7 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
         
         if (jsonMatch) {
           const jsonStr = jsonMatch[1] || jsonMatch[0];
-          console.log("📋 JSON extraído (primeiros 200 chars):", jsonStr.substring(0, 200));
+          console.log("📋 JSON extraído:", jsonStr.substring(0, 200));
           
           // Limpar caracteres de escape
           let cleanJsonStr = jsonStr
@@ -142,30 +143,30 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
       }
       
       if (jsonData) {
-        console.log("📊 Estrutura dos dados parseados:", {
-          hasModelo: !!jsonData.modelo_identificado,
-          hasAnalyseFidelidade: !!jsonData.analise_fidelidade,
-          hasValidacaoTaxas: !!jsonData.validacao_taxas,
-          hasErros: !!jsonData.erros,
-          numErros: jsonData.erros?.length || 0,
-          hasAlertas: !!jsonData.alertas,
-          numAlertas: jsonData.alertas?.length || 0,
-          statusGeral: jsonData.status_geral
-        });
+        console.log("📊 [FRONTEND] Dados parseados:");
+        console.log("  - Erros originais:", jsonData.erros?.length || 0);
+        console.log("  - Alertas originais:", jsonData.alertas?.length || 0);
+        console.log("  - Status original:", jsonData.status_geral);
         
-        // 🚨 CORREÇÃO CRÍTICA: NÃO FILTRAR NENHUM ERRO!
-        // Aceitar TODOS os erros que vieram do backend
+        // 🚨 GARANTIA ABSOLUTA: ACEITAR **TODOS** OS DADOS SEM FILTRO
         const errosOriginais = jsonData.erros || [];
         const alertasOriginais = jsonData.alertas || [];
         
-        console.log("🔍 ERROS ORIGINAIS (SEM FILTRAGEM):", errosOriginais);
-        console.log("🔍 ALERTAS ORIGINAIS (SEM FILTRAGEM):", alertasOriginais);
+        console.log("🔍 [FRONTEND] ACEITA TODOS OS ERROS:");
+        errosOriginais.forEach((erro: ErrorAnalysis, i: number) => {
+          console.log(`  ${i+1}. ${erro.campo}: ${erro.valor_encontrado} (${erro.severidade})`);
+        });
         
-        // Criar dados padronizados SEM FILTRAGEM
+        console.log("🔍 [FRONTEND] ACEITA TODOS OS ALERTAS:");
+        alertasOriginais.forEach((alerta: AlertItem, i: number) => {
+          console.log(`  ${i+1}. ${alerta.campo}: ${alerta.valor_encontrado}`);
+        });
+        
+        // Criar dados padronizados - ZERO FILTRAGEM
         const analysisData: AnalysisData = {
           modelo_identificado: jsonData.modelo_identificado,
-          erros: errosOriginais, // 🚨 USAR TODOS OS ERROS ORIGINAIS
-          alertas: alertasOriginais, // 🚨 USAR TODOS OS ALERTAS ORIGINAIS
+          erros: errosOriginais, // 🚨 TODOS OS ERROS ORIGINAIS
+          alertas: alertasOriginais, // 🚨 TODOS OS ALERTAS ORIGINAIS
           validacoes_corretas: jsonData.validacoes_corretas || [],
           resumo: jsonData.resumo || { total_erros: 0 },
           status_geral: jsonData.status_geral || 'aprovado',
@@ -174,14 +175,14 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
           validacao_taxas: jsonData.validacao_taxas
         };
         
-        // Calcular contadores por severidade (usando erros originais)
+        // Recalcular contadores (usando TODOS os erros)
         const contadores = errosOriginais.reduce((acc: Record<string, number>, erro: ErrorAnalysis) => {
           const sev = erro.severidade || 'medio';
           acc[sev] = (acc[sev] || 0) + 1;
           return acc;
         }, {});
         
-        // Atualizar resumo com dados reais
+        // Atualizar resumo com contadores reais
         analysisData.resumo = {
           ...analysisData.resumo,
           total_erros: errosOriginais.length,
@@ -189,15 +190,15 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
           criticos: contadores.critico || 0,
           altos: contadores.alto || 0,
           medios: contadores.medio || 0,
-          baixos: contadores.baixo || 0
+          baixos: contadores.baixos || 0
         };
         
-        // Status baseado em erros críticos e altos
+        // Status baseado em erros críticos
         const temErrosCriticos = (contadores.critico || 0) > 0 || (contadores.alto || 0) > 0;
         analysisData.status_geral = temErrosCriticos ? 'reprovado' : (jsonData.status_geral || 'aprovado');
         
-        console.log("✅ Análise processada SEM FILTRAGEM!");
-        console.log("📈 Estatísticas finais:", {
+        console.log("✅ [FRONTEND] ZERO FILTRAGEM APLICADA!");
+        console.log("📈 [FRONTEND] Dados finais:", {
           erros: errosOriginais.length,
           alertas: alertasOriginais.length,
           status: analysisData.status_geral,
@@ -214,12 +215,12 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
         };
       }
     } catch (error) {
-      console.error("❌ Erro no parsing:", error);
-      console.log("📄 Content que falhou (primeiros 500 chars):", content?.substring(0, 500));
+      console.error("❌ [FRONTEND] Erro no parsing:", error);
+      console.log("📄 Content que falhou:", content?.substring(0, 500));
     }
 
     // Fallback
-    console.log("⚠️ Usando fallback para análises não estruturadas");
+    console.log("⚠️ [FRONTEND] Usando fallback");
     const errorPatterns = [/\d+\.\s*(.+)$/gm, /[-•]\s*(.+)$/gm, /erro/gi, /incorreto/gi];
     let errorCount = 0;
     errorPatterns.forEach(pattern => {
@@ -232,13 +233,11 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
 
   const { analysisData, errorCount, fullContent } = parseAnalysisContent(content);
 
-  console.log("🔍 [AnalysisReport] Dados finais para renderização:", {
-    hasAnalysisData: !!analysisData,
-    numErros: analysisData?.erros?.length || 0,
-    numAlertas: analysisData?.alertas?.length || 0,
-    statusGeral: analysisData?.status_geral,
-    errorCount
-  });
+  console.log("🔍 [FRONTEND] Dados para renderização:");
+  console.log("  - analysisData exists:", !!analysisData);
+  console.log("  - erros count:", analysisData?.erros?.length || 0);
+  console.log("  - alertas count:", analysisData?.alertas?.length || 0);
+  console.log("  - status:", analysisData?.status_geral);
 
   return (
     <Card className="mt-6 bg-white border-2">
@@ -310,12 +309,12 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
               </div>
             )}
 
-            {/* Lista de Erros - SEMPRE MOSTRAR SE EXISTIR */}
+            {/* Lista de Erros - SEMPRE EXIBIR SE EXISTIR */}
             {analysisData.erros && analysisData.erros.length > 0 && (
               <ErrorListCard erros={analysisData.erros} />
             )}
 
-            {/* Lista de Alertas - SEMPRE MOSTRAR SE EXISTIR */}
+            {/* Lista de Alertas - SEMPRE EXIBIR SE EXISTIR */}
             {analysisData.alertas && analysisData.alertas.length > 0 && (
               <AlertListCard alertas={analysisData.alertas} />
             )}
@@ -348,8 +347,8 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
               </div>
             )}
 
-            {/* Mensagem quando não há erros */}
-            {(!analysisData.erros || analysisData.erros.length === 0) && (
+            {/* Mensagem quando não há erros - SÓ MOSTRA SE REALMENTE NÃO HÁ ERROS */}
+            {(!analysisData.erros || analysisData.erros.length === 0) && (!analysisData.alertas || analysisData.alertas.length === 0) && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="flex items-center gap-2 text-green-700">
                   <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
