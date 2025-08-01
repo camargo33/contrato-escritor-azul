@@ -1,24 +1,108 @@
-# Logs
-logs
-*.log
+# 🔐 SEGURANÇA: Arquivos que NUNCA devem ser commitados
+
+# ===== VARIÁVEIS DE AMBIENTE =====
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ===== DEPENDÊNCIAS =====
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# ===== BUILD =====
+dist/
+build/
+.vite/
+.vercel/
+.netlify/
+
+# ===== CACHE =====
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.out/
+.swc/
+
+# ===== LOGS =====
+logs/
+*.log
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# ===== EDITOR CONFIG =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
+
+# ===== RUNTIME =====
+.pnp.*
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# ===== TESTING =====
+coverage/
+*.lcov
+.nyc_output/
+
+# ===== TEMPORARY =====
+tmp/
+temp/
+*.tmp
+*.temp
+
+# ===== SUPABASE LOCAL =====
+supabase/.temp/
+supabase/.branches/
+supabase/.git/
+supabase/seed.sql
+
+# ===== DOCUMENTOS SENSÍVEIS =====
+*.pdf
+*.doc
+*.docx
+contracts/
+uploads/
+
+# ===== CHAVES E CERTIFICADOS =====
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# ===== DATABASE DUMPS =====
+*.sql
+*.db
+*.sqlite
+*.sqlite3
+
+# ===== BACKUPS =====
+backup/
+*.backup
+*.bak
+
+# ===== SPECIFIC TO PROJECT =====
+# Contratos de teste
+test-contracts/
+sample-contracts/
+
+# Logs específicos da aplicação
+contract-analysis-logs/
+error-reports/
+
+# ===== FERRAMENTAS DE DESENVOLVIMENTO =====
+.eslintcache
+.stylelintcache
+.turbo/
+.rushstack/
