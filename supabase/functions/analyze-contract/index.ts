@@ -6,20 +6,86 @@ import {
   validateOpenRouterApiKey, 
   createErrorResponse, 
   createSuccessResponse,
+  createHealthCheckResponse,
   handleOpenRouterError,
   handleGenericError
 } from './utils.ts';
 import { analyzeContractWithOpenRouter } from './openai-service.ts';
 
 serve(async (req) => {
+  // 🔧 CORREÇÃO: Resposta OPTIONS mais robusta
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      status: 200,
+      headers: corsHeaders 
+    });
   }
 
   try {
     console.log("=== ANALYZE CONTRACT FUNCTION STARTED ===");
+    console.log("Método:", req.method);
+    console.log("URL:", req.url);
     
-    const { contractText, filename } = await req.json();
+    // 🔧 NOVO: Health check endpoint
+    if (req.method === 'GET') {
+      console.log("🏥 Health check requisitado");
+      const healthResponse = createHealthCheckResponse();
+      return new Response(JSON.stringify(healthResponse), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // Verificar se é POST com dados
+    if (req.method !== 'POST') {
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Método não permitido. Use POST para análise ou GET para health check."
+      }), {
+        status: 405,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 🔧 CORREÇÃO: Melhor tratamento de JSON
+    let requestData;
+    try {
+      const requestText = await req.text();
+      console.log("📥 Dados recebidos (tamanho):", requestText.length, "caracteres");
+      
+      if (!requestText.trim()) {
+        throw new Error("Corpo da requisição vazio");
+      }
+      
+      requestData = JSON.parse(requestText);
+    } catch (parseError) {
+      console.error("❌ Erro ao fazer parse do JSON:", parseError);
+      const result = createErrorResponse(
+        'Dados inválidos na requisição. Verifique se está enviando JSON válido.',
+        '',
+        { parse_error: parseError.message }
+      );
+      return new Response(JSON.stringify(result), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { contractText, filename, test } = requestData;
+
+    // 🔧 NOVO: Resposta para requisições de teste
+    if (test === true) {
+      console.log("🧪 Requisição de teste detectada");
+      return new Response(JSON.stringify({
+        success: true,
+        message: "Edge Function está funcionando corretamente",
+        test: true,
+        timestamp: new Date().toISOString()
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     if (!contractText) {
       console.error("Erro: Texto do contrato não fornecido");
@@ -153,7 +219,7 @@ serve(async (req) => {
 
     console.log(`🚨 PRÉ-VALIDAÇÃO CONCLUÍDA: ${errosCriticosObrigatorios.length} erros críticos obrigatórios detectados`);
 
-    // Validar API key do OpenRouter
+    // Validar API key do OpenRouter/OpenAI
     const apiKeyValidation = validateOpenRouterApiKey();
     if (!apiKeyValidation.isValid) {
       const result = createErrorResponse(
@@ -167,7 +233,7 @@ serve(async (req) => {
       });
     }
 
-    // Analisar contrato com OpenRouter
+    // Analisar contrato com IA
     const analysisResult = await analyzeContractWithOpenRouter({
       contractText,
       filename,
