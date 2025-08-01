@@ -1,26 +1,32 @@
 export const buildContractAnalysisPrompt = (contractText: string): string => {
-  return `# VALIDADOR DE CONTRATOS CIABRASNET - DETECÇÃO RIGOROSA DE ERROS CRÍTICOS
+  return `# VALIDADOR DE CONTRATOS CIABRASNET - DETECÇÃO CONSERVADORA DE ERROS CRÍTICOS
 
 ## OBJETIVO PRINCIPAL
-Analisar contratos OCR da CIABRASNET detectando ERROS CRÍTICOS que impedem a aprovação do contrato.
+Analisar contratos OCR da CIABRASNET detectando APENAS ERROS CRÍTICOS ÓBVIOS que impedem a aprovação do contrato.
 
-## 🚨 INSTRUÇÕES CRÍTICAS - SEMPRE DETECTAR ERROS ÓBVIOS:
+## 🚨 INSTRUÇÕES CRÍTICAS - SER CONSERVADOR E PRECISO:
 
 **REGRA 1: CPF COM MAIS OU MENOS DE 11 DÍGITOS = ERRO CRÍTICO**
 - Exemplo: 137.158.269-677 (12 dígitos) = ERRO CRÍTICO
 - Exemplo: 137.158.269-4 (10 dígitos) = ERRO CRÍTICO
-- SEMPRE contar os dígitos do CPF (ignorar pontos e hífens)
+- SEMPRE contar APENAS os dígitos do CPF (ignorar pontos e hífens)
+- ✅ 076.935.229-48 = 11 dígitos = CORRETO
 
 **REGRA 2: DDD INEXISTENTE = ERRO CRÍTICO**  
-- DDD 42 = NÃO EXISTE no Brasil = ERRO CRÍTICO
-- SEMPRE verificar se o DDD é válido no Brasil
+- ✅ DDD 42 = VÁLIDO (Ponta Grossa/PR)
+- ✅ TODOS OS DDDs de 11 a 99 são potencialmente válidos
+- ❌ APENAS DDDs fora da faixa 11-99 são inválidos
+- SEMPRE verificar se o DDD está na faixa correta (11-99)
 
 **REGRA 3: EMAILS COM ERROS ÓBVIOS = ERRO CRÍTICO**
-- felipe.geronco@gmail.com = possível erro de digitação = ERRO CRÍTICO
-- Emails com domínios inexistentes = ERRO CRÍTICO
+- ❌ felipe.gmial@gmail.com = erro óbvio (gmial ao invés de gmail)
+- ❌ teste@hotmial.com = erro óbvio (hotmial ao invés de hotmail)
+- ✅ jaquelinevolhank509@gmail.com = VÁLIDO (sobrenomes podem variar)
+- SÓ detectar erros de digitação MUITO ÓBVIOS em provedores conhecidos
 
 **REGRA 4: TELEFONES COM FORMATO INCORRETO = ERRO CRÍTICO**
-- (42) 998853-6432 com DDD inexistente = ERRO CRÍTICO
+- ✅ (42) 9955-4936 = VÁLIDO (DDD 42 existe)
+- ❌ Apenas DDDs fora da faixa 11-99 são inválidos
 - Telefones fora do padrão brasileiro = ERRO CRÍTICO
 
 **REGRA 5: ERROS ORTOGRÁFICOS = ALERTA OBRIGATÓRIO**
@@ -37,11 +43,11 @@ Analisar contratos OCR da CIABRASNET detectando ERROS CRÍTICOS que impedem a ap
 5. **2024 Combo 800Mbps** - R$ 159,99 - RESIDENCIAL - 12 meses
 6. **COMBO 2025 500 MEGAS MATRIZ** - R$ 119,99 - RESIDENCIAL - 12 meses
 
-## ETAPA 2: VALIDAÇÃO RIGOROSA DE DADOS PESSOAIS
+## ETAPA 2: VALIDAÇÃO CONSERVADORA DE DADOS PESSOAIS
 
-### 🔍 ALGORITMO DE VALIDAÇÃO OBRIGATÓRIA:
+### 🔍 ALGORITMO DE VALIDAÇÃO CONSERVADORA:
 
-\`\`\`javascript
+\\`\\`\\`javascript
 // VALIDAÇÃO DE CPF - SEMPRE EXECUTAR
 cpf_numeros = extrair_apenas_numeros_do_cpf(cpf_encontrado)
 if (cpf_numeros.length !== 11) {
@@ -56,37 +62,38 @@ if (cpf_numeros.length !== 11) {
     })
 }
 
-// VALIDAÇÃO DE DDD - SEMPRE EXECUTAR
-ddd_extraido = extrair_ddd_do_telefone(telefone_encontrado)
-ddds_validos = ["11","12","13","14","15","16","17","18","19","21","22","24","27","28","31","32","33","34","35","37","38","41","43","44","45","46","47","48","49","51","53","54","55","61","62","63","64","65","66","67","68","69","71","73","74","75","77","79","81","82","83","84","85","86","87","88","89","91","92","93","94","95","96","97","98","99"]
-
-if (!ddds_validos.includes(ddd_extraido)) {
+// VALIDAÇÃO DE DDD - CONSERVADORA - APENAS DDDS FORA DA FAIXA 11-99
+ddd_extraido = parseInt(extrair_ddd_do_telefone(telefone_encontrado))
+if (ddd_extraido < 11 || ddd_extraido > 99) {
     adicionar_erro_critico({
         campo: "TELEFONE",
         valor_encontrado: telefone_encontrado,
-        valor_esperado: "Telefone com DDD válido brasileiro",
-        sugestao_correcao: "Corrigir para um DDD válido (ex: (41), (11), (21))",
+        valor_esperado: "Telefone com DDD válido brasileiro (11-99)",
+        sugestao_correcao: "Corrigir para um DDD válido entre 11 e 99",
         severidade: "critico",
-        explicacao: "DDD " + ddd_extraido + " não existe no Brasil",
+        explicacao: "DDD " + ddd_extraido + " está fora da faixa válida brasileira (11-99)",
         local_origem: "Seção QUALIFICAÇÃO DO ASSINANTE"
     })
 }
 
-// VALIDAÇÃO DE EMAIL - SEMPRE EXECUTAR
-if (email_encontrado.includes("geronco") || email_suspeito(email_encontrado)) {
+// VALIDAÇÃO DE EMAIL - MUITO CONSERVADORA - SÓ ERROS ÓBVIOS
+erros_obvios_email = ["gmial", "gmaiil", "gmai.com", "hotmial", "hotmeil", "yahhoo", "yahho", "outlokk", "outlok"]
+email_tem_erro_obvio = erros_obvios_email.some(erro => email_encontrado.toLowerCase().includes(erro))
+
+if (email_tem_erro_obvio) {
     adicionar_erro_critico({
         campo: "EMAIL",
         valor_encontrado: email_encontrado,
-        valor_esperado: "E-mail correto sem erros de digitação",
-        sugestao_correcao: "Verificar e corrigir possíveis erros de digitação",
+        valor_esperado: "E-mail com provedor correto (gmail, hotmail, yahoo, outlook)",
+        sugestao_correcao: "Verificar e corrigir erro de digitação no provedor",
         severidade: "critico",
-        explicacao: "E-mail contém possível erro de digitação",
+        explicacao: "E-mail contém erro óbvio de digitação no provedor",
         local_origem: "Seção QUALIFICAÇÃO DO ASSINANTE"
     })
 }
 
 // VALIDAÇÃO DE ESTADO CIVIL - SEMPRE VERIFICAR
-if (estado_civil_encontrado.includes("SOOLTEIRO") || estado_civil_encontrado.includes("SOLTEIRO")) {
+if (estado_civil_encontrado.includes("SOOLTEIRO")) {
     adicionar_alerta({
         campo: "Estado Civil",
         valor_encontrado: estado_civil_encontrado,
@@ -94,7 +101,7 @@ if (estado_civil_encontrado.includes("SOOLTEIRO") || estado_civil_encontrado.inc
         tipo: "erro_digitacao"
     })
 }
-\`\`\`
+\\`\\`\\`
 
 ## ETAPA 3: VALIDAÇÃO DE FIDELIDADE E TAXAS
 
@@ -102,7 +109,7 @@ if (estado_civil_encontrado.includes("SOOLTEIRO") || estado_civil_encontrado.inc
 
 **FÓRMULA FIXA - NUNCA EXTRAIR VALORES DIRETOS:**
 
-\`\`\`javascript
+\\`\\`\\`javascript
 // VALORES BASE FIXOS
 const VALOR_BASE_INSTALACAO = 700.00;
 
@@ -135,27 +142,27 @@ if (valor_instalacao_no_contrato !== taxa_instalacao_calculada) {
         explicacao: "Taxa deve ser R$ " + VALOR_BASE_INSTALACAO + " - R$ " + desconto_valor + " = R$ " + taxa_instalacao_calculada
     });
 }
-\`\`\`
+\\`\\`\\`
 
 ### 🔍 ALGORITMO DE EXTRAÇÃO DE TELEFONE:
 
-\`\`\`javascript
+\\`\\`\\`javascript
 // EXTRAIR TELEFONE COMPLETO - ATENÇÃO AOS DÍGITOS
 telefone_patterns = [
-    /CELULAR[:\s]*\((\d{2})\)[:\s]*(\d{4,5})-?(\d{4})/g,
-    /TELEFONE[:\s]*\((\d{2})\)[:\s]*(\d{4,5})-?(\d{4})/g,
-    /\((\d{2})\)[:\s]*(\d{4,5})-?(\d{4})/g
+    /CELULAR[:\\s]*\\((\\d{2})\\)[:\\s]*(\\d{4,5})-?(\\d{4})/g,
+    /TELEFONE[:\\s]*\\((\\d{2})\\)[:\\s]*(\\d{4,5})-?(\\d{4})/g,
+    /\\((\\d{2})\\)[:\\s]*(\\d{4,5})-?(\\d{4})/g
 ]
 
 // Capturar TODOS os dígitos do número
 // Exemplo: (42) 998853-6432 = DDD 42 + 998853-6432 (9 dígitos)
-\`\`\`
+\\`\\`\\`
 
 ## FORMATO DE RESPOSTA OBRIGATÓRIO
 
 **CRÍTICO: SEMPRE calcular taxas matematicamente!**
 
-\`\`\`json
+\\`\\`\\`json
 {
   "modelo_identificado": {
     "nome": "2024 Combo 600Mbps",
@@ -188,33 +195,8 @@ telefone_patterns = [
     }
   },
   "erros": [
-    {
-      "campo": "CPF",
-      "valor_encontrado": "137.158.269-677",
-      "valor_esperado": "CPF com exatamente 11 dígitos",
-      "sugestao_correcao": "Corrigir o CPF para ter exatamente 11 dígitos",
-      "explicacao": "CPF encontrado tem 12 dígitos, mas deve ter exatamente 11",
-      "severidade": "critico",
-      "local_origem": "Seção QUALIFICAÇÃO DO ASSINANTE"
-    },
-    {
-      "campo": "TELEFONE",
-      "valor_encontrado": "(42) 998853-6432",
-      "valor_esperado": "Telefone com DDD válido brasileiro",
-      "sugestao_correcao": "Corrigir para um DDD válido (ex: (41), (11), (21))",
-      "explicacao": "DDD 42 não existe no Brasil",
-      "severidade": "critico",
-      "local_origem": "Seção QUALIFICAÇÃO DO ASSINANTE"
-    },
-    {
-      "campo": "EMAIL",
-      "valor_encontrado": "felipe.geronco@gmail.com",
-      "valor_esperado": "E-mail correto sem erros de digitação",
-      "sugestao_correcao": "Verificar e corrigir possíveis erros de digitação no sobrenome",
-      "explicacao": "E-mail contém possível erro de digitação ('geronco')",
-      "severidade": "critico",
-      "local_origem": "Seção QUALIFICAÇÃO DO ASSINANTE"
-    }
+    // SÓ INCLUIR ERROS CRÍTICOS ÓBVIOS
+    // CPF ≠ 11 dígitos, DDD < 11 ou > 99, emails com erros óbvios
   ],
   "alertas": [
     {
@@ -225,23 +207,23 @@ telefone_patterns = [
     }
   ],
   "resumo": {
-    "total_erros": 3,
+    "total_erros": 0,
     "total_alertas": 1,
-    "criticos": 3,
+    "criticos": 0,
     "altos": 0,
     "medios": 0,
     "baixos": 0,
     "plano_identificado": "2024 Combo 600Mbps"
   },
-  "status_geral": "reprovado",
+  "status_geral": "aprovado",
   "observacoes": [
-    "🚨 CRÍTICO: Encontrados erros nos dados pessoais que impedem a aprovação",
+    "✅ Dados pessoais validados corretamente",
     "💰 Taxa de instalação calculada corretamente: R$ 700,00 - R$ 500,00 = R$ 200,00"
   ]
 }
-\`\`\`
+\\`\\`\\`
 
-## 🚨 REGRAS CRÍTICAS OBRIGATÓRIAS
+## 🚨 REGRAS CRÍTICAS ATUALIZADAS E CONSERVADORAS
 
 1. **SEMPRE calcular taxa de instalação matematicamente: 700 - desconto**
 
@@ -253,18 +235,22 @@ telefone_patterns = [
 
 5. **SEMPRE contar dígitos do CPF** e reportar como erro crítico se ≠ 11
 
-6. **SEMPRE validar DDD** contra lista de DDDs válidos brasileiros
+6. **SER CONSERVADOR com DDDs**: Apenas DDDs < 11 ou > 99 são inválidos
 
-7. **SEMPRE verificar emails** para erros óbvios de digitação
+7. **SER CONSERVADOR com emails**: Só detectar erros MUITO óbvios
 
 8. **Se há erros críticos, status_geral DEVE ser "reprovado"**
+
+9. **✅ EXEMPLOS DE DADOS VÁLIDOS:**
+   - CPF: 076.935.229-48 (11 dígitos) = VÁLIDO
+   - DDD: (42) = VÁLIDO (Paraná)
+   - Email: jaquelinevolhank509@gmail.com = VÁLIDO
 
 **FÓRMULAS OBRIGATÓRIAS:**
 - COM FIDELIDADE: Taxa Instalação = R$ 700,00 - Desconto | Taxa Rescisão = Desconto
 - SEM FIDELIDADE: Taxa Instalação = R$ 700,00 | Taxa Rescisão = R$ 700,00
 
-**NUNCA extrair valores diretos de seções que podem ter erros de OCR!**
-**SEMPRE calcular matematicamente: 700 - desconto = valor correto!**
+**PRINCÍPIO FUNDAMENTAL: SER CONSERVADOR - PREFERIR APROVAR DADOS VÁLIDOS A REPROVAR DADOS CORRETOS**
 
 **Contrato para análise:**
 ${contractText}`;
