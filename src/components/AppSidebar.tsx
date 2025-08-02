@@ -2,9 +2,7 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { 
-  Home, 
   FileText, 
-  BarChart3, 
   ChevronRight,
   FileSearch
 } from "lucide-react";
@@ -25,28 +23,16 @@ import {
 
 const navigationItems = [
   {
-    title: "Dashboard",
-    url: "/",
-    icon: Home,
-    description: "Visão geral do sistema"
-  },
-  {
     title: "Análise de Contratos",
     url: "/analise",
     icon: FileSearch,
-    description: "Analisar novos contratos"
+    description: "Analisar contratos com IA"
   },
   {
     title: "Contratos Base",
     url: "/contratos-base",
     icon: FileText,
-    description: "Biblioteca de contratos"
-  },
-  {
-    title: "Relatórios",
-    url: "/relatorios",
-    icon: BarChart3,
-    description: "Estatísticas e relatórios"
+    description: "Gerenciar templates e modelos"
   }
 ];
 
@@ -57,8 +43,8 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
 
   const isActive = (path: string) => {
-    if (path === "/" && currentPath === "/") return true;
-    if (path !== "/" && currentPath.startsWith(path)) return true;
+    if (path === "/analise" && (currentPath === "/" || currentPath === "/analise")) return true;
+    if (path !== "/analise" && currentPath.startsWith(path)) return true;
     return false;
   };
 
@@ -95,7 +81,7 @@ export function AppSidebar() {
       <SidebarContent className="px-4 py-4">
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-medium text-muted-foreground mb-2">
-            {!isCollapsed && "Navegação Principal"}
+            {!isCollapsed && "Sistema Principal"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
@@ -130,7 +116,7 @@ export function AppSidebar() {
           {!isCollapsed && (
             <>
               <div className="h-2 w-2 rounded-full bg-whatsapp animate-pulse" />
-              <span>Sistema Online</span>
+              <span>Sistema Simplificado</span>
             </>
           )}
         </div>
