@@ -17,10 +17,20 @@ interface ErrorAnalysis {
 }
 
 interface ErrorListCardProps {
-  erros: ErrorAnalysis[];
+  erros: ErrorAnalysis[] | null | undefined;
 }
 
 const ErrorListCard = ({ erros }: ErrorListCardProps) => {
+  // 🛡️ PROTEÇÃO ABSOLUTA CONTRA UNDEFINED/NULL
+  console.log("🔍 [ErrorListCard] Recebeu erros:", erros);
+  console.log("🔍 [ErrorListCard] Tipo:", typeof erros);
+  console.log("🔍 [ErrorListCard] Array?", Array.isArray(erros));
+  
+  // Garantir que erros seja sempre um array válido
+  const errosSeguro = Array.isArray(erros) ? erros : [];
+  
+  console.log("🛡️ [ErrorListCard] Array seguro:", errosSeguro.length, "itens");
+
   // Função para obter ícone baseado na severidade
   const getSeverityIcon = (severidade?: string) => {
     switch (severidade?.toLowerCase()) {
@@ -78,17 +88,35 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
     }
   };
 
-  // 🚨 GARANTIA: MOSTRAR TODOS OS ERROS QUE CHEGARAM ATÉ AQUI
-  console.log("🔍 [ErrorListCard] Recebeu", erros?.length || 0, "erros para exibir");
-  console.log("📋 [ErrorListCard] Lista de erros:", erros?.map(e => ({
-    campo: e.campo,
-    severidade: e.severidade,
-    valor_encontrado: e.valor_encontrado
-  })));
+  // 🛡️ FILTRO SEGURO: Apenas erros válidos
+  let errosValidos: ErrorAnalysis[] = [];
   
-  // Se não há erros, não mostrar a seção
-  if (!erros || erros.length === 0) {
-    console.log("⚠️ [ErrorListCard] Nenhum erro para exibir");
+  try {
+    errosValidos = errosSeguro.filter(erro => {
+      // Verificar se erro tem as propriedades básicas necessárias
+      if (!erro || typeof erro !== 'object') {
+        console.warn("⚠️ [ErrorListCard] Erro inválido:", erro);
+        return false;
+      }
+      
+      const hasRequiredFields = erro.campo && erro.valor_encontrado !== undefined && erro.valor_esperado !== undefined;
+      if (!hasRequiredFields) {
+        console.warn("⚠️ [ErrorListCard] Erro sem campos obrigatórios:", erro);
+        return false;
+      }
+      
+      return true;
+    });
+  } catch (error) {
+    console.error("❌ [ErrorListCard] Erro ao filtrar erros:", error);
+    errosValidos = [];
+  }
+
+  console.log("✅ [ErrorListCard] Erros válidos filtrados:", errosValidos.length);
+  
+  // Se não há erros válidos, não mostrar a seção
+  if (errosValidos.length === 0) {
+    console.log("⚠️ [ErrorListCard] Nenhum erro válido para exibir");
     return null;
   }
 
@@ -96,11 +124,17 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
     <div className="mb-6">
       <div className="flex items-center gap-3 mb-3">
         <XCircle className="h-5 w-5 text-red-600" />
-        <h3 className="text-lg font-semibold text-slate-700">🚨 Erros Detectados ({erros.length})</h3>
+        <h3 className="text-lg font-semibold text-slate-700">🚨 Erros Detectados ({errosValidos.length})</h3>
       </div>
       
       <div className="space-y-4">
-        {erros.map((erro, index) => {
+        {errosValidos.map((erro, index) => {
+          // 🛡️ PROTEÇÃO EXTRA: Verificar se erro ainda é válido
+          if (!erro || typeof erro !== 'object') {
+            console.error("❌ [ErrorListCard] Erro inválido no render:", erro);
+            return null;
+          }
+
           const colors = getSeverityColors(erro.severidade);
           
           console.log(`📋 [ErrorListCard] Exibindo erro ${index + 1}:`, {
@@ -117,7 +151,7 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
                     {getSeverityIcon(erro.severidade)}
-                    <span className={colors.text}>{erro.campo}</span>
+                    <span className={colors.text}>{erro.campo || 'Campo não identificado'}</span>
                   </CardTitle>
                   <div className="flex items-center gap-2">
                     {erro.severidade && (
@@ -139,12 +173,16 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-3 bg-white border border-red-200 rounded-lg">
                     <div className="text-sm font-medium text-red-700 mb-1">❌ Valor Encontrado</div>
-                    <div className="text-lg font-semibold text-red-800 break-words">{erro.valor_encontrado}</div>
+                    <div className="text-lg font-semibold text-red-800 break-words">
+                      {erro.valor_encontrado || '(vazio)'}
+                    </div>
                   </div>
                   
                   <div className="p-3 bg-white border border-green-200 rounded-lg">
                     <div className="text-sm font-medium text-green-700 mb-1">✅ Valor Esperado</div>
-                    <div className="text-lg font-semibold text-green-800 break-words">{erro.valor_esperado}</div>
+                    <div className="text-lg font-semibold text-green-800 break-words">
+                      {erro.valor_esperado || '(não definido)'}
+                    </div>
                   </div>
                 </div>
 
@@ -160,7 +198,7 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
                 <div className="p-3 bg-white border border-purple-200 rounded-lg">
                   <div className="text-sm font-medium text-purple-700 mb-1">🔧 Correção Necessária</div>
                   <div className="text-sm text-purple-800">
-                    {erro.correcao_necessaria || erro.sugestao_correcao}
+                    {erro.correcao_necessaria || erro.sugestao_correcao || 'Verifique e corrija o valor'}
                   </div>
                 </div>
 
@@ -206,10 +244,10 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
           <span className="font-medium text-gray-800">📋 Próximos Passos</span>
         </div>
         <div className="text-sm text-gray-700">
-          {erros.length === 1 ? (
+          {errosValidos.length === 1 ? (
             'Corrija o erro identificado acima antes de aprovar o contrato.'
           ) : (
-            `Corrija os ${erros.length} erros identificados acima antes de aprovar o contrato.`
+            `Corrija os ${errosValidos.length} erros identificados acima antes de aprovar o contrato.`
           )}
         </div>
         <div className="text-xs text-gray-600 mt-1">
@@ -217,12 +255,12 @@ const ErrorListCard = ({ erros }: ErrorListCardProps) => {
         </div>
         
         {/* Estatísticas de Severidade */}
-        {erros.length > 1 && (
+        {errosValidos.length > 1 && (
           <div className="mt-3 pt-3 border-t border-gray-200">
             <div className="text-xs text-gray-600 mb-2">Distribuição por severidade:</div>
             <div className="flex gap-4 text-xs">
               {['critico', 'alto', 'medio', 'baixo'].map(sev => {
-                const count = erros.filter(e => e.severidade === sev).length;
+                const count = errosValidos.filter(e => e.severidade === sev).length;
                 if (count > 0) {
                   const colors = getSeverityColors(sev);
                   return (
