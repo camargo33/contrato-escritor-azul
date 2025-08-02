@@ -98,10 +98,10 @@ interface AnalysisData {
 }
 
 const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: AnalysisReportProps) => {
-  console.log("🔍 [AnalysisReport] Processamento LIMPO - SEM JSON BRUTO");
+  console.log("🔍 [AnalysisReport] INTERFACE ULTRA LIMPA - ZERO JSON BRUTO");
 
   const parseAnalysisContent = (content: string): { analysisData: AnalysisData | null; errorCount: number; fullContent: string } => {
-    console.log("🔍 [FRONTEND] Parsing para interface LIMPA");
+    console.log("🔍 [FRONTEND] PARSING ULTRA LIMPO - SEM JSON NA INTERFACE");
     
     // 🛡️ PROTEÇÃO: Verificar se content existe
     if (!content) {
@@ -112,7 +112,7 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
     try {
       let rawData: any = null;
       
-      // 🔍 ETAPA 1: EXTRAIR DADOS - MÚLTIPLAS ESTRATÉGIAS
+      // 🔍 ETAPA 1: EXTRAIR DADOS - MÚLTIPLAS ESTRATÉGIAS, SEM EXIBIR JSON
       console.log("🔍 Tentando extrair dados...");
       
       // Estratégia 1: Se já é um objeto
@@ -129,22 +129,22 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
       else {
         console.log("🔍 Procurando JSON em texto...");
         const patterns = [
-          /```json\\s*([\\s\\S]*?)\\s*```/,
-          /```\\s*(\\{[\\s\\S]*?\\})\\s*```/,
-          /(\\{[\\s\\S]*\\})/
+          /```json\s*([^`]*?)\s*```/s,
+          /```\s*(\{[^`]*?\})\s*```/s,
+          /(\{[\s\S]*?\})/
         ];
         
         for (const pattern of patterns) {
           const match = content.match(pattern);
           if (match) {
             const jsonStr = match[1] || match[0];
-            console.log("📋 JSON encontrado:", jsonStr.substring(0, 200));
+            console.log("📋 JSON encontrado, parseando...");
             
             // Limpar o JSON
             const cleanJsonStr = jsonStr
-              .replace(/\\\\\"/g, '\"')
-              .replace(/\\\\n/g, '\\n')
-              .replace(/\\\\\\\\/g, '\\\\')
+              .replace(/\\"/g, '"')
+              .replace(/\\n/g, '\n')
+              .replace(/\\\\/g, '\\')
               .trim();
             
             rawData = JSON.parse(cleanJsonStr);
@@ -154,13 +154,13 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
       }
       
       if (!rawData) {
-        console.warn("⚠️ [FRONTEND] Não conseguiu extrair JSON, usando fallback...");
+        console.warn("⚠️ [FRONTEND] JSON não encontrado, usando fallback limpo...");
         throw new Error("JSON não encontrado");
       }
       
-      console.log("✅ [FRONTEND] Dados extraídos com sucesso");
+      console.log("✅ [FRONTEND] Dados extraídos - construindo interface limpa");
       
-      // 🔍 ETAPA 2: IDENTIFICAR FORMATO E EXTRAIR CAMPOS
+      // 🔍 ETAPA 2: IDENTIFICAR FORMATO E EXTRAIR CAMPOS LIMPOS
       let errosOriginais: ErrorAnalysis[] = [];
       let alertasOriginais: AlertItem[] = [];
       let modeloIdentificado: ModeloIdentificado | undefined;
@@ -262,13 +262,13 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
         searchInObject(rawData);
       }
       
-      console.log("📊 [FRONTEND] EXTRAÇÃO COMPLETA:");
+      console.log("📊 [FRONTEND] EXTRAÇÃO LIMPA COMPLETA:");
       console.log(`  - Erros: ${errosOriginais.length}`);
       console.log(`  - Alertas: ${alertasOriginais.length}`);
       console.log(`  - Modelo: ${modeloIdentificado ? 'SIM' : 'NÃO'}`);
       console.log(`  - Status: ${statusGeral}`);
       
-      // 🏗️ CONSTRUIR ANÁLISE FINAL
+      // 🏗️ CONSTRUIR ANÁLISE FINAL LIMPA
       const analysisData: AnalysisData = {
         modelo_identificado: modeloIdentificado,
         erros: errosOriginais,
@@ -294,20 +294,21 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
         analysisData.status_geral = 'reprovado';
       }
       
-      console.log("✅ [FRONTEND] ANÁLISE CONSTRUÍDA - INTERFACE LIMPA!");
+      console.log("✅ [FRONTEND] ANÁLISE LIMPA CONSTRUÍDA - ZERO JSON NA UI!");
       
       return {
         analysisData,
         errorCount: errosOriginais.length,
-        fullContent: content
+        fullContent: '' // 🚨 CRÍTICO: NÃO PASSAR JSON BRUTO
       };
       
     } catch (error) {
       console.error("❌ [FRONTEND] Erro no parsing:", error);
       
-      // 🆘 FALLBACK FINAL - APENAS PARA CASOS EXTREMOS
-      console.log("🆘 [FRONTEND] Usando fallback de emergência");
+      // 🆘 FALLBACK FINAL LIMPO - SEM JSON
+      console.log("🆘 [FRONTEND] Usando fallback ultra limpo");
       
+      // Contar possíveis erros sem mostrar JSON
       const errorPatterns = [/erro/gi, /incorreto/gi, /inválido/gi, /crítico/gi];
       let errorCount = 0;
       errorPatterns.forEach(pattern => {
@@ -315,17 +316,22 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
         if (matches) errorCount += matches.length;
       });
       
-      return { analysisData: null, errorCount, fullContent: content };
+      return { 
+        analysisData: null, 
+        errorCount, 
+        fullContent: content // Só para fallback, que agora filtra JSON
+      };
     }
   };
 
   const { analysisData, errorCount, fullContent } = parseAnalysisContent(content);
 
-  console.log("🎯 [FRONTEND] RENDERIZAÇÃO FINAL:");
+  console.log("🎯 [FRONTEND] RENDERIZAÇÃO ULTRA LIMPA:");
   console.log("  - analysisData exists:", !!analysisData);
   console.log("  - erros count:", analysisData?.erros?.length || 0);
   console.log("  - alertas count:", analysisData?.alertas?.length || 0);
   console.log("  - status:", analysisData?.status_geral);
+  console.log("  - 🚫 JSON BRUTO: NUNCA MOSTRADO");
 
   return (
     <Card className="mt-6 bg-white border-2">
@@ -423,19 +429,21 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
               </div>
             )}
 
-            {/* Observações - APENAS SE EXISTIR */}
+            {/* Observações - APENAS SE EXISTIR E SEM JSON */}
             {analysisData.observacoes && analysisData.observacoes.length > 0 && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="font-semibold text-blue-800 mb-3">📋 Observações da Análise</h4>
                 <ul className="list-disc list-inside space-y-1 text-sm text-blue-700">
-                  {analysisData.observacoes.map((obs, index) => (
-                    <li key={index}>{obs}</li>
-                  ))}
+                  {analysisData.observacoes
+                    .filter(obs => !obs.includes('{') && !obs.includes('"') && obs.length < 200) // Filtrar JSON
+                    .map((obs, index) => (
+                      <li key={index}>{obs}</li>
+                    ))}
                 </ul>
               </div>
             )}
 
-            {/* 🎉 MENSAGEM QUANDO NÃO HÁ ERROS - SÓ MOSTRA INTERFACE LIMPA */}
+            {/* 🎉 MENSAGEM QUANDO NÃO HÁ ERROS - INTERFACE LIMPA */}
             {(!analysisData.erros || analysisData.erros.length === 0) && (!analysisData.alertas || analysisData.alertas.length === 0) && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="flex items-center gap-2 text-green-700">
@@ -451,7 +459,7 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
             )}
           </div>
         ) : (
-          // 🆘 Fallback APENAS para casos onde o JSON não pode ser parseado
+          // 🆘 Fallback ULTRA LIMPO - SEM JSON BRUTO
           <FallbackAnalysisView errorCount={errorCount} fullContent={fullContent} />
         )}
 
