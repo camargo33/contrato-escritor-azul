@@ -8,14 +8,32 @@ interface AlertItem {
 }
 
 interface AlertListCardProps {
-  alertas: AlertItem[];
+  alertas: AlertItem[] | null | undefined;
 }
 
 const AlertListCard = ({ alertas }: AlertListCardProps) => {
+  // 🛡️ PROTEÇÃO ABSOLUTA CONTRA UNDEFINED/NULL
+  console.log("🔍 [AlertListCard] Recebeu alertas:", alertas);
+  console.log("🔍 [AlertListCard] Tipo:", typeof alertas);
+  console.log("🔍 [AlertListCard] Array?", Array.isArray(alertas));
+  
+  // Garantir que alertas seja sempre um array válido
+  const alertasSeguro = Array.isArray(alertas) ? alertas : [];
+  
+  console.log("🛡️ [AlertListCard] Array seguro:", alertasSeguro.length, "itens");
+
   // Função para verificar se é realmente um alerta válido
   const isValidAlert = (alerta: AlertItem): boolean => {
-    const valorEncontrado = alerta.valor_encontrado?.trim() || '';
-    const campo = alerta.campo?.toLowerCase() || '';
+    // 🛡️ PROTEÇÃO: Verificar se alerta existe e tem propriedades básicas
+    if (!alerta || typeof alerta !== 'object') {
+      console.warn("⚠️ [AlertListCard] Alerta inválido:", alerta);
+      return false;
+    }
+
+    const valorEncontrado = (alerta.valor_encontrado || '').toString().trim();
+    const campo = (alerta.campo || '').toString().toLowerCase();
+    
+    console.log("🔍 [AlertListCard] Validando alerta:", { campo, valorEncontrado, tipo: alerta.tipo });
     
     // Se o campo está preenchido corretamente, não é um alerta real
     if (campo.includes('nome') && valorEncontrado && valorEncontrado !== '(vazio)') {
@@ -24,23 +42,23 @@ const AlertListCard = ({ alertas }: AlertListCardProps) => {
     
     // Telefone no formato correto não é alerta
     if (campo.includes('telefone') || campo.includes('celular')) {
-      const telefoneRegex = /^\(\d{2}\)\s?\d{4,5}-?\d{4}$/;
-      if (telefoneRegex.test(valorEncontrado.replace(/\s/g, ''))) {
+      const telefoneRegex = /^\\(?\\d{2}\\)?\\s?\\d{4,5}-?\\d{4}$/;
+      if (telefoneRegex.test(valorEncontrado.replace(/\\s/g, ''))) {
         return false;
       }
     }
     
     // CPF no formato correto não é alerta
     if (campo.includes('cpf')) {
-      const cpfRegex = /^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/;
-      if (cpfRegex.test(valorEncontrado.replace(/\s/g, ''))) {
+      const cpfRegex = /^\\d{3}\\.?\\d{3}\\.?\\d{3}-?\\d{2}$/;
+      if (cpfRegex.test(valorEncontrado.replace(/\\s/g, ''))) {
         return false;
       }
     }
     
     // E-mail válido não é alerta
     if (campo.includes('email') || campo.includes('e-mail')) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
       if (emailRegex.test(valorEncontrado)) {
         return false;
       }
@@ -54,8 +72,24 @@ const AlertListCard = ({ alertas }: AlertListCardProps) => {
     return true;
   };
 
-  // Filtrar apenas alertas reais
-  const alertasReais = alertas?.filter(isValidAlert) || [];
+  // 🛡️ FILTRO SEGURO: Apenas alertas válidos
+  let alertasReais: AlertItem[] = [];
+  
+  try {
+    alertasReais = alertasSeguro.filter(alerta => {
+      try {
+        return isValidAlert(alerta);
+      } catch (error) {
+        console.error("❌ [AlertListCard] Erro ao validar alerta:", error, alerta);
+        return false;
+      }
+    });
+  } catch (error) {
+    console.error("❌ [AlertListCard] Erro ao filtrar alertas:", error);
+    alertasReais = [];
+  }
+
+  console.log("✅ [AlertListCard] Alertas reais filtrados:", alertasReais.length);
 
   if (alertasReais.length === 0) {
     return (
@@ -113,34 +147,46 @@ const AlertListCard = ({ alertas }: AlertListCardProps) => {
         Alertas Detectados ({alertasReais.length}):
       </h3>
       
-      {alertasReais.map((alerta, index) => (
-        <div key={index} className={`border-l-4 p-4 rounded-r-lg ${getAlertColor(alerta.tipo)}`}>
-          <div className="flex items-start gap-3">
-            {getAlertIcon(alerta.tipo)}
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="font-medium text-gray-800">{alerta.campo}</span>
-                <span className="text-xs px-2 py-1 bg-white rounded text-gray-600 border">
-                  {alerta.tipo.replace('_', ' ').toUpperCase()}
-                </span>
-              </div>
-              
-              <div className="space-y-1 text-sm">
-                <div>
-                  <span className="font-medium text-gray-700">Encontrado:</span>
-                  <span className="ml-2 text-gray-800">
-                    {alerta.valor_encontrado || '(vazio)'}
+      {alertasReais.map((alerta, index) => {
+        // 🛡️ PROTEÇÃO EXTRA: Verificar se alerta ainda é válido
+        if (!alerta || typeof alerta !== 'object') {
+          console.error("❌ [AlertListCard] Alerta inválido no render:", alerta);
+          return null;
+        }
+
+        return (
+          <div key={index} className={`border-l-4 p-4 rounded-r-lg ${getAlertColor(alerta.tipo)}`}>
+            <div className="flex items-start gap-3">
+              {getAlertIcon(alerta.tipo)}
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-medium text-gray-800">
+                    {alerta.campo || 'Campo não identificado'}
+                  </span>
+                  <span className="text-xs px-2 py-1 bg-white rounded text-gray-600 border">
+                    {(alerta.tipo || 'desconhecido').replace('_', ' ').toUpperCase()}
                   </span>
                 </div>
-                <div>
-                  <span className="font-medium text-gray-700">Sugestão:</span>
-                  <span className="ml-2 text-gray-800">{alerta.sugestao}</span>
+                
+                <div className="space-y-1 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-700">Encontrado:</span>
+                    <span className="ml-2 text-gray-800">
+                      {alerta.valor_encontrado || '(vazio)'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Sugestão:</span>
+                    <span className="ml-2 text-gray-800">
+                      {alerta.sugestao || 'Verificar dados'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
