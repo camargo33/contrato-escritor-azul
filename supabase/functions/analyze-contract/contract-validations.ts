@@ -1,5 +1,5 @@
-// 🔍 FASE 2: VALIDAÇÕES CORRIGIDAS - SER CONSERVADOR E PRECISO
-// CORREÇÃO: Telefone (42) 98833-3039 é VÁLIDO, não inventar erros
+// 🔍 VALIDAÇÕES RIGOROSAS - DETECTA ERROS REAIS, NÃO INVENTA
+// CORREÇÃO: Detectar telefone com 10 dígitos e erros ortográficos óbvios
 
 export interface ValidationRule {
   field: string;
@@ -27,7 +27,7 @@ export interface ContractValidationResult {
   total_warnings: number;
 }
 
-// 📱 VALIDAÇÃO CORRIGIDA DE TELEFONE CELULAR
+// 📱 VALIDAÇÃO RIGOROSA DE TELEFONE CELULAR - DETECTA ERROS REAIS
 export const validateCellPhone = (phone: string): ValidationResult => {
   if (!phone || phone.trim() === '') {
     return {
@@ -41,15 +41,15 @@ export const validateCellPhone = (phone: string): ValidationResult => {
   const numbers = phone.replace(/[^0-9]/g, '');
   
   // Log para debug
-  console.log(`🔍 Validando telefone: "${phone}" → números: "${numbers}"`);
+  console.log(`🔍 VALIDAÇÃO RIGOROSA - Telefone: "${phone}" → números: "${numbers}"`);
   
-  // Deve ter exatamente 11 dígitos (DDD + 9 dígitos do celular)
+  // VERIFICAÇÃO 1: Deve ter exatamente 11 dígitos (DDD + 9 dígitos do celular)
   if (numbers.length !== 11) {
     return {
       valid: false,
-      message: `Telefone deve ter 11 dígitos total (DDD + celular). Encontrado: ${numbers.length} dígitos`,
-      found: phone,
-      expected: "(XX) 9XXXX-XXXX",
+      message: `Telefone celular inválido - deve ter 11 dígitos total (DDD + 9 dígitos)`,
+      found: `${phone} (${numbers.length} dígitos)`,
+      expected: "(XX) 9XXXX-XXXX (11 dígitos total)",
       severity: 'error'
     };
   }
@@ -58,20 +58,20 @@ export const validateCellPhone = (phone: string): ValidationResult => {
   const ddd = numbers.substring(0, 2);      // Primeiros 2 dígitos
   const cellNumber = numbers.substring(2);  // Últimos 9 dígitos
   
-  console.log(`📱 DDD: "${ddd}", Celular: "${cellNumber}"`);
+  console.log(`📱 DDD: "${ddd}", Celular: "${cellNumber}" (${cellNumber.length} dígitos)`);
 
-  // Verificar se o número do celular tem exatamente 9 dígitos
+  // VERIFICAÇÃO 2: Número do celular deve ter exatamente 9 dígitos
   if (cellNumber.length !== 9) {
     return {
       valid: false,
-      message: `Número do celular deve ter 9 dígitos. Encontrado: ${cellNumber.length} dígitos`,
+      message: `Número do celular deve ter exatamente 9 dígitos`,
       found: `${cellNumber} (${cellNumber.length} dígitos)`,
       expected: "9XXXX-XXXX (9 dígitos)",
       severity: 'error'
     };
   }
 
-  // Verificar se o celular começa com 9 (padrão brasileiro)
+  // VERIFICAÇÃO 3: Celular deve começar com 9 (padrão brasileiro)
   if (!cellNumber.startsWith('9')) {
     return {
       valid: false,
@@ -82,7 +82,7 @@ export const validateCellPhone = (phone: string): ValidationResult => {
     };
   }
 
-  // Verificar se o DDD é válido (11-99)
+  // VERIFICAÇÃO 4: DDD deve ser válido (11-99)
   const dddNumber = parseInt(ddd);
   if (dddNumber < 11 || dddNumber > 99) {
     return {
@@ -104,27 +104,101 @@ export const validateCellPhone = (phone: string): ValidationResult => {
   };
 };
 
-// 🧪 FUNÇÃO DE TESTE PARA TELEFONES
+// 🧪 FUNÇÃO DE TESTE RIGOROSO PARA TELEFONES
 export const testCellPhoneValidation = () => {
   const testCases = [
-    { phone: "(42) 98833-3039", expected: true, description: "Número real do usuário" },
-    { phone: "(42) 99955-4936", expected: true, description: "Exemplo válido" },
-    { phone: "(47) 91234-5678", expected: true, description: "WNKBR válido" },
-    { phone: "(42) 8833-3039", expected: false, description: "Sem 9 inicial - inválido" },
-    { phone: "(42) 988333039", expected: true, description: "Sem hífen - válido" },
-    { phone: "42988333039", expected: true, description: "Sem formatação - válido" },
-    { phone: "(42) 988333-0393", expected: false, description: "10 dígitos - inválido" }
+    { phone: "(42) 98833-3039", expected: true, description: "Número válido - 9 dígitos" },
+    { phone: "(42) 99955-4936", expected: true, description: "Exemplo válido - 9 dígitos" },
+    { phone: "(47) 91234-5678", expected: true, description: "WNKBR válido - 9 dígitos" },
+    { phone: "(42) 998853-6432", expected: false, description: "❌ ERRO REAL - 10 dígitos" },
+    { phone: "(42) 8833-3039", expected: false, description: "❌ ERRO - 8 dígitos" },
+    { phone: "(42) 38833-3039", expected: false, description: "❌ ERRO - não inicia com 9" },
+    { phone: "42988333039", expected: true, description: "Sem formatação - 9 dígitos válido" }
   ];
 
-  console.log("🧪 Testando validação de telefones:");
+  console.log("🧪 TESTE RIGOROSO - Validação de telefones:");
   testCases.forEach(test => {
     const result = validateCellPhone(test.phone);
     const passed = result.valid === test.expected;
     console.log(`${passed ? '✅' : '❌'} ${test.phone} → ${result.valid} (esperado: ${test.expected}) - ${test.description}`);
     if (!passed) {
-      console.log(`   Mensagem: ${result.message}`);
+      console.log(`   ⚠️ Mensagem: ${result.message}`);
     }
   });
+};
+
+// 📝 VALIDAÇÃO DE ERROS ORTOGRÁFICOS ÓBVIOS
+export const validateSpelling = (text: string): ValidationResult[] => {
+  const errors: ValidationResult[] = [];
+  
+  // Palavras com erros óbvios - APENAS detectar se existirem no texto
+  const spellingErrors = {
+    'SOOLTEIRO': 'SOLTEIRO',
+    'SOLETEIRO': 'SOLTEIRO', 
+    'SOLTERO': 'SOLTEIRO',
+    'CAZADO': 'CASADO',
+    'CASDO': 'CASADO',
+    'VIUVA': 'VIÚVA',
+    'VIUVO': 'VIÚVO'
+  };
+  
+  console.log("🔍 VERIFICANDO ORTOGRAFIA - Procurando erros óbvios...");
+  
+  // Verificar se alguma palavra incorreta está presente no texto
+  for (const [incorreta, correta] of Object.entries(spellingErrors)) {
+    if (text.includes(incorreta)) {
+      console.log(`❌ ERRO ORTOGRÁFICO ENCONTRADO: "${incorreta}" → deveria ser "${correta}"`);
+      errors.push({
+        valid: false,
+        message: `Erro ortográfico: "${incorreta}" deveria ser "${correta}"`,
+        found: incorreta,
+        expected: correta,
+        severity: 'error'
+      });
+    }
+  }
+  
+  if (errors.length === 0) {
+    console.log("✅ Nenhum erro ortográfico óbvio encontrado");
+  }
+  
+  return errors;
+};
+
+// 🗓️ VALIDAÇÃO DE FORMATO DE DATAS (NÃO ANO)
+export const validateDateFormat = (text: string): ValidationResult[] => {
+  const errors: ValidationResult[] = [];
+  const dateRegex = /\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/g;
+  
+  let match;
+  while ((match = dateRegex.exec(text)) !== null) {
+    const dia = parseInt(match[1]);
+    const mes = parseInt(match[2]);
+    const dataCompleta = match[0];
+    
+    // Validar apenas formato básico - NÃO ANO
+    if (dia < 1 || dia > 31) {
+      errors.push({
+        valid: false,
+        message: `Data com dia inválido: ${dataCompleta}`,
+        found: dataCompleta,
+        expected: "DD/MM/AAAA (dia 01-31)",
+        severity: 'error'
+      });
+    }
+    
+    if (mes < 1 || mes > 12) {
+      errors.push({
+        valid: false,
+        message: `Data com mês inválido: ${dataCompleta}`,
+        found: dataCompleta,
+        expected: "DD/MM/AAAA (mês 01-12)",
+        severity: 'error'
+      });
+    }
+  }
+  
+  return errors;
 };
 
 // 🌐 VALIDAÇÃO DE IP FIXO vs VARIÁVEL (MANTIDA)
@@ -173,18 +247,18 @@ export const validateIPConfiguration = (ipType: string, totalValue: number, base
   }
   
   return {
-    valid: true, // MUDANÇA: Não reportar erro se tipo não identificado
+    valid: true,
     message: "Tipo de IP não identificado claramente - assumindo válido",
     found: ipType,
     severity: 'info'
   };
 };
 
-// 🔧 VALIDAÇÃO CONSERVADORA DE EQUIPAMENTOS
+// 🔧 VALIDAÇÃO CONSERVADORA DE EQUIPAMENTOS (MANTIDA)
 export const validateEquipment = (equipmentText: string, speed: string): ValidationResult => {
   if (!equipmentText || equipmentText.trim() === '') {
     return {
-      valid: true, // CONSERVADOR: Não reportar erro se não conseguir identificar
+      valid: true,
       message: "Seção de equipamentos não identificada claramente",
       severity: 'info'
     };
@@ -228,119 +302,18 @@ export const validateEquipment = (equipmentText: string, speed: string): Validat
   };
 };
 
-// 💰 VALIDAÇÃO CONSERVADORA DE SERVIÇOS
-export const validateServiceValues = (services: any, speed: string, company: string): ValidationResult[] => {
-  const results: ValidationResult[] = [];
-  
-  // Só validar se os dados estão claramente identificados
-  if (!services || !speed) {
-    results.push({
-      valid: true,
-      message: "Serviços não identificados claramente - assumindo corretos",
-      severity: 'info'
-    });
-    return results;
-  }
-  
-  // CNET Livros sempre R$ 29,90 (apenas se identificado)
-  if (services.cnet_livros && services.cnet_livros !== 'R$ 29,90') {
-    results.push({
-      valid: false,
-      message: "CNET Livros deve ser sempre R$ 29,90",
-      found: services.cnet_livros,
-      expected: 'R$ 29,90',
-      severity: 'error'
-    });
-  }
-  
-  return results;
-};
-
-// 🏢 VALIDAÇÃO CONSERVADORA DE EMPRESA vs DDD
-export const validateCompanyDDD = (company: string, ddd: string): ValidationResult => {
-  if (!company || !ddd) {
-    return {
-      valid: true,
-      message: "Empresa ou DDD não identificados claramente",
-      severity: 'info'
-    };
-  }
-
-  const companyLower = company.toLowerCase();
-  const dddNumber = ddd.replace(/[^0-9]/g, '');
-  
-  if (companyLower.includes('ciabrasnet') || companyLower.includes('matriz')) {
-    if (dddNumber !== '42') {
-      return {
-        valid: false,
-        message: "CIABRASNET (Matriz) geralmente usa DDD 42 (Porto União)",
-        found: `DDD ${dddNumber}`,
-        expected: "DDD 42",
-        severity: 'warning' // WARNING, não ERROR
-      };
-    }
-  } else if (companyLower.includes('wnkbr')) {
-    if (dddNumber !== '47') {
-      return {
-        valid: false,
-        message: "WNKBR geralmente usa DDD 47 (Papanduva)",
-        found: `DDD ${dddNumber}`,
-        expected: "DDD 47",
-        severity: 'warning' // WARNING, não ERROR
-      };
-    }
-  }
-  
-  return {
-    valid: true,
-    message: "DDD compatível com a empresa",
-    severity: 'info'
-  };
-};
-
-// 📊 VALIDAÇÃO CONSERVADORA DE FIDELIDADE
-export const validateFidelityDiscount = (fidelityPeriod: string, cancellationFee: string): ValidationResult => {
-  if (!fidelityPeriod || !cancellationFee) {
-    return {
-      valid: true,
-      message: "Dados de fidelidade não identificados claramente",
-      severity: 'info'
-    };
-  }
-
-  const text = cancellationFee.toLowerCase();
-  
-  if (fidelityPeriod === '12 meses' || fidelityPeriod === '24 meses') {
-    if (!text.includes('700') && !text.includes('desconto')) {
-      return {
-        valid: false,
-        message: "Contratos com fidelidade geralmente têm desconto de R$ 700,00",
-        found: cancellationFee,
-        expected: "R$ 700,00 descontados proporcionalmente",
-        severity: 'warning' // WARNING, não ERROR
-      };
-    }
-  }
-  
-  return {
-    valid: true,
-    message: "Regra de fidelidade parece correta",
-    severity: 'info'
-  };
-};
-
-// 🎯 FUNÇÃO PRINCIPAL DE VALIDAÇÃO CONSERVADORA
+// 🎯 FUNÇÃO PRINCIPAL DE VALIDAÇÃO RIGOROSA - DETECTA ERROS REAIS
 export const validateContract = (contractData: any, identifiedModel?: any): ContractValidationResult => {
   const errors: ValidationResult[] = [];
   const warnings: ValidationResult[] = [];
   const info: ValidationResult[] = [];
   const validatedFields: string[] = [];
   
-  console.log("🔍 Iniciando validação conservadora do contrato");
+  console.log("🔍 INICIANDO VALIDAÇÃO RIGOROSA - DETECTAR ERROS REAIS");
   
-  // 1. Validar telefone celular (apenas se identificado)
+  // 1. Validar telefone celular (RIGOROSO)
   if (contractData.cellPhone) {
-    console.log("📱 Validando telefone:", contractData.cellPhone);
+    console.log("📱 Validando telefone rigorosamente:", contractData.cellPhone);
     const phoneResult = validateCellPhone(contractData.cellPhone);
     if (phoneResult.severity === 'error') errors.push(phoneResult);
     else if (phoneResult.severity === 'warning') warnings.push(phoneResult);
@@ -348,7 +321,31 @@ export const validateContract = (contractData: any, identifiedModel?: any): Cont
     validatedFields.push('cellPhone');
   }
   
-  // 2. Validar IP (apenas se dados claros)
+  // 2. Validar erros ortográficos óbvios (NOVO)
+  if (contractData.fullText) {
+    console.log("📝 Verificando ortografia...");
+    const spellingErrors = validateSpelling(contractData.fullText);
+    spellingErrors.forEach(error => {
+      if (error.severity === 'error') errors.push(error);
+      else if (error.severity === 'warning') warnings.push(error);
+      else info.push(error);
+    });
+    if (spellingErrors.length > 0) validatedFields.push('spelling');
+  }
+  
+  // 3. Validar formato de datas (NÃO ANO)
+  if (contractData.fullText) {
+    console.log("🗓️ Verificando formato de datas...");
+    const dateErrors = validateDateFormat(contractData.fullText);
+    dateErrors.forEach(error => {
+      if (error.severity === 'error') errors.push(error);
+      else if (error.severity === 'warning') warnings.push(error);
+      else info.push(error);
+    });
+    if (dateErrors.length > 0) validatedFields.push('dateFormat');
+  }
+  
+  // 4. Validar IP (conservador)
   if (contractData.ipType && contractData.totalValue && contractData.baseValue) {
     const ipResult = validateIPConfiguration(contractData.ipType, contractData.totalValue, contractData.baseValue);
     if (ipResult.severity === 'error') errors.push(ipResult);
@@ -357,7 +354,7 @@ export const validateContract = (contractData: any, identifiedModel?: any): Cont
     validatedFields.push('ipConfiguration');
   }
   
-  // 3. Validar equipamentos (conservador)
+  // 5. Validar equipamentos (conservador)
   if (contractData.equipment && contractData.speed) {
     const equipmentResult = validateEquipment(contractData.equipment, contractData.speed);
     if (equipmentResult.severity === 'error') errors.push(equipmentResult);
@@ -366,27 +363,8 @@ export const validateContract = (contractData: any, identifiedModel?: any): Cont
     validatedFields.push('equipment');
   }
   
-  // 4. Validar serviços (conservador)
-  if (contractData.services && contractData.speed) {
-    const serviceResults = validateServiceValues(contractData.services, contractData.speed, contractData.company);
-    serviceResults.forEach(result => {
-      if (result.severity === 'error') errors.push(result);
-      else if (result.severity === 'warning') warnings.push(result);
-      else info.push(result);
-    });
-    validatedFields.push('services');
-  }
-  
-  // 5. Validar empresa vs DDD (conservador)
-  if (contractData.company && contractData.ddd) {
-    const dddResult = validateCompanyDDD(contractData.company, contractData.ddd);
-    if (dddResult.severity === 'error') errors.push(dddResult);
-    else if (dddResult.severity === 'warning') warnings.push(dddResult);
-    else info.push(dddResult);
-    validatedFields.push('companyDDD');
-  }
-  
-  console.log(`✅ Validação concluída: ${errors.length} erros, ${warnings.length} alertas`);
+  console.log(`✅ Validação rigorosa concluída: ${errors.length} erros, ${warnings.length} alertas`);
+  console.log("📋 Erros encontrados:", errors.map(e => e.message));
   
   return {
     isValid: errors.length === 0,
@@ -403,11 +381,10 @@ export const validateContract = (contractData: any, identifiedModel?: any): Cont
 // 📋 LISTA DE VALIDAÇÕES DISPONÍVEIS
 export const AVAILABLE_VALIDATIONS = [
   'cellPhone',
+  'spelling',
+  'dateFormat',
   'ipConfiguration', 
-  'equipment',
-  'services',
-  'companyDDD',
-  'fidelity'
+  'equipment'
 ] as const;
 
 // 📊 RESUMO DE VALIDAÇÕES
@@ -423,5 +400,5 @@ export const getValidationSummary = (result: ContractValidationResult) => {
   };
 };
 
-// 🧪 EXECUTAR TESTE AUTOMÁTICO
-// testCellPhoneValidation(); // Descomente para testar
+// 🧪 EXECUTAR TESTE AUTOMÁTICO (DESCOMENTE PARA TESTAR)
+// testCellPhoneValidation();
