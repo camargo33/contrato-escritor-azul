@@ -1,84 +1,168 @@
-# 📄 Analisador de Contratos CIABRASNET
+# 📄 Analisador de Contratos CIABRASNET/WNKBR - FASE 2
 
-**Sistema simplificado de análise inteligente de contratos focado na funcionalidade core**
+**Sistema inteligente de análise por velocidade + empresa com categorização dinâmica**
 
-## 🎯 **VISÃO GERAL - SISTEMA SIMPLIFICADO (FASE 1)**
+## 🎯 **VISÃO GERAL - SISTEMA AVANÇADO (FASE 2)**
 
-Sistema otimizado para análise de contratos com **foco na funcionalidade essencial**:
+Sistema otimizado com **categorização inteligente por velocidade e empresa**:
+- ✅ **Identificação automática** - Detecta velocidade (300mb-1gb) e empresa (CIABRASNET/WNKBR)
+- ✅ **Validações específicas** - Regras personalizadas por tipo de plano  
 - ✅ **Análise temporária** - Resultados na hora, sem histórico
-- ✅ **Contratos base** - Templates para comparação inteligente  
-- ✅ **Interface limpa** - Apenas funcionalidades necessárias
-- ✅ **Deploy simples** - Menos pontos de falha
+- ✅ **Prompt dinâmico** - IA usa contexto específico de cada modelo
+- ✅ **Interface simplificada** - Foco na funcionalidade essencial
 
 ---
 
-## 🚀 **FUNCIONALIDADES PRINCIPAIS**
+## 🚀 **FUNCIONALIDADES PRINCIPAIS - FASE 2**
 
-### **1. Análise de Contratos** 
-- 📄 Upload de PDF para análise
-- 🤖 Análise inteligente com IA (Claude 3.5 Sonnet)
-- ⚡ Resultado imediato (30-60 segundos)
-- 📊 Detecção de erros críticos e alertas
+### **1. Identificação Automática de Modelos** 
+- 🎯 **Por Velocidade**: 300mb, 500mb, 600mb, 700mb, 800mb, 1gb
+- 🏢 **Por Empresa**: CIABRASNET (Matriz/Porto União) vs WNKBR (Papanduva)
+- 📍 **Por Região**: DDD 42 (Porto União) vs DDD 47 (Papanduva)
+- 💼 **Por Tipo**: RESIDENCIAL (12 meses) vs CORPORATIVO (24 meses)
 
-### **2. Contratos Base**
-- 📋 Upload de templates de contratos
-- 🏷️ Organização por categorias
-- 🔄 Comparação automática durante análise
-- 💾 Armazenamento seguro no Supabase
+### **2. Validações Específicas Avançadas**
+- 📱 **Telefone Celular**: Deve ter 9 dígitos e começar com 9
+- 🌐 **IP Fixo vs Variável**: IP Fixo adiciona R$ 50,00, Variável não
+- 🔧 **Equipamentos**: Validação por velocidade (600mb inclui ROTEADOR)
+- 💰 **Serviços**: Valores corretos por velocidade (CNET Livros, Suporte, CNET Educa)
+- 🏢 **Empresa × DDD**: Coerência entre empresa e código de área
 
-### **3. Validações Implementadas**
-- ✅ **CPF** - 11 dígitos obrigatórios
-- ✅ **Telefone** - 8 dígitos (fixo) ou 9 dígitos (celular)
-- ✅ **Email** - Detecção de erros óbvios de digitação
-- ✅ **DDD** - Validação de códigos brasileiros válidos
-- ✅ **Ortografia** - Alertas para erros comuns
-
----
-
-## 📋 **ESTRUTURA SIMPLIFICADA**
-
-### **Páginas do Sistema**
-```
-📱 /analise           # Página principal - Análise de contratos
-📁 /contratos-base    # Gerenciar templates de contratos
-🔐 /auth             # Login e cadastro
-```
-
-### **Banco de Dados Simplificado**
-```sql
-📋 base_contracts    # Contratos base (MANTIDO)
-👤 auth.users       # Usuários (Supabase Auth)
-
-❌ analysis_history  # REMOVIDO - Sem histórico persistente
-```
-
-### **Funcionalidades Removidas (Simplificação)**
-- ❌ Dashboard de estatísticas
-- ❌ Relatórios de histórico  
-- ❌ Análises salvas
-- ❌ Métricas de uso
-- ❌ Componentes de debug complexos
+### **3. Sistema de Prompt Dinâmico**
+- 🤖 **Contexto Inteligente**: IA recebe modelo identificado automaticamente
+- 📊 **Valores Esperados**: Cálculo automático com/sem IP Fixo
+- 🔍 **Validações Direcionadas**: Regras específicas para cada categoria
+- ⚡ **Análise Otimizada**: Foco nas validações relevantes
 
 ---
 
-## 🏗️ **ARQUITETURA ATUAL**
+## 📋 **MODELOS SUPORTADOS (FASE 2)**
 
-### **Frontend (React + TypeScript)**
-- ⚡ **Vite** - Build tool ultrarrápido
-- 🎨 **Tailwind CSS** - Styling moderno  
-- 🧩 **shadcn/ui** - Componentes de qualidade
-- 📱 **Responsivo** - Design mobile-first
+### **CIABRASNET (Porto União - DDD 42)**
+```
+🏢 CIABRASNET CENTRAL BRASILEIRA DE INTERNET LTDA
 
-### **Backend (Supabase Simplificado)**
-- 🗄️ **PostgreSQL** - Apenas base_contracts
-- 🔐 **Auth** - Autenticação integrada
-- 📁 **Storage** - Contratos base organizados
-- ⚡ **Edge Function** - Análise sem persistência
+300mb → R$ 109,99 (Promocional/Convênio)
+500mb → R$ 119,99 (Convênio)  
+600mb → R$ 129,99 (Com IP upgrade)
+700mb → R$ 139,99 (Convênio + CNET Educa)
+800mb → R$ 159,99 (+ CNET Educa)
+1gb   → R$ 209,99 (Residencial) / R$ 229,90 (Corporativo)
+```
 
-### **IA/ML**
-- 🤖 **OpenRouter + Claude 3.5 Sonnet** - Análise inteligente
-- 📄 **PDF.js** - Extração de texto
-- 🔍 **Validação conservadora** - Apenas erros óbvios
+### **WNKBR (Papanduva - DDD 47)**
+```
+🏢 WNKBR TELECOM LTDA
+
+300mb → R$ 109,99 (Convênio)
+500mb → R$ 119,99 (Convênio)
+700mb → R$ 139,99 (Convênio + CNET Educa)
+```
+
+### **Serviços Padrão por Velocidade**
+```
+300mb: CNET Livros (R$ 29,90) + Suporte (R$ 19,90) + CNET Play (R$ 0,00)
+500mb: CNET Livros (R$ 29,90) + Suporte (R$ 14,90) + CNET Play (R$ 0,00)
+600mb: CNET Livros (R$ 29,90) + Suporte (R$ 14,90) + CNET Play (R$ 0,00)
+700mb: CNET Livros (R$ 29,90) + Suporte (R$ 9,90) + CNET Educa (R$ 19,90)
+800mb: CNET Livros (R$ 29,90) + Suporte (R$ 14,90) + CNET Educa (R$ 19,90)
+1gb:   CNET Livros (R$ 29,90) + Suporte (R$ 14,90) + CNET Educa (R$ 19,90)
+```
+
+---
+
+## 🔍 **VALIDAÇÕES AVANÇADAS (FASE 2)**
+
+### **📱 Telefone Celular (CRÍTICO)**
+```javascript
+✅ CORRETO: (42) 99955-4936 = 9 dígitos, inicia com 9
+❌ ERRO: (42) 9955-4936 = 8 dígitos (falta 1)
+❌ ERRO: (42) 998853-6432 = 10 dígitos (sobra 1)  
+❌ ERRO: (42) 89955-4936 = não inicia com 9
+```
+
+### **🌐 IP Fixo vs Variável (CRÍTICO)**
+```javascript
+IP Fixo:     Valor Total = Valor Base + R$ 50,00
+IP Variável: Valor Total = Valor Base + R$ 0,00
+
+Exemplo 600mb:
+- IP Variável: R$ 129,99 + R$ 29,90 + R$ 14,90 = R$ 174,79
+- IP Fixo:     R$ 129,99 + R$ 29,90 + R$ 14,90 + R$ 50,00 = R$ 224,79
+```
+
+### **🔧 Equipamentos por Velocidade**
+```javascript
+Base: ONU/ONT (R$ 350,00) + Conectores/cabos (R$ 700,00)
+600mb: + ROTEADOR obrigatório
+Extras: Cada equipamento adicional = +R$ 350,00
+```
+
+### **🏢 Empresa vs DDD (ALERTA)**
+```javascript
+CIABRASNET → DDD 42 (Porto União)
+WNKBR      → DDD 47 (Papanduva)
+
+Inconsistência gera alerta, não erro crítico
+```
+
+### **💳 Fidelidade Padrão**
+```javascript
+COM fidelidade:    Desconto R$ 700,00
+SEM fidelidade:    Taxa instalação R$ 700,00
+Taxa cancelamento: Proporcional ao desconto
+```
+
+---
+
+## 🏗️ **ARQUITETURA TÉCNICA - FASE 2**
+
+### **Sistema de Identificação Automática**
+```typescript
+// Algoritmo de detecção
+function identifyContractModel(contractText: string) {
+  // 1. Identificar empresa
+  if (text.includes('CIABRASNET') || text.includes('MATRIZ')) 
+    company = 'CIABRASNET'
+  
+  // 2. Identificar velocidade  
+  if (text.includes('600') && text.includes('mb'))
+    speed = '600mb'
+    
+  // 3. Buscar modelo correspondente
+  return getModelsBySpeedAndCompany(speed, company)
+}
+```
+
+### **Prompt Builder Dinâmico**
+```typescript
+// Constrói prompt específico para o modelo identificado
+buildContractAnalysisPrompt(contractText) {
+  const model = identifyContractModel(contractText)
+  
+  return `
+    MODELO IDENTIFICADO: ${model.name}
+    VALORES ESPERADOS: ${calculateExpectedTotal(model)}
+    VALIDAÇÕES ESPECÍFICAS: ${getValidationsForModel(model)}
+    ...
+  `
+}
+```
+
+### **Sistema de Validações**
+```typescript
+// Validações contextualizadas
+validateContract(contractData, identifiedModel) {
+  const rules = getRulesForModel(identifiedModel)
+  
+  return {
+    cellPhone: validateCellPhone(data.phone),
+    ipConfiguration: validateIPConfiguration(data.ip, model.baseValue),
+    services: validateServiceValues(data.services, model.speed),
+    equipment: validateEquipment(data.equipment, model.speed)
+  }
+}
+```
 
 ---
 
@@ -101,231 +185,212 @@ VITE_SUPABASE_ANON_KEY=sua-chave-anon
 OPEN_ROUTER_API_KEY=sk-sua-chave-openrouter
 ```
 
-### **3. Executar Migração (Supabase)**
+### **3. Deploy da Edge Function FASE 2**
 ```bash
-# Aplicar simplificação do banco
-supabase db push
-```
-
-### **4. Deploy da Edge Function**
-```bash
-# Deploy da função simplificada
+# Deploy da função com novo sistema
 supabase functions deploy analyze-contract
 ```
 
-### **5. Executar Localmente**
+### **4. Executar Localmente**
 ```bash
 npm run dev
 ```
 
 ---
 
-## 🔧 **DEPLOY EM PRODUÇÃO**
+## 💻 **COMO USAR O SISTEMA - FASE 2**
 
-### **Opção 1: Lovable (Recomendado)**
-1. Conectar repositório GitHub ao Lovable
-2. Configurar variáveis de ambiente no painel
-3. Deploy automático a cada commit
-
-### **Opção 2: Vercel/Netlify**
-```bash
-# Build para produção
-npm run build
-
-# Deploy manual ou conectar Git
+### **1. Análise Automática**
 ```
-
-### **Variáveis de Ambiente Necessárias**
-```env
-VITE_SUPABASE_URL=https://sua-url.supabase.co
-VITE_SUPABASE_ANON_KEY=sua-chave-anon
-```
-
----
-
-## 💻 **COMO USAR O SISTEMA**
-
-### **1. Gerenciar Contratos Base**
-```
-1. Acesse "Contratos Base"
-2. Faça upload de PDFs template
-3. Organize por categorias
-4. Sistema usará para comparação
-```
-
-### **2. Analisar Contrato**
-```
-1. Acesse "Análise de Contratos"  
+1. Acesse "Análise de Contratos"
 2. Faça upload do PDF
-3. Aguarde análise (30-60s)
-4. Visualize erros e alertas
-5. Resultado é temporário
+3. Sistema identifica automaticamente:
+   - Velocidade (300mb-1gb)  
+   - Empresa (CIABRASNET/WNKBR)
+   - Tipo (Residencial/Corporativo)
+4. Aplica validações específicas
+5. Retorna análise contextualizada
 ```
 
-### **3. Interpretar Resultados**
-```
-🟢 APROVADO    # Sem erros críticos
-🔴 REPROVADO   # Erros críticos encontrados
-
-📊 Seções do Resultado:
-├── Erros Críticos (obrigatório corrigir)
-├── Alertas (sugestões)  
-├── Contratos Base Utilizados
-└── Score de Qualidade
-```
-
----
-
-## 🔍 **VALIDAÇÕES IMPLEMENTADAS**
-
-### **Erros Críticos (Reprovam Contrato)**
-```javascript
-❌ CPF com ≠ 11 dígitos
-❌ Telefone com dígitos incorretos  
-❌ Email com erros óbvios (gmial, hotmial)
-❌ DDD fora da faixa 11-99
-```
-
-### **Alertas (Não Reprovam)**
-```javascript
-⚠️ Possíveis erros ortográficos
-⚠️ Sugestões de melhoria
-⚠️ Inconsistências menores
-```
-
-### **Abordagem Conservadora**
-- ✅ Só detecta erros **realmente óbvios**
-- ✅ Evita falsos positivos
-- ✅ Foco em qualidade, não quantidade de erros
-
----
-
-## 🛡️ **SEGURANÇA**
-
-### **Dados Temporários**
-- ✅ Análises não são salvas
-- ✅ PDFs processados apenas na sessão
-- ✅ Sem acúmulo de dados sensíveis
-- ✅ LGPD friendly por design
-
-### **Contratos Base Protegidos**
-- ✅ Row Level Security (RLS) ativo
-- ✅ Usuário só acessa seus templates
-- ✅ Storage segmentado por user_id
-- ✅ Validação de permissões
-
----
-
-## 🐛 **TROUBLESHOOTING**
-
-### **Problemas Comuns**
-
-#### ❌ "Edge Function não responde"
-```bash
-# Verificar deploy da função
-supabase functions list
-supabase functions deploy analyze-contract
-```
-
-#### ❌ "API Key não configurada"  
-```bash
-# Configurar no Supabase Dashboard
-# Project > Edge Functions > Environment Variables
-# OPEN_ROUTER_API_KEY=sk-...
-```
-
-#### ❌ "Erro de CORS"
-```bash
-# Verificar domínio nas variáveis de ambiente
-# Configurar CORS no Supabase se necessário
-```
-
-#### ❌ "Upload falha"
-```bash
-# Verificar bucket 'base-contracts' existe
-# Verificar RLS policies estão corretas
+### **2. Interpretar Resultados Avançados**
+```json
+{
+  "modelo_identificado": {
+    "nome": "CONVENIO COMBO 600 MB",
+    "velocidade": "600mb",
+    "empresa": "CIABRASNET", 
+    "ddd_esperado": "42"
+  },
+  "validacao_telefone_celular": {
+    "status": "ERRO",
+    "explicacao": "Celular tem 8 dígitos, deve ter 9"
+  },
+  "validacao_ip": {
+    "tipo": "Fixo",
+    "valor_esperado": "R$ 224,79",
+    "status": "CORRETO"
+  },
+  "validacao_servicos": {
+    "cnet_livros": {"esperado": "R$ 29,90", "status": "OK"},
+    "suporte": {"esperado": "R$ 14,90", "status": "ERRO"}
+  }
+}
 ```
 
 ---
 
-## 📊 **MONITORAMENTO**
+## 🎯 **VANTAGENS DA FASE 2**
 
-### **Logs Disponíveis**
-```javascript
-// Console do navegador (Frontend)
-console.log("🚀 Análise iniciada");
-console.error("❌ Erro encontrado");
+### **Inteligência Contextual**
+- 🎯 **Identificação automática** de modelos
+- 🔍 **Validações específicas** por categoria
+- 💰 **Cálculos precisos** baseados no modelo
+- 🏢 **Coerência empresa × região** automatizada
 
-// Supabase Dashboard (Backend)  
-// Project > Logs > Edge Functions
+### **Facilidade de Uso**
+- ⚡ **Análise mais rápida** - IA focada no modelo correto
+- 🎨 **Resultados organizados** - Por categoria de validação
+- 📊 **Informações detalhadas** - Valores esperados vs encontrados
+- 🔧 **Sugestões específicas** - Correções direcionadas
+
+### **Manutenibilidade**
+- 📋 **Modelos centralizados** - Fácil adicionar novos contratos
+- 🔄 **Sistema extensível** - Novas velocidades/empresas facilmente
+- 🧪 **Testável** - Validações modulares e independentes
+- 📚 **Documentado** - Cada validação tem explicação clara
+
+---
+
+## 🔧 **TROUBLESHOOTING - FASE 2**
+
+### **Problemas de Identificação**
+```bash
+# Modelo não identificado
+❌ "Modelo não identificado automaticamente"
+
+Soluções:
+✅ Verificar se velocidade está clara no texto (300mb, 600mb, etc)
+✅ Verificar se empresa está mencionada (CIABRASNET, WNKBR)
+✅ Adicionar novo modelo em contract-models.ts se necessário
 ```
 
-### **Health Check**
+### **Validações Falhando**
 ```bash
-# Testar Edge Function
+# Validação específica falha
+❌ "Telefone celular inválido" 
+
+Verificar:
+✅ Número tem exatamente 9 dígitos
+✅ Inicia com dígito 9
+✅ Formato: (XX) 9XXXX-XXXX
+
+❌ "Valor IP incorreto"
+
+Verificar:
+✅ IP marcado como "Fixo" ou "Variável"
+✅ Cálculo: IP Fixo = Base + R$ 50,00
+```
+
+### **Health Check FASE 2**
+```bash
+# Testar sistema avançado
 curl https://sua-url.supabase.co/functions/v1/analyze-contract
 
 # Resposta esperada:
-# { "success": true, "status": "healthy" }
+{
+  "success": true,
+  "version": "2.0.0", 
+  "features": [
+    "Categorização por velocidade (300mb-1gb)",
+    "Suporte CIABRASNET + WNKBR",
+    "Validações específicas por modelo"
+  ],
+  "models_available": {
+    "total_models": 11,
+    "by_company": {"CIABRASNET": 8, "WNKBR": 3}
+  }
+}
 ```
 
 ---
 
-## 🎯 **ROADMAP PÓS FASE 1**
+## 📊 **MONITORAMENTO E LOGS**
 
-### **Próximas Fases (Opcionais)**
-- 🔄 **Fase 2**: Sistema de prompt dinâmico por categoria
-- 📊 **Fase 3**: Métricas básicas (se necessário)
-- 🎨 **Fase 4**: Customização de validações
-- 🔍 **Fase 5**: OCR para PDFs escaneados
+### **Logs da Edge Function**
+```javascript
+// Logs específicos da FASE 2
+console.log('🎯 FASE 2 - Iniciando análise inteligente...')
+console.log('✅ Modelo identificado:', model.name)
+console.log('🏢 Empresa:', model.company)  
+console.log('⚡ Velocidade:', model.speed)
+console.log('🔍 Validações:', validations.validatedFields.length)
+```
+
+### **Debugging por Modelo**
+```bash
+# Verificar modelos disponíveis
+curl https://sua-url/functions/v1/analyze-contract \
+  -X GET | jq '.models_available'
+
+# Testar identificação específica
+curl https://sua-url/functions/v1/analyze-contract \
+  -X POST \
+  -d '{"contractText": "COMBO 600MB CIABRASNET"}' \
+  | jq '.metadata.auto_identified_model'
+```
+
+---
+
+## 🎯 **ROADMAP FUTURO**
+
+### **FASE 3 (Planejada)**
+- 📊 **Métricas opcionais** - Se o usuário solicitar
+- 🎨 **Customização de regras** - Validações personalizáveis
+- 🔍 **OCR avançado** - Para PDFs escaneados
+- 📱 **API pública** - Para integração externa
 
 ### **Melhorias Incrementais**
-- ✨ Novas validações específicas
-- 🎨 Aprimoramentos de UI/UX  
-- ⚡ Otimizações de performance
-- 🔐 Recursos de segurança avançada
+- 🏢 **Novas empresas** - Expandir além CIABRASNET/WNKBR
+- ⚡ **Novas velocidades** - 2gb, velocidades personalizadas
+- 🔧 **Validações extras** - Regras específicas por região
+- 🤖 **IA aprimorada** - Modelos mais recentes
 
 ---
 
-## 🎉 **VANTAGENS DA SIMPLIFICAÇÃO**
+## 📞 **SUPORTE TÉCNICO**
 
-### **Para o Usuário**
-- ⚡ **Mais rápido** - Foco na análise principal
-- 🎯 **Mais simples** - Interface limpa e objetiva  
-- 🔒 **Mais seguro** - Menos dados persistentes
-- 💰 **Mais barato** - Menor uso de recursos
-
-### **Para Manutenção**
-- 🐛 **Menos bugs** - Menos código = menos problemas
-- 🔧 **Deploy fácil** - Menos dependências
-- 📈 **Escalável** - Arquitetura stateless
-- 🔍 **Debug simples** - Menos pontos de falha
-
----
-
-## 📞 **SUPORTE**
-
-### **Desenvolvimento**
+### **Desenvolvimento FASE 2**
 - 🔧 **GitHub**: https://github.com/camargo33/contrato-escritor-azul
-- 📧 **Issues**: Para reportar bugs ou sugestões
+- 📧 **Issues**: Para bugs específicos da categorização
+- 💬 **Discussões**: Para sugestões de novos modelos
 
-### **Deploy e Configuração**
-- 📚 **Documentação Supabase**: https://supabase.com/docs
-- 🌐 **Documentação Lovable**: Para deploy automático
-
----
-
-## ✨ **SISTEMA SIMPLIFICADO E EFICIENTE**
-
-**Foco na funcionalidade core**: O sistema agora oferece **exatamente o que é necessário** para análise inteligente de contratos, sem complexidades desnecessárias.
-
-- 🎯 **Objetivo claro**: Analisar contratos com qualidade
-- ⚡ **Resposta rápida**: Resultado na hora
-- 🔧 **Manutenção simples**: Código limpo e organizado  
-- 🚀 **Deploy fácil**: Menos configurações e dependências
-
-**A simplificação trouxe maior confiabilidade e facilidade de uso!** ✨
+### **Configuração Avançada**
+- 📚 **Contract Models**: `supabase/functions/analyze-contract/contract-models.ts`
+- 🔍 **Validations**: `supabase/functions/analyze-contract/contract-validations.ts` 
+- 🤖 **Prompt Builder**: `supabase/functions/analyze-contract/prompt-builder.ts`
 
 ---
 
-*Sistema simplificado na FASE 1 - Focado na excelência da análise de contratos* 🎯
+## ✨ **SISTEMA INTELIGENTE E CONTEXTUALIZADO**
+
+**A FASE 2 revolucionou a análise**: O sistema agora **entende automaticamente** qual tipo de contrato está analisando e aplica **validações específicas** para cada categoria.
+
+### **Evolução das Fases**
+```
+FASE 1: Sistema simplificado e funcional ✅
+FASE 2: Categorização inteligente por velocidade + empresa ✅  
+FASE 3: Personalização e métricas opcionais (planejada)
+```
+
+### **Principais Inovações da FASE 2**
+- 🎯 **Identificação automática** - Zero configuração manual
+- 🔍 **Validações contextualizadas** - Regras específicas por modelo
+- 💰 **Cálculos precisos** - Valores esperados automáticos
+- 🏢 **Multi-empresa** - CIABRASNET + WNKBR unified
+- 📱 **Validação avançada** - Telefone celular específico brasileiro
+
+**A inteligência contextual trouxe precisão e confiabilidade sem precedentes!** 🚀
+
+---
+
+*Sistema FASE 2 - Análise inteligente por categorização automática* 🎯
