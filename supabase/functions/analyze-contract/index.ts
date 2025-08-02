@@ -1,7 +1,9 @@
 // 🚀 FASE 2: EDGE FUNCTION SIMPLIFICADA COM NOVO SISTEMA DE CATEGORIZAÇÃO
 // Análise inteligente por velocidade + empresa, sem salvamento de histórico
+// 🔧 VERSÃO CORRIGIDA - Imports fixados para Deno/Supabase Edge Functions
 
-import { createClient } from '@supabase/supabase-js'
+// ✅ IMPORT CORRETO PARA SUPABASE EDGE FUNCTIONS
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { buildContractAnalysisPrompt } from './prompt-builder.ts'
 import { identifyContractModel, getModelStats } from './contract-models.ts'
 import { validateContract } from './contract-validations.ts'
@@ -16,28 +18,33 @@ const corsHeaders = {
 // Health check simplificado
 async function healthCheck() {
   try {
-    console.log('🔍 FASE 2 - Health check executado');
+    console.log('🔍 FASE 2 - Health check executado - VERSÃO CORRIGIDA')
     
     // Estatísticas dos modelos disponíveis
-    const stats = getModelStats();
+    const stats = getModelStats()
     
     return {
       success: true,
       message: "Edge Function FASE 2 funcionando - Sistema por velocidade + empresa",
       status: "healthy",
-      version: "2.0.0",
+      version: "2.1.0-FIXED",
       features: [
         "Categorização por velocidade (300mb-1gb)",
         "Suporte CIABRASNET + WNKBR", 
         "Validações específicas por modelo",
         "Sem histórico persistente",
-        "Análise em tempo real"
+        "Análise em tempo real",
+        "⚡ Imports corrigidos para Edge Functions"
       ],
       models_available: stats,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      deploy_info: {
+        last_update: "2025-08-02T03:25:00Z",
+        fixes_applied: ["Supabase import path corrected", "Cache cleared"]
+      }
     }
   } catch (error) {
-    console.error('❌ Health check falhou:', error);
+    console.error('❌ Health check falhou:', error)
     return {
       success: false,
       message: "Erro no health check",
@@ -48,7 +55,7 @@ async function healthCheck() {
 
 // Função principal
 Deno.serve(async (req) => {
-  console.log(`📥 FASE 2 - Requisição recebida: ${req.method} ${req.url}`)
+  console.log(`📥 FASE 2 - Requisição recebida: ${req.method} ${req.url} - VERSÃO CORRIGIDA`)
 
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -98,14 +105,14 @@ Deno.serve(async (req) => {
       const prompt = buildContractAnalysisPrompt(body.contractText)
       console.log('✍️ Prompt dinâmico construído com', prompt.length, 'caracteres')
 
-      // 🤖 ETAPA 3: CHAMAR OPENROUTER
-      const openRouterKey = Deno.env.get('OPEN_ROUTER_API_KEY') || Deno.env.get('OPENAI_API_KEY')
+      // 🤖 ETAPA 3: CHAMAR OPENROUTER COM FALLBACK PARA OPENAI
+      const openRouterKey = Deno.env.get('OPEN_ROUTER') || Deno.env.get('OPEN_ROUTER_API_KEY') || Deno.env.get('OPENAI_API_KEY')
       
       if (!openRouterKey) {
         console.error('❌ API Key não configurada')
         return new Response(JSON.stringify({
           success: false,
-          error: "API Key não configurada nos secrets do Supabase"
+          error: "API Key não configurada nos secrets do Supabase. Configure OPEN_ROUTER ou OPENAI_API_KEY"
         }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -136,7 +143,7 @@ Deno.serve(async (req) => {
         
         let errorMessage = "Erro na API de análise"
         if (openRouterResponse.status === 401) {
-          errorMessage = "API Key inválida"
+          errorMessage = "API Key inválida ou expirada"
         } else if (openRouterResponse.status === 429) {
           errorMessage = "Limite de uso atingido"
         } else if (openRouterResponse.status >= 500) {
@@ -226,7 +233,7 @@ Deno.serve(async (req) => {
         ...analysisResult,
         metadata: {
           timestamp: new Date().toISOString(),
-          version: "2.0.0",
+          version: "2.1.0-FIXED",
           model_used: "anthropic/claude-3.5-sonnet",
           auto_identified_model: identifiedModel ? {
             id: identifiedModel.id,
@@ -242,14 +249,16 @@ Deno.serve(async (req) => {
             "Validações específicas por velocidade",
             "Comparação empresa vs DDD",
             "Cálculo automático de valores",
-            "Validação de telefone celular"
+            "Validação de telefone celular",
+            "⚡ Edge Function Corrigida"
           ],
           text_size: body.contractText.length,
-          prompt_size: prompt.length
+          prompt_size: prompt.length,
+          fixes_applied: ["Supabase import corrected", "Telefone validation fixed", "SOOLTEIRO removed"]
         }
       }
 
-      console.log('🎉 FASE 2 - Análise concluída com sucesso!')
+      console.log('🎉 FASE 2 - Análise concluída com sucesso! (VERSÃO CORRIGIDA)')
       console.log('📊 Modelo:', identifiedModel?.name || 'Manual')
       console.log('🔍 Validações:', additionalValidations?.validatedFields.length || 0)
 
@@ -275,14 +284,14 @@ Deno.serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('💥 Erro fatal na Edge Function FASE 2:', error)
+    console.error('💥 Erro fatal na Edge Function FASE 2 (VERSÃO CORRIGIDA):', error)
     console.error('Stack trace:', error.stack)
     
     return new Response(JSON.stringify({
       success: false,
       error: "Erro interno do servidor",
       message: error.message,
-      version: "2.0.0",
+      version: "2.1.0-FIXED",
       timestamp: new Date().toISOString()
     }), {
       status: 500,
@@ -291,6 +300,7 @@ Deno.serve(async (req) => {
   }
 })
 
-console.log('🚀 FASE 2 - Edge Function iniciada')
+console.log('🚀 FASE 2 - Edge Function iniciada (VERSÃO CORRIGIDA)')
 console.log('✅ Sistema de categorização por velocidade + empresa ativo')
+console.log('🔧 Imports corrigidos para Edge Functions')
 console.log('📋 Modelos disponíveis:', getModelStats().total_models)
