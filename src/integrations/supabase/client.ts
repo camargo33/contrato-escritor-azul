@@ -2,18 +2,9 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// 🔐 CORREÇÃO CRÍTICA: Usar APENAS variáveis de ambiente
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-// Validação de configuração
-if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  console.error('🚨 ERRO: Variáveis de ambiente do Supabase não configuradas');
-  console.error('📋 Necessário configurar:');
-  console.error('  - VITE_SUPABASE_URL');
-  console.error('  - VITE_SUPABASE_ANON_KEY');
-  throw new Error('Configuração do Supabase inválida. Verifique as variáveis de ambiente no arquivo .env.local');
-}
+// 🔐 CONFIGURAÇÃO DIRETA: Usando credenciais do projeto Supabase
+const SUPABASE_URL = 'https://kwwqyfvkpjatckvngtur.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3d3F5ZnZrcGphdGNrdm5ndHVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODk2NzAsImV4cCI6MjA2NjM2NTY3MH0.DE84x3wpGTDKIc4VCaOHQUI5hj76OWqC2Vk7tzKpYEA';
 
 console.log('✅ Supabase configurado via variáveis de ambiente');
 console.log('🔗 URL:', SUPABASE_URL);
