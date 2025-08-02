@@ -1,292 +1,358 @@
+// 🚀 FASE 2: PROMPT BUILDER DINÂMICO POR VELOCIDADE + EMPRESA
+// Baseado nos contratos fornecidos e novo sistema de categorização
+
+import { CONTRACT_MODELS, identifyContractModel, calculateExpectedTotal } from './contract-models.ts';
+import { validateContract } from './contract-validations.ts';
+
 export const buildContractAnalysisPrompt = (contractText: string): string => {
-  return `# VALIDADOR DE CONTRATOS CIABRASNET - DETECÇÃO CONSERVADORA DE ERROS CRÍTICOS
+  // 🎯 IDENTIFICAR MODELO AUTOMATICAMENTE
+  const identifiedModel = identifyContractModel(contractText);
+  
+  // 📊 CONSTRUIR LISTA DE MODELOS DISPONÍVEIS
+  const modelsList = CONTRACT_MODELS.map(model => {
+    const expectedTotal = calculateExpectedTotal(model, false); // Sem IP fixo inicialmente
+    const expectedTotalWithIP = calculateExpectedTotal(model, true); // Com IP fixo
+    
+    return `**${model.name}** (${model.speed.toUpperCase()})
+   - Empresa: ${model.company_full_name} (${model.city} - DDD ${model.ddd})
+   - Valor: ${model.value} (${model.type} - ${model.validity_period})
+   - Serviços: ${model.services.cnet_livros} (CNET Livros) + ${model.services.suporte} (Suporte)${model.services.cnet_educa ? ` + ${model.services.cnet_educa} (CNET Educa)` : ''} + ${model.services.cnet_play} (CNET Play)
+   - IP: ${model.fixed_ip}
+   - Valor Total Esperado: R$ ${expectedTotal.toFixed(2)} (IP Variável) | R$ ${expectedTotalWithIP.toFixed(2)} (IP Fixo)
+   - Equipamentos: ${model.equipment}
+   - Instalação: ${model.installation_fee}
+   - Cancelamento: ${model.cancellation_fee}`;
+  }).join('\n\n');
+
+  // 🎯 MODELO IDENTIFICADO (SE HOUVER)
+  const modelIdentificationSection = identifiedModel ? `
+## 🎯 MODELO IDENTIFICADO AUTOMATICAMENTE
+**${identifiedModel.name}** (${identifiedModel.speed.toUpperCase()}) - ${identifiedModel.company}
+- Valor Base: ${identifiedModel.value}
+- Tipo: ${identifiedModel.type} (${identifiedModel.validity_period})
+- Empresa: ${identifiedModel.company_full_name}
+- Cidade: ${identifiedModel.city} - DDD ${identifiedModel.ddd}
+- Valor Total Esperado sem IP Fixo: R$ ${calculateExpectedTotal(identifiedModel, false).toFixed(2)}
+- Valor Total Esperado com IP Fixo: R$ ${calculateExpectedTotal(identifiedModel, true).toFixed(2)}
+
+**Use este modelo como referência principal para validações!**
+` : `
+## ⚠️ MODELO NÃO IDENTIFICADO AUTOMATICAMENTE
+Analise o texto para identificar velocidade, empresa e tipo de contrato.
+`;
+
+  return `# VALIDADOR INTELIGENTE DE CONTRATOS CIABRASNET/WNKBR - FASE 2
+## SISTEMA DE CATEGORIZAÇÃO POR VELOCIDADE + EMPRESA
 
 ## OBJETIVO PRINCIPAL
-Analisar contratos OCR da CIABRASNET detectando APENAS ERROS CRÍTICOS ÓBVIOS que impedem a aprovação do contrato.
+Analisar contratos usando o novo sistema de categorização por velocidade + empresa, aplicando validações específicas para cada tipo de plano.
 
-## 🚨 INSTRUÇÕES CRÍTICAS - SER CONSERVADOR E PRECISO:
+${modelIdentificationSection}
 
-**REGRA 1: CPF COM MAIS OU MENOS DE 11 DÍGITOS = ERRO CRÍTICO**
-- Exemplo: 137.158.269-677 (12 dígitos) = ERRO CRÍTICO
-- Exemplo: 137.158.269-4 (10 dígitos) = ERRO CRÍTICO
-- SEMPRE contar APENAS os dígitos do CPF (ignorar pontos e hífens)
-- ✅ 076.935.229-48 = 11 dígitos = CORRETO
+## 📊 MODELOS DISPONÍVEIS POR VELOCIDADE E EMPRESA
 
-**REGRA 2: DDD INEXISTENTE = ERRO CRÍTICO**  
-- ✅ DDD 42 = VÁLIDO (Ponta Grossa/PR)
-- ✅ TODOS OS DDDs de 11 a 99 são potencialmente válidos
-- ❌ APENAS DDDs fora da faixa 11-99 são inválidos
-- SEMPRE verificar se o DDD está na faixa correta (11-99)
+${modelsList}
 
-**REGRA 3: EMAILS COM ERROS ÓBVIOS = ERRO CRÍTICO**
-- ❌ felipe.gmial@gmail.com = erro óbvio (gmial ao invés de gmail)
-- ❌ teste@hotmial.com = erro óbvio (hotmial ao invés de hotmail)
-- ✅ jaquelinevolhank509@gmail.com = VÁLIDO (sobrenomes podem variar)
-- SÓ detectar erros de digitação MUITO ÓBVIOS em provedores conhecidos
+## 🔍 ETAPA 1: IDENTIFICAÇÃO PRECISA DO MODELO
 
-**REGRA 4: TELEFONES COM DÍGITOS INCORRETOS = ERRO CRÍTICO**
-- ✅ DDD correto: (42) = VÁLIDO (Ponta Grossa/PR)
-- ❌ CELULAR: (42) 9955-4936 = 8 dígitos (falta 1 dígito)
-- ❌ CELULAR: (42) 998853-6432 = 10 dígitos (sobra 1 dígito)
-- ✅ CORRETO: (42) 99955-4936 = 9 dígitos exatos
-- **SEMPRE verificar se o número tem EXATAMENTE 9 dígitos (celular) ou 8 dígitos (fixo)**
+### Critérios de Identificação:
+1. **Velocidade**: Buscar 300mb, 500mb, 600mb, 700mb, 800mb, 1gb
+2. **Empresa**: Identificar CIABRASNET (Matriz/Porto União) ou WNKBR (Papanduva)
+3. **Tipo**: RESIDENCIAL (12 meses) vs CORPORATIVO (24 meses)
+4. **DDD**: 42 (CIABRASNET) vs 47 (WNKBR)
 
-**REGRA 5: ERROS ORTOGRÁFICOS = ALERTA OBRIGATÓRIO**
-- "SOOLTEIRO" ao invés de "SOLTEIRO" = ALERTA
-- Qualquer erro de digitação óbvio = ALERTA
+### Algoritmo de Identificação:
+\`\`\`javascript
+// Identificar empresa
+if (texto.includes('CIABRASNET') || texto.includes('MATRIZ') || texto.includes('Porto União')) {
+    empresa = 'CIABRASNET';
+    ddd_esperado = '42';
+} else if (texto.includes('WNKBR') || texto.includes('Papanduva')) {
+    empresa = 'WNKBR';
+    ddd_esperado = '47';
+}
 
-## ETAPA 1: IDENTIFICAÇÃO DO MODELO
+// Identificar velocidade
+if (texto.includes('300') && texto.includes('mb')) velocidade = '300mb';
+else if (texto.includes('500') && texto.includes('mb')) velocidade = '500mb';
+else if (texto.includes('600') && texto.includes('mb')) velocidade = '600mb';
+else if (texto.includes('700') && texto.includes('mb')) velocidade = '700mb';
+else if (texto.includes('800') && texto.includes('mb')) velocidade = '800mb';
+else if (texto.includes('1') && texto.includes('gb')) velocidade = '1gb';
+\`\`\`
 
-### Modelos Disponíveis:
-1. **2024 Combo 600Mbps** - R$ 129,99 - RESIDENCIAL - 12 meses
-2. **1 Gb Empresarial** - R$ 229,90 - CORPORATIVO - 24 meses - IP: INCLUSO
-3. **2024 Combo Giga** - R$ 209,99 - RESIDENCIAL - 12 meses
-4. **2024 Combo 300Mbps** - R$ 109,99 - RESIDENCIAL - 12 meses
-5. **2024 Combo 800Mbps** - R$ 159,99 - RESIDENCIAL - 12 meses
-6. **COMBO 2025 500 MEGAS MATRIZ** - R$ 119,99 - RESIDENCIAL - 12 meses
+## 🚨 ETAPA 2: VALIDAÇÕES ESPECÍFICAS POR CATEGORIA
 
-## ETAPA 2: VALIDAÇÃO CONSERVADORA DE DADOS PESSOAIS
+### 📱 VALIDAÇÃO CRÍTICA: TELEFONE CELULAR
+**REGRA OBRIGATÓRIA: Celular deve ter 9 dígitos e começar com 9**
 
-### 🔍 ALGORITMO DE VALIDAÇÃO CONSERVADORA:
+\`\`\`javascript
+// Extrair número do celular (sem DDD)
+numero_celular = extrair_numero_celular_sem_ddd(telefone);
+digitos = numero_celular.replace(/[^0-9]/g, '');
 
-EXEMPLO DE CÓDIGO JAVASCRIPT:
-
-// VALIDAÇÃO DE CPF - SEMPRE EXECUTAR
-cpf_numeros = extrair_apenas_numeros_do_cpf(cpf_encontrado)
-if (cpf_numeros.length !== 11) {
+// Verificações obrigatórias
+if (digitos.length !== 9) {
     adicionar_erro_critico({
-        campo: "CPF",
-        valor_encontrado: cpf_encontrado,
-        valor_esperado: "CPF com exatamente 11 dígitos",
-        sugestao_correcao: "Corrigir o CPF para ter exatamente 11 dígitos",
-        severidade: "critico",
-        explicacao: "CPF encontrado tem " + cpf_numeros.length + " dígitos, mas deve ter exatamente 11",
-        local_origem: "Seção QUALIFICAÇÃO DO ASSINANTE"
-    })
-}
-
-// VALIDAÇÃO DE DDD - CONSERVADORA - APENAS DDDS FORA DA FAIXA 11-99
-ddd_extraido = parseInt(extrair_ddd_do_telefone(telefone_encontrado))
-if (ddd_extraido < 11 || ddd_extraido > 99) {
-    adicionar_erro_critico({
-        campo: "TELEFONE - DDD",
-        valor_encontrado: telefone_encontrado,
-        valor_esperado: "Telefone com DDD válido brasileiro (11-99)",
-        sugestao_correcao: "Corrigir para um DDD válido entre 11 e 99",
-        severidade: "critico",
-        explicacao: "DDD " + ddd_extraido + " está fora da faixa válida brasileira (11-99)",
-        local_origem: "Seção QUALIFICAÇÃO DO ASSINANTE"
-    })
-}
-
-// VALIDAÇÃO DE NÚMERO DE TELEFONE - CRÍTICA - CONTAR DÍGITOS EXATOS
-numero_telefone = extrair_numero_sem_ddd(telefone_encontrado)
-digitos_numero = numero_telefone.replace(/[^0-9]/g, '').length
-
-// Celular: deve ter 9 dígitos (9XXXX-XXXX)
-// Fixo: deve ter 8 dígitos (XXXX-XXXX)
-if (digitos_numero !== 9 && digitos_numero !== 8) {
-    adicionar_erro_critico({
-        campo: "TELEFONE - DÍGITOS",
-        valor_encontrado: telefone_encontrado,
-        valor_esperado: "Telefone com 8 dígitos (fixo) ou 9 dígitos (celular)",
-        sugestao_correcao: "Corrigir número para ter exatamente 8 ou 9 dígitos",
-        severidade: "critico",
-        explicacao: "Número tem " + digitos_numero + " dígitos, mas deve ter 8 (fixo) ou 9 (celular)",
-        local_origem: "Seção QUALIFICAÇÃO DO ASSINANTE"
-    })
-}
-
-// VALIDAÇÃO DE EMAIL - MUITO CONSERVADORA - SÓ ERROS ÓBVIOS
-erros_obvios_email = ["gmial", "gmaiil", "gmai.com", "hotmial", "hotmeil", "yahhoo", "yahho", "outlokk", "outlok"]
-email_tem_erro_obvio = erros_obvios_email.some(erro => email_encontrado.toLowerCase().includes(erro))
-
-if (email_tem_erro_obvio) {
-    adicionar_erro_critico({
-        campo: "EMAIL",
-        valor_encontrado: email_encontrado,
-        valor_esperado: "E-mail com provedor correto (gmail, hotmail, yahoo, outlook)",
-        sugestao_correcao: "Verificar e corrigir erro de digitação no provedor",
-        severidade: "critico",
-        explicacao: "E-mail contém erro óbvio de digitação no provedor",
-        local_origem: "Seção QUALIFICAÇÃO DO ASSINANTE"
-    })
-}
-
-// VALIDAÇÃO DE ESTADO CIVIL - SEMPRE VERIFICAR
-if (estado_civil_encontrado.includes("SOOLTEIRO")) {
-    adicionar_alerta({
-        campo: "Estado Civil",
-        valor_encontrado: estado_civil_encontrado,
-        sugestao: "Verificar ortografia - deveria ser 'SOLTEIRO'",
-        tipo: "erro_digitacao"
-    })
-}
-
-## ETAPA 3: VALIDAÇÃO DE FIDELIDADE E TAXAS
-
-### 🚨 LÓGICA MATEMÁTICA OBRIGATÓRIA PARA TAXAS:
-
-**FÓRMULA FIXA - NUNCA EXTRAIR VALORES DIRETOS:**
-
-EXEMPLO DE CÓDIGO JAVASCRIPT:
-
-// VALORES BASE FIXOS
-const VALOR_BASE_INSTALACAO = 700.00;
-
-// LÓGICA DE CÁLCULO
-if (fidelidade_escolhida === "SIM") {
-    // 1. Extrair desconto da seção de fidelidade
-    desconto_valor = extrair_desconto_do_texto_fidelidade();
-    
-    // 2. CALCULAR (não extrair) taxa de instalação
-    taxa_instalacao_calculada = VALOR_BASE_INSTALACAO - desconto_valor;
-    // Exemplo: 700 - 500 = 200
-    
-    // 3. Taxa de rescisão = valor do desconto
-    taxa_rescisao = desconto_valor;
-    
-} else {
-    // SEM FIDELIDADE
-    taxa_instalacao_calculada = VALOR_BASE_INSTALACAO; // 700
-    taxa_rescisao = VALOR_BASE_INSTALACAO; // 700
-}
-
-// VALIDAÇÃO: Comparar valor calculado vs valor encontrado no contrato
-valor_instalacao_no_contrato = extrair_taxa_instalacao_do_contrato();
-if (valor_instalacao_no_contrato !== taxa_instalacao_calculada) {
-    adicionar_erro({
-        campo: "Taxa de Instalação",
-        valor_encontrado: valor_instalacao_no_contrato,
-        valor_esperado: taxa_instalacao_calculada,
-        severidade: "medio",
-        explicacao: "Taxa deve ser R$ " + VALOR_BASE_INSTALACAO + " - R$ " + desconto_valor + " = R$ " + taxa_instalacao_calculada
+        campo: "TELEFONE CELULAR - DÍGITOS",
+        valor_encontrado: telefone,
+        valor_esperado: "9 dígitos exatos",
+        explicacao: \`Celular tem \${digitos.length} dígitos, deve ter exatamente 9\`,
+        sugestao: "Adicionar ou remover dígitos para totalizar 9"
     });
 }
 
-### 🔍 ALGORITMO DE EXTRAÇÃO DE TELEFONE:
+if (!digitos.startsWith('9')) {
+    adicionar_erro_critico({
+        campo: "TELEFONE CELULAR - FORMATO",
+        valor_encontrado: telefone,
+        valor_esperado: "Deve começar com 9",
+        explicacao: "Celular deve iniciar com dígito 9",
+        sugestao: "Corrigir número para iniciar com 9"
+    });
+}
 
-EXEMPLO DE CÓDIGO JAVASCRIPT:
+// Exemplos:
+// ❌ (42) 8855-4936 = 8 dígitos, não começa com 9 = ERRO DUPLO
+// ❌ (42) 99955-493 = 8 dígitos = ERRO (falta 1 dígito)
+// ❌ (42) 999555-4936 = 10 dígitos = ERRO (sobra 1 dígito)
+// ✅ (42) 99955-4936 = 9 dígitos, começa com 9 = CORRETO
+\`\`\`
 
-// EXTRAIR TELEFONE COMPLETO - ATENÇÃO AOS DÍGITOS EXATOS
-telefone_patterns = [
-    /CELULAR[:\\s]*\\((\\d{2})\\)[:\\s]*(\\d{4,5})-?(\\d{4})/g,
-    /TELEFONE[:\\s]*\\((\\d{2})\\)[:\\s]*(\\d{4,5})-?(\\d{4})/g,
-    /\\((\\d{2})\\)[:\\s]*(\\d{4,5})-?(\\d{4})/g
-]
+### 💰 VALIDAÇÃO CRÍTICA: IP FIXO vs VARIÁVEL
+**REGRA: IP Fixo adiciona R$ 50,00, IP Variável não adiciona nada**
 
-// EXEMPLOS DE VALIDAÇÃO:
-// ❌ (42) 9955-4936 = DDD(2) + 9955(4) + 4936(4) = 8 dígitos no número (ERRO - falta 1)
-// ❌ (42) 998853-6432 = DDD(2) + 998853(6) + 6432(4) = 10 dígitos no número (ERRO - sobra 1)  
-// ✅ (42) 99955-4936 = DDD(2) + 99955(5) + 4936(4) = 9 dígitos no número (CORRETO - celular)
-// ✅ (42) 3245-6789 = DDD(2) + 3245(4) + 6789(4) = 8 dígitos no número (CORRETO - fixo)
+\`\`\`javascript
+// Identificar tipo de IP
+tipo_ip = identificar_tipo_ip(texto_contrato);
+valor_base = calcular_valor_base_servicos(modelo_identificado);
 
-## FORMATO DE RESPOSTA OBRIGATÓRIO
+if (tipo_ip.toLowerCase().includes('fixo')) {
+    valor_total_esperado = valor_base + 50.00;
+    adicionar_info("IP Fixo: +R$ 50,00 adicionado ao valor total");
+} else if (tipo_ip.toLowerCase().includes('variável')) {
+    valor_total_esperado = valor_base;
+    adicionar_info("IP Variável: sem taxa adicional");
+} else {
+    adicionar_erro("Tipo de IP não identificado claramente");
+}
 
-**CRÍTICO: SEMPRE calcular taxas matematicamente!**
+// Validar se o valor total bate
+if (Math.abs(valor_total_encontrado - valor_total_esperado) > 0.01) {
+    adicionar_erro_critico({
+        campo: "VALOR TOTAL - IP",
+        valor_encontrado: \`R$ \${valor_total_encontrado.toFixed(2)}\`,
+        valor_esperado: \`R$ \${valor_total_esperado.toFixed(2)}\`,
+        explicacao: \`IP \${tipo_ip} ${tipo_ip.includes('fixo') ? 'deve adicionar R$ 50,00' : 'não deve adicionar valor'}\`
+    });
+}
+\`\`\`
 
-FORMATO JSON DE RESPOSTA:
+### 🔧 VALIDAÇÃO ESPECÍFICA: EQUIPAMENTOS POR VELOCIDADE
+**REGRA: Cada equipamento extra = +R$ 350,00**
 
+\`\`\`javascript
+// Equipamentos base obrigatórios
+equipamentos_base = ['ONU', 'Conectores/cabos R$ 700,00'];
+
+// Validações específicas por velocidade
+if (velocidade === '600mb') {
+    equipamentos_esperados = ['ONT', '700ONU', 'ROTEADOR', 'Conectores/cabos'];
+    if (!texto_equipamentos.includes('ROTEADOR')) {
+        adicionar_erro("Plano 600mb deve incluir ROTEADOR");
+    }
+}
+
+// Contar equipamentos extras
+equipamentos_extras = contar_equipamentos_extras(texto_equipamentos);
+valor_equipamentos_extras = equipamentos_extras * 350.00;
+
+adicionar_info(\`Equipamentos extras identificados: \${equipamentos_extras} × R$ 350,00 = R$ \${valor_equipamentos_extras.toFixed(2)}\`);
+\`\`\`
+
+### 📊 VALIDAÇÃO ESPECÍFICA: SERVIÇOS POR VELOCIDADE
+**REGRAS POR VELOCIDADE:**
+
+\`\`\`javascript
+// Valores padrão por velocidade
+const servicos_por_velocidade = {
+    '300mb': {
+        cnet_livros: 'R$ 29,90',
+        cnet_play: 'R$ 0,00', 
+        suporte: 'R$ 19,90',
+        cnet_educa: null // Não obrigatório
+    },
+    '500mb': {
+        cnet_livros: 'R$ 29,90',
+        cnet_play: 'R$ 0,00',
+        suporte: 'R$ 14,90',
+        cnet_educa: null
+    },
+    '700mb': {
+        cnet_livros: 'R$ 29,90',
+        cnet_play: 'R$ 0,00',
+        suporte: 'R$ 9,90',
+        cnet_educa: 'R$ 19,90' // OBRIGATÓRIO
+    },
+    '800mb': {
+        cnet_livros: 'R$ 29,90',
+        cnet_play: 'R$ 0,00',
+        suporte: 'R$ 14,90',
+        cnet_educa: 'R$ 19,90' // OBRIGATÓRIO
+    },
+    '1gb': {
+        cnet_livros: 'R$ 29,90',
+        cnet_play: 'R$ 0,00',
+        suporte: 'R$ 14,90',
+        cnet_educa: 'R$ 19,90' // OBRIGATÓRIO
+    }
+};
+
+// Validar serviços do modelo identificado
+const servicos_esperados = servicos_por_velocidade[velocidade_identificada];
+Object.keys(servicos_esperados).forEach(servico => {
+    const valor_esperado = servicos_esperados[servico];
+    const valor_encontrado = extrair_valor_servico(texto_contrato, servico);
+    
+    if (valor_esperado && valor_encontrado !== valor_esperado) {
+        adicionar_erro_critico({
+            campo: \`SERVIÇO - \${servico.toUpperCase()}\`,
+            valor_encontrado: valor_encontrado || 'Não encontrado',
+            valor_esperado: valor_esperado,
+            explicacao: \`Plano \${velocidade_identificada} deve ter \${servico} = \${valor_esperado}\`
+        });
+    }
+});
+\`\`\`
+
+### 🏢 VALIDAÇÃO: EMPRESA vs DDD
+**REGRA: CIABRASNET = DDD 42, WNKBR = DDD 47**
+
+\`\`\`javascript
+// Validar coerência empresa × DDD
+if (empresa_identificada === 'CIABRASNET' && ddd_encontrado !== '42') {
+    adicionar_alerta({
+        campo: "EMPRESA vs DDD",
+        valor_encontrado: \`\${empresa_identificada} com DDD \${ddd_encontrado}\`,
+        valor_esperado: "CIABRASNET com DDD 42 (Porto União)",
+        severidade: "warning",
+        explicacao: "Verificar se contrato é para região correta"
+    });
+}
+
+if (empresa_identificada === 'WNKBR' && ddd_encontrado !== '47') {
+    adicionar_alerta({
+        campo: "EMPRESA vs DDD", 
+        valor_encontrado: \`\${empresa_identificada} com DDD \${ddd_encontrado}\`,
+        valor_esperado: "WNKBR com DDD 47 (Papanduva)",
+        severidade: "warning",
+        explicacao: "Verificar se contrato é para região correta"
+    });
+}
+\`\`\`
+
+### 💳 VALIDAÇÃO: FIDELIDADE PADRÃO
+**REGRA: Sempre R$ 700,00 de desconto com fidelidade**
+
+\`\`\`javascript
+// Validar desconto de fidelidade
+if (fidelidade_escolhida === 'SIM') {
+    if (desconto_fidelidade !== 'R$ 700,00') {
+        adicionar_erro({
+            campo: "DESCONTO FIDELIDADE",
+            valor_encontrado: desconto_fidelidade,
+            valor_esperado: "R$ 700,00",
+            explicacao: "Desconto padrão de fidelidade deve ser sempre R$ 700,00"
+        });
+    }
+    
+    // Taxa de instalação = GRATUITA ou R$ 200,00 (700 - 500 desconto parcial)
+    // Taxa de cancelamento = R$ 700,00 proporcional
+}
+\`\`\`
+
+## 📋 FORMATO DE RESPOSTA OBRIGATÓRIO - FASE 2
+
+\`\`\`json
 {
   "modelo_identificado": {
-    "nome": "2024 Combo 600Mbps",
-    "confianca": 95
+    "nome": "${identifiedModel?.name || 'Não identificado'}",
+    "velocidade": "${identifiedModel?.speed || 'Não identificada'}",
+    "empresa": "${identifiedModel?.company || 'Não identificada'}",
+    "tipo": "${identifiedModel?.type || 'Não identificado'}",
+    "valor_base": "${identifiedModel?.value || 'Não identificado'}",
+    "confianca": 95,
+    "ddd_esperado": "${identifiedModel?.ddd || 'Não identificado'}",
+    "cidade": "${identifiedModel?.city || 'Não identificada'}"
   },
-  "analise_fidelidade": {
-    "opcao_fidelidade": "SIM",
-    "valor_desconto_extraido": "R$ 500,00",
-    "texto_origem": "desconto de R$ 500,00 (Quinhentos reais)",
-    "marcacao_encontrada": "SIM (X)"
+  "validacao_telefone_celular": {
+    "numero_encontrado": "(XX) XXXXX-XXXX",
+    "numero_sem_ddd": "XXXXXXXXX",
+    "quantidade_digitos": 9,
+    "inicia_com_9": true,
+    "status": "CORRETO",
+    "observacoes": "Telefone celular válido"
   },
-  "validacao_taxas": {
-    "fidelidade": "SIM",
-    "valor_desconto_fidelidade": "R$ 500,00",
-    "valor_base_instalacao": "R$ 700,00",
-    "taxa_instalacao_calculada": "R$ 200,00",
-    "taxa_instalacao_encontrada": "R$ 200,00",
-    "taxa_instalacao_status": "CORRETO",
-    "taxa_instalacao_explicacao": "✅ R$ 700,00 - R$ 500,00 = R$ 200,00",
-    "taxa_rescisao_esperada": "R$ 500,00",
-    "taxa_rescisao_encontrada": "R$ 500,00",
-    "taxa_rescisao_status": "CORRETO",
-    "taxa_rescisao_explicacao": "✅ Igual ao desconto aplicado",
-    "calculo_detalhado": {
-      "formula": "Taxa Instalação = Valor Base - Desconto",
-      "calculo": "R$ 700,00 - R$ 500,00 = R$ 200,00",
-      "valor_base": "R$ 700,00",
-      "desconto": "R$ 500,00",
-      "resultado": "R$ 200,00"
-    }
+  "validacao_ip": {
+    "tipo_identificado": "Variável/Fixo",
+    "valor_base_servicos": "R$ XXX,XX",
+    "taxa_ip_fixo": "R$ 0,00 ou R$ 50,00",
+    "valor_total_esperado": "R$ XXX,XX",
+    "valor_total_encontrado": "R$ XXX,XX",
+    "status": "CORRETO/ERRO"
+  },
+  "validacao_servicos": {
+    "cnet_livros": {"esperado": "R$ 29,90", "encontrado": "R$ 29,90", "status": "OK"},
+    "cnet_play": {"esperado": "R$ 0,00", "encontrado": "R$ 0,00", "status": "OK"},
+    "suporte": {"esperado": "R$ XX,XX", "encontrado": "R$ XX,XX", "status": "OK/ERRO"},
+    "cnet_educa": {"esperado": "R$ 19,90", "encontrado": "R$ 19,90", "status": "OK/NÃO_OBRIGATÓRIO"}
+  },
+  "validacao_equipamentos": {
+    "base_obrigatorios": ["ONU", "Conectores/cabos"],
+    "extras_identificados": 0,
+    "valor_extras": "R$ 0,00",
+    "status": "CORRETO"
+  },
+  "validacao_empresa_ddd": {
+    "empresa": "CIABRASNET/WNKBR", 
+    "ddd_encontrado": "42/47",
+    "ddd_esperado": "42/47",
+    "compatibilidade": "COMPATÍVEL/INCOMPATÍVEL"
   },
   "erros": [
     {
-      "campo": "TELEFONE - DÍGITOS",
+      "campo": "TELEFONE CELULAR",
+      "tipo": "digitos_incorretos",
       "valor_encontrado": "(42) 9955-4936",
-      "valor_esperado": "Telefone com 8 dígitos (fixo) ou 9 dígitos (celular)",
-      "sugestao_correcao": "Adicionar 1 dígito ao número: (42) 99955-4936",
-      "explicacao": "Número tem 8 dígitos, mas celular deve ter 9 dígitos",
-      "severidade": "critico",
-      "local_origem": "Seção QUALIFICAÇÃO DO ASSINANTE"
-    }
-  ],
-  "alertas": [
-    {
-      "tipo": "erro_digitacao",
-      "campo": "Estado Civil",
-      "valor_encontrado": "SOOLTEIRO",
-      "sugestao": "Verificar ortografia - deveria ser 'SOLTEIRO'"
+      "valor_esperado": "9 dígitos iniciando com 9",
+      "explicacao": "Celular tem 8 dígitos, deve ter exatamente 9",
+      "sugestao_correcao": "Adicionar 1 dígito: (42) 99955-4936",
+      "severidade": "critico"
     }
   ],
   "resumo": {
-    "total_erros": 1,
-    "total_alertas": 1,
-    "criticos": 1,
-    "altos": 0,
-    "medios": 0,
-    "baixos": 0,
-    "plano_identificado": "2024 Combo 600Mbps"
-  },
-  "status_geral": "reprovado",
-  "observacoes": [
-    "🚨 CRÍTICO: Número de telefone com quantidade incorreta de dígitos",
-    "💰 Taxa de instalação calculada corretamente: R$ 700,00 - R$ 500,00 = R$ 200,00"
-  ]
+    "total_erros": 0,
+    "total_alertas": 0,
+    "modelo_usado": "${identifiedModel?.name || 'Manual'}",
+    "validacoes_realizadas": ["telefone", "ip", "servicos", "equipamentos", "empresa_ddd"],
+    "status_geral": "aprovado/reprovado"
+  }
 }
+\`\`\`
 
-## 🚨 REGRAS CRÍTICAS ATUALIZADAS E CONSERVADORAS
+## 🎯 INSTRUÇÕES FINAIS - FASE 2
 
-1. **SEMPRE calcular taxa de instalação matematicamente: 700 - desconto**
+1. **USE O MODELO IDENTIFICADO** como referência principal
+2. **APLIQUE VALIDAÇÕES ESPECÍFICAS** por velocidade e empresa
+3. **SEJA PRECISO** nas validações de telefone celular (9 dígitos + começar com 9)
+4. **CALCULE VALORES** baseado no tipo de IP (Fixo +R$ 50,00)
+5. **VALIDE SERVIÇOS** conforme a tabela de velocidades
+6. **VERIFIQUE COERÊNCIA** empresa × DDD × cidade
+7. **DOCUMENTE TODAS** as validações realizadas
 
-2. **NUNCA extrair taxa de instalação de seções que podem ter valores incorretos**
+**PRINCÍPIO: Use o sistema inteligente de categorização para validações precisas e contextualizadas!**
 
-3. **SEMPRE usar fórmula: Taxa Instalação = R$ 700,00 - Desconto**
-
-4. **SEMPRE contar dígitos do telefone: 8 (fixo) ou 9 (celular)**
-
-5. **SEMPRE contar dígitos do CPF** e reportar como erro crítico se ≠ 11
-
-6. **SER CONSERVADOR com DDDs**: Apenas DDDs < 11 ou > 99 são inválidos
-
-7. **SER CONSERVADOR com emails**: Só detectar erros MUITO óbvios
-
-8. **Se há erros críticos, status_geral DEVE ser "reprovado"**
-
-9. **✅ EXEMPLOS DE DADOS VÁLIDOS:**
-   - CPF: 076.935.229-48 (11 dígitos) = VÁLIDO
-   - DDD: (42) = VÁLIDO (Paraná)
-   - Celular: (42) 99955-4936 (9 dígitos) = VÁLIDO
-   - Fixo: (42) 3245-6789 (8 dígitos) = VÁLIDO
-   - Email: jaquelinevolhank509@gmail.com = VÁLIDO
-
-10. **❌ EXEMPLOS DE ERROS:**
-    - Celular: (42) 9955-4936 (8 dígitos) = ERRO (falta 1)
-    - Celular: (42) 998853-6432 (10 dígitos) = ERRO (sobra 1)
-
-**FÓRMULAS OBRIGATÓRIAS:**
-- COM FIDELIDADE: Taxa Instalação = R$ 700,00 - Desconto | Taxa Rescisão = Desconto
-- SEM FIDELIDADE: Taxa Instalação = R$ 700,00 | Taxa Rescisão = R$ 700,00
-
-**PRINCÍPIO FUNDAMENTAL: SER CONSERVADOR - PREFERIR APROVAR DADOS VÁLIDOS A REPROVAR DADOS CORRETOS**
+---
 
 **Contrato para análise:**
 ${contractText}`;
