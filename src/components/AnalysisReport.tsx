@@ -98,142 +98,234 @@ interface AnalysisData {
 }
 
 const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: AnalysisReportProps) => {
-  console.log("🔍 [AnalysisReport] Iniciando processamento - VERSÃO CORRIGIDA");
-  console.log("📄 Content recebido:", content?.substring(0, 200));
+  console.log("🔍 [AnalysisReport] Iniciando processamento - VERSÃO ULTRA ROBUSTA");
+  console.log("📄 Content recebido (300 chars):", content?.substring(0, 300));
 
   const parseAnalysisContent = (content: string): { analysisData: AnalysisData | null; errorCount: number; fullContent: string } => {
-    console.log("🔍 [FRONTEND] Parsing content - ACEITA TODOS OS ERROS");
-    console.log("📄 Content (300 chars):", content?.substring(0, 300));
+    console.log("🔍 [FRONTEND] NOVA VERSÃO - Parsing ultra robusto");
+    
+    // 🛡️ PROTEÇÃO: Verificar se content existe
+    if (!content) {
+      console.error("❌ [FRONTEND] Content é null/undefined");
+      return { analysisData: null, errorCount: 0, fullContent: '' };
+    }
     
     try {
-      let jsonData: any = null;
+      let rawData: any = null;
       
-      // Tentar diferentes métodos de parsing
+      // 🔍 ETAPA 1: EXTRAIR DADOS - MÚLTIPLAS ESTRATÉGIAS
+      console.log("🔍 Tentando extrair dados...");
       
-      // 1. Se já é um objeto JSON
+      // Estratégia 1: Se já é um objeto
       if (typeof content === 'object') {
-        console.log("✅ Content já é objeto JSON");
-        jsonData = content;
+        console.log("✅ Content já é objeto");
+        rawData = content;
       }
-      // 2. Tentar parse direto
+      // Estratégia 2: Parse direto
       else if (content.trim().startsWith('{')) {
-        console.log("🔄 Tentando parse direto...");
-        jsonData = JSON.parse(content);
-        console.log("✅ Parse direto funcionou!");
+        console.log("🔄 Parse direto do JSON...");
+        rawData = JSON.parse(content);
       }
-      // 3. Procurar JSON em markdown
+      // Estratégia 3: Buscar JSON em markdown
       else {
-        console.log("🔍 Procurando JSON em markdown...");
-        const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || content.match(/```\s*(\{[\s\S]*?\})\s*```/) || content.match(/(\{[\s\S]*\})/);
+        console.log("🔍 Procurando JSON em texto...");
+        const patterns = [
+          /```json\\s*([\\s\\S]*?)\\s*```/,
+          /```\\s*(\\{[\\s\\S]*?\\})\\s*```/,
+          /(\\{[\\s\\S]*\\})/
+        ];
         
-        if (jsonMatch) {
-          const jsonStr = jsonMatch[1] || jsonMatch[0];
-          console.log("📋 JSON extraído:", jsonStr.substring(0, 200));
-          
-          // Limpar caracteres de escape
-          let cleanJsonStr = jsonStr
-            .replace(/\\"/g, '"')
-            .replace(/\\n/g, '\n')
-            .replace(/\\\\/g, '\\')
-            .trim();
-          
-          jsonData = JSON.parse(cleanJsonStr);
-          console.log("✅ Parse do markdown funcionou!");
+        for (const pattern of patterns) {
+          const match = content.match(pattern);
+          if (match) {
+            const jsonStr = match[1] || match[0];
+            console.log("📋 JSON encontrado:", jsonStr.substring(0, 200));
+            
+            // Limpar o JSON
+            const cleanJsonStr = jsonStr
+              .replace(/\\\\\"/g, '\"')
+              .replace(/\\\\n/g, '\\n')
+              .replace(/\\\\\\\\/g, '\\\\')
+              .trim();
+            
+            rawData = JSON.parse(cleanJsonStr);
+            break;
+          }
         }
       }
       
-      if (jsonData) {
-        console.log("📊 [FRONTEND] Dados parseados:");
-        console.log("  - Erros originais:", jsonData.erros?.length || 0);
-        console.log("  - Alertas originais:", jsonData.alertas?.length || 0);
-        console.log("  - Status original:", jsonData.status_geral);
+      if (!rawData) {
+        console.warn("⚠️ [FRONTEND] Não conseguiu extrair JSON, tentando fallback...");
+        throw new Error("JSON não encontrado");
+      }
+      
+      console.log("✅ [FRONTEND] Dados extraídos com sucesso");
+      console.log("📊 [FRONTEND] Tipo de dados:", typeof rawData);
+      console.log("📊 [FRONTEND] Chaves principais:", Object.keys(rawData));
+      
+      // 🔍 ETAPA 2: IDENTIFICAR FORMATO E EXTRAIR CAMPOS
+      let errosOriginais: ErrorAnalysis[] = [];
+      let alertasOriginais: AlertItem[] = [];
+      let modeloIdentificado: ModeloIdentificado | undefined;
+      let statusGeral: 'aprovado' | 'reprovado' = 'aprovado';
+      
+      // 🧩 BUSCA INTELIGENTE POR ERROS E ALERTAS EM MÚLTIPLOS LOCAIS
+      const possibleErrorFields = ['erros', 'errors', 'erro_list', 'validacoes', 'problems'];
+      const possibleAlertFields = ['alertas', 'alerts', 'warnings', 'avisos', 'observacoes'];
+      
+      // Buscar erros
+      for (const field of possibleErrorFields) {
+        if (rawData[field] && Array.isArray(rawData[field])) {
+          console.log(`✅ [FRONTEND] Erros encontrados em '${field}':`, rawData[field].length);
+          errosOriginais = rawData[field];
+          break;
+        }
+      }
+      
+      // Buscar alertas
+      for (const field of possibleAlertFields) {
+        if (rawData[field] && Array.isArray(rawData[field])) {
+          console.log(`✅ [FRONTEND] Alertas encontrados em '${field}':`, rawData[field].length);
+          alertasOriginais = rawData[field];
+          break;
+        }
+      }
+      
+      // Buscar modelo identificado
+      const possibleModelFields = ['modelo_identificado', 'model_identified', 'modelo', 'auto_identified_model'];
+      for (const field of possibleModelFields) {
+        if (rawData[field]) {
+          console.log(`✅ [FRONTEND] Modelo encontrado em '${field}'`);
+          modeloIdentificado = rawData[field];
+          break;
+        }
+      }
+      
+      // Buscar status
+      const possibleStatusFields = ['status_geral', 'status', 'resultado', 'aprovado'];
+      for (const field of possibleStatusFields) {
+        if (rawData[field]) {
+          console.log(`✅ [FRONTEND] Status encontrado em '${field}':`, rawData[field]);
+          statusGeral = rawData[field] === 'aprovado' || rawData[field] === 'approved' ? 'aprovado' : 'reprovado';
+          break;
+        }
+      }
+      
+      // 🧮 BUSCA EM METADATA (NOVA ESTRUTURA DA EDGE FUNCTION)
+      if (rawData.metadata && typeof rawData.metadata === 'object') {
+        console.log("🔍 [FRONTEND] Verificando metadata...");
         
-        // 🚨 GARANTIA ABSOLUTA: ACEITAR **TODOS** OS DADOS SEM FILTRO
-        const errosOriginais = jsonData.erros || [];
-        const alertasOriginais = jsonData.alertas || [];
+        if (rawData.metadata.auto_identified_model) {
+          console.log("✅ [FRONTEND] Modelo encontrado em metadata");
+          modeloIdentificado = rawData.metadata.auto_identified_model;
+        }
         
-        console.log("🔍 [FRONTEND] ACEITA TODOS OS ERROS:");
-        errosOriginais.forEach((erro: ErrorAnalysis, i: number) => {
-          console.log(`  ${i+1}. ${erro.campo}: ${erro.valor_encontrado} (${erro.severidade})`);
-        });
+        if (rawData.metadata.additional_validations) {
+          console.log("✅ [FRONTEND] Validações adicionais encontradas");
+          const validations = rawData.metadata.additional_validations;
+          
+          if (validations.errors && Array.isArray(validations.errors)) {
+            errosOriginais = validations.errors;
+          }
+          if (validations.warnings && Array.isArray(validations.warnings)) {
+            alertasOriginais = validations.warnings;
+          }
+        }
+      }
+      
+      // 🔍 EXTRAÇÃO FINAL DE DADOS ANINHADOS
+      if (errosOriginais.length === 0 && alertasOriginais.length === 0) {
+        console.log("🔍 [FRONTEND] Tentando extração profunda...");
         
-        console.log("🔍 [FRONTEND] ACEITA TODOS OS ALERTAS:");
-        alertasOriginais.forEach((alerta: AlertItem, i: number) => {
-          console.log(`  ${i+1}. ${alerta.campo}: ${alerta.valor_encontrado}`);
-        });
-        
-        // Criar dados padronizados - ZERO FILTRAGEM
-        const analysisData: AnalysisData = {
-          modelo_identificado: jsonData.modelo_identificado,
-          erros: errosOriginais, // 🚨 TODOS OS ERROS ORIGINAIS
-          alertas: alertasOriginais, // 🚨 TODOS OS ALERTAS ORIGINAIS
-          validacoes_corretas: jsonData.validacoes_corretas || [],
-          resumo: jsonData.resumo || { total_erros: 0 },
-          status_geral: jsonData.status_geral || 'aprovado',
-          observacoes: jsonData.observacoes || [],
-          analise_fidelidade: jsonData.analise_fidelidade,
-          validacao_taxas: jsonData.validacao_taxas
+        // Buscar em todos os objetos aninhados
+        const searchInObject = (obj: any, depth = 0): void => {
+          if (depth > 3) return; // Evitar recursão infinita
+          
+          for (const [key, value] of Object.entries(obj)) {
+            if (Array.isArray(value) && value.length > 0) {
+              const firstItem = value[0];
+              if (firstItem && typeof firstItem === 'object') {
+                // Verificar se parece com erro
+                if (firstItem.campo || firstItem.field || firstItem.error) {
+                  console.log(`🔍 [FRONTEND] Possíveis erros em '${key}':`, value.length);
+                  if (errosOriginais.length === 0) errosOriginais = value;
+                }
+                // Verificar se parece com alerta
+                if (firstItem.tipo || firstItem.type || firstItem.alert) {
+                  console.log(`🔍 [FRONTEND] Possíveis alertas em '${key}':`, value.length);
+                  if (alertasOriginais.length === 0) alertasOriginais = value;
+                }
+              }
+            } else if (typeof value === 'object' && value !== null) {
+              searchInObject(value, depth + 1);
+            }
+          }
         };
         
-        // Recalcular contadores (usando TODOS os erros)
-        const contadores = errosOriginais.reduce((acc: Record<string, number>, erro: ErrorAnalysis) => {
-          const sev = erro.severidade || 'medio';
-          acc[sev] = (acc[sev] || 0) + 1;
-          return acc;
-        }, {});
-        
-        // Atualizar resumo com contadores reais
-        analysisData.resumo = {
-          ...analysisData.resumo,
+        searchInObject(rawData);
+      }
+      
+      console.log("📊 [FRONTEND] EXTRAÇÃO COMPLETA:");
+      console.log(`  - Erros: ${errosOriginais.length}`);
+      console.log(`  - Alertas: ${alertasOriginais.length}`);
+      console.log(`  - Modelo: ${modeloIdentificado ? 'SIM' : 'NÃO'}`);
+      console.log(`  - Status: ${statusGeral}`);
+      
+      // 🏗️ CONSTRUIR ANÁLISE FINAL
+      const analysisData: AnalysisData = {
+        modelo_identificado: modeloIdentificado,
+        erros: errosOriginais,
+        alertas: alertasOriginais,
+        validacoes_corretas: rawData.validacoes_corretas || [],
+        resumo: {
           total_erros: errosOriginais.length,
           total_alertas: alertasOriginais.length,
-          criticos: contadores.critico || 0,
-          altos: contadores.alto || 0,
-          medios: contadores.medio || 0,
-          baixos: contadores.baixos || 0
-        };
-        
-        // Status baseado em erros críticos
-        const temErrosCriticos = (contadores.critico || 0) > 0 || (contadores.alto || 0) > 0;
-        analysisData.status_geral = temErrosCriticos ? 'reprovado' : (jsonData.status_geral || 'aprovado');
-        
-        console.log("✅ [FRONTEND] ZERO FILTRAGEM APLICADA!");
-        console.log("📈 [FRONTEND] Dados finais:", {
-          erros: errosOriginais.length,
-          alertas: alertasOriginais.length,
-          status: analysisData.status_geral,
-          criticos: contadores.critico || 0,
-          altos: contadores.alto || 0,
-          medios: contadores.medio || 0,
-          baixos: contadores.baixo || 0
-        });
-        
-        return {
-          analysisData,
-          errorCount: errosOriginais.length,
-          fullContent: content
-        };
+          criticos: errosOriginais.filter(e => e.severidade === 'critico').length,
+          altos: errosOriginais.filter(e => e.severidade === 'alto').length,
+          medios: errosOriginais.filter(e => e.severidade === 'medio').length,
+          baixos: errosOriginais.filter(e => e.severidade === 'baixo').length
+        },
+        status_geral: statusGeral,
+        observacoes: rawData.observacoes || [],
+        analise_fidelidade: rawData.analise_fidelidade,
+        validacao_taxas: rawData.validacao_taxas
+      };
+      
+      // Atualizar status baseado em erros críticos
+      const temErrosCriticos = analysisData.resumo!.criticos! > 0 || analysisData.resumo!.altos! > 0;
+      if (temErrosCriticos) {
+        analysisData.status_geral = 'reprovado';
       }
+      
+      console.log("✅ [FRONTEND] ANÁLISE CONSTRUÍDA COM SUCESSO!");
+      
+      return {
+        analysisData,
+        errorCount: errosOriginais.length,
+        fullContent: content
+      };
+      
     } catch (error) {
-      console.error("❌ [FRONTEND] Erro no parsing:", error);
-      console.log("📄 Content que falhou:", content?.substring(0, 500));
+      console.error("❌ [FRONTEND] Erro no parsing ultra robusto:", error);
+      console.log("📄 Content problemático (500 chars):", content?.substring(0, 500));
+      
+      // 🆘 FALLBACK FINAL
+      console.log("🆘 [FRONTEND] Usando fallback de emergência");
+      
+      const errorPatterns = [/erro/gi, /incorreto/gi, /inválido/gi, /crítico/gi];
+      let errorCount = 0;
+      errorPatterns.forEach(pattern => {
+        const matches = content.match(pattern);
+        if (matches) errorCount += matches.length;
+      });
+      
+      return { analysisData: null, errorCount, fullContent: content };
     }
-
-    // Fallback
-    console.log("⚠️ [FRONTEND] Usando fallback");
-    const errorPatterns = [/\d+\.\s*(.+)$/gm, /[-•]\s*(.+)$/gm, /erro/gi, /incorreto/gi];
-    let errorCount = 0;
-    errorPatterns.forEach(pattern => {
-      const matches = content.match(pattern);
-      if (matches) errorCount += matches.length;
-    });
-
-    return { analysisData: null, errorCount, fullContent: content };
   };
 
   const { analysisData, errorCount, fullContent } = parseAnalysisContent(content);
 
-  console.log("🔍 [FRONTEND] Dados para renderização:");
+  console.log("🎯 [FRONTEND] DADOS FINAIS PARA RENDERIZAÇÃO:");
   console.log("  - analysisData exists:", !!analysisData);
   console.log("  - erros count:", analysisData?.erros?.length || 0);
   console.log("  - alertas count:", analysisData?.alertas?.length || 0);
@@ -309,15 +401,11 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
               </div>
             )}
 
-            {/* Lista de Erros - SEMPRE EXIBIR SE EXISTIR */}
-            {analysisData.erros && analysisData.erros.length > 0 && (
-              <ErrorListCard erros={analysisData.erros} />
-            )}
+            {/* Lista de Erros - COM PROTEÇÃO ABSOLUTA */}
+            <ErrorListCard erros={analysisData.erros} />
 
-            {/* Lista de Alertas - SEMPRE EXIBIR SE EXISTIR */}
-            {analysisData.alertas && analysisData.alertas.length > 0 && (
-              <AlertListCard alertas={analysisData.alertas} />
-            )}
+            {/* Lista de Alertas - COM PROTEÇÃO ABSOLUTA */}
+            <AlertListCard alertas={analysisData.alertas} />
 
             {/* Validações Corretas */}
             {analysisData.validacoes_corretas && analysisData.validacoes_corretas.length > 0 && (
