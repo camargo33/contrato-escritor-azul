@@ -1,6 +1,15 @@
 // 💰 VALIDAÇÕES RIGOROSAS DE TAXAS E VALORES
 // DETECTA INCONSISTÊNCIAS NA LÓGICA DE TAXAS, IP FIXO/VARIÁVEL E FIDELIDADE
 
+// 📋 INTERFACE PARA RESULTADOS DE VALIDAÇÃO
+export interface ValidationResult {
+  valid: boolean;
+  message?: string;
+  expected?: string;
+  found?: string;
+  severity: 'error' | 'warning' | 'info';
+}
+
 // 🌐 VALIDAÇÃO RIGOROSA DE IP E TAXAS
 export const validateIPAndTaxes = (contractText: string): ValidationResult[] => {
   const errors: ValidationResult[] = [];
