@@ -15,48 +15,93 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 }
 
-// 🔍 VALIDAÇÃO DIRETA DE TELEFONE NO CÓDIGO (NÃO DEPENDE DA IA)
+// 🔍 VALIDAÇÃO ROBUSTA DE TELEFONE - DETECÇÃO FORÇADA
 function forceValidatePhone(contractText: string) {
   const errors = [];
-  console.log('📱 EXECUTANDO VALIDAÇÃO DIRETA DE TELEFONE...');
+  console.log('📱 EXECUTANDO VALIDAÇÃO ROBUSTA DE TELEFONE...');
   
-  // Buscar padrões de telefone no texto
-  const phoneRegex = /\((\d{2})\)\s*(\d{4,5})-?(\d{4})/g;
-  let match;
+  // Múltiplos padrões para capturar telefones
+  const phonePatterns = [
+    /\((\d{2})\)\s*(\d{4,5})[\-\s]?(\d{4})/g,    // (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
+    /(\d{2})\s+(\d{4,5})[\-\s]?(\d{4})/g,        // XX XXXXX-XXXX
+    /(\d{2})(\d{4,5})(\d{4})/g                    // XXXXXXXXXXX ou XXXXXXXXXX
+  ];
   
-  while ((match = phoneRegex.exec(contractText)) !== null) {
-    const ddd = match[1];
-    const parte1 = match[2];
-    const parte2 = match[3];
-    const numeroCompleto = parte1 + parte2;
-    const telefoneFormatado = `(${ddd}) ${parte1}-${parte2}`;
-    
-    console.log(`📱 TELEFONE ENCONTRADO: ${telefoneFormatado} = ${numeroCompleto.length} dígitos`);
-    
-    // ERRO: Deve ter exatamente 9 dígitos (celular)
-    if (numeroCompleto.length !== 9) {
-      console.log(`❌ ERRO DETECTADO: Telefone ${telefoneFormatado} tem ${numeroCompleto.length} dígitos, deveria ter 9`);
-      errors.push({
-        campo: "Telefone Celular",
-        valor_encontrado: `${telefoneFormatado} (${numeroCompleto.length} dígitos)`,
-        valor_esperado: "(XX) 9XXXX-XXXX (9 dígitos)",
-        sugestao_correcao: `Telefone celular deve ter exatamente 9 dígitos após o DDD`,
-        severidade: "critico"
-      });
+  const foundPhones = new Set(); // Evitar duplicatas
+  
+  phonePatterns.forEach((pattern, patternIndex) => {
+    let match;
+    while ((match = pattern.exec(contractText)) !== null) {
+      const ddd = match[1];
+      const parte1 = match[2];
+      const parte2 = match[3];
+      const numeroCompleto = parte1 + parte2;
+      const telefoneFormatado = `(${ddd}) ${parte1}-${parte2}`;
+      const telefoneKey = ddd + numeroCompleto;
+      
+      // Evitar processar o mesmo telefone múltiplas vezes
+      if (foundPhones.has(telefoneKey)) continue;
+      foundPhones.add(telefoneKey);
+      
+      console.log(`📱 TELEFONE DETECTADO [Padrão ${patternIndex + 1}]: ${telefoneFormatado}`);
+      console.log(`   DDD: ${ddd} | Número: ${numeroCompleto} | Total de dígitos: ${numeroCompleto.length}`);
+      
+      // ERRO CRÍTICO: Telefone com 8 dígitos (antigo formato - deveria ter 9)
+      if (numeroCompleto.length === 8) {
+        console.log(`❌ ERRO CRÍTICO: Telefone com 8 dígitos (formato antigo): ${telefoneFormatado}`);
+        errors.push({
+          campo: "Telefone Celular",
+          valor_encontrado: `${telefoneFormatado} (${numeroCompleto.length} dígitos - formato antigo)`,
+          valor_esperado: "(XX) 9XXXX-XXXX (9 dígitos)",
+          sugestao_correcao: `Telefone celular deve ter 9 dígitos (incluindo o 9 inicial)`,
+          severidade: "critico"
+        });
+      }
+      
+      // ERRO CRÍTICO: Telefone com 10 dígitos (muito comum - falta o 9)
+      else if (numeroCompleto.length === 10) {
+        console.log(`❌ ERRO CRÍTICO: Telefone com 10 dígitos: ${telefoneFormatado}`);
+        errors.push({
+          campo: "Telefone Celular", 
+          valor_encontrado: `${telefoneFormatado} (${numeroCompleto.length} dígitos - provável erro de digitação)`,
+          valor_esperado: "(XX) 9XXXX-XXXX (9 dígitos)",
+          sugestao_correcao: `Telefone celular brasileiro deve ter exatamente 9 dígitos após o DDD`,
+          severidade: "critico"
+        });
+      }
+      
+      // ERRO: Telefone com 9 dígitos mas não começa com 9
+      else if (numeroCompleto.length === 9 && !numeroCompleto.startsWith('9')) {
+        console.log(`❌ ERRO: Telefone não começa com 9: ${telefoneFormatado}`);
+        errors.push({
+          campo: "Telefone Celular",
+          valor_encontrado: `${telefoneFormatado} (inicia com ${numeroCompleto[0]})`,
+          valor_esperado: "(XX) 9XXXX-XXXX (deve iniciar com 9)",
+          sugestao_correcao: `Número de celular brasileiro deve começar com 9`,
+          severidade: "critico"
+        });
+      }
+      
+      // SUCESSO: Telefone válido
+      else if (numeroCompleto.length === 9 && numeroCompleto.startsWith('9')) {
+        console.log(`✅ TELEFONE VÁLIDO: ${telefoneFormatado} - 9 dígitos, inicia com 9`);
+      }
+      
+      // ERRO: Comprimento inválido
+      else {
+        console.log(`❌ ERRO: Telefone com comprimento inválido: ${telefoneFormatado} (${numeroCompleto.length} dígitos)`);
+        errors.push({
+          campo: "Telefone Celular",
+          valor_encontrado: `${telefoneFormatado} (${numeroCompleto.length} dígitos)`,
+          valor_esperado: "(XX) 9XXXX-XXXX (9 dígitos)",
+          sugestao_correcao: `Telefone deve ter exatamente 9 dígitos após o DDD`,
+          severidade: "critico"
+        });
+      }
     }
-    
-    // ERRO: Deve começar com 9 (celular)
-    if (!numeroCompleto.startsWith('9')) {
-      console.log(`❌ ERRO DETECTADO: Telefone ${telefoneFormatado} não começa com 9`);
-      errors.push({
-        campo: "Telefone Celular",
-        valor_encontrado: `${telefoneFormatado} (inicia com ${numeroCompleto[0]})`,
-        valor_esperado: "(XX) 9XXXX-XXXX (deve iniciar com 9)",
-        sugestao_correcao: `Telefone celular deve iniciar com 9`,
-        severidade: "critico"
-      });
-    }
-  }
+  });
+  
+  console.log(`📱 ANÁLISE DE TELEFONE CONCLUÍDA: ${foundPhones.size} telefones únicos encontrados, ${errors.length} erros detectados`);
   
   return errors;
 }
