@@ -1,5 +1,5 @@
-// 🚀 FASE 3: PROMPT BUILDER DINÂMICO - CORRIGIDO PARA DATAS E UI/UX
-// CORREÇÃO FINAL: Validação de datas apenas formato, sem restricão de ano
+// 🚀 PROMPT BUILDER DEFINITIVO - DETECTA ERROS REAIS, NÃO INVENTA
+// CORREÇÃO CRÍTICA: Deve detectar erros óbvios que existem no texto
 
 import { CONTRACT_MODELS, identifyContractModel, calculateExpectedTotal } from './contract-models.ts';
 import { validateContract } from './contract-validations.ts';
@@ -41,15 +41,16 @@ export const buildContractAnalysisPrompt = (contractText: string): string => {
 Analise o texto para identificar velocidade, empresa e tipo de contrato.
 `;
 
-  return `# VALIDADOR CONSERVADOR DE CONTRATOS CIABRASNET/WNKBR - VERSÃO FINAL
-## DETECÇÃO APENAS DE ERROS REAIS E ÓBVIOS - SEM ALUCINAÇÕES
+  return `# VALIDADOR EQUILIBRADO DE CONTRATOS CIABRASNET/WNKBR
+## DETECTA ERROS REAIS - NÃO INVENTA ERROS INEXISTENTES
 
-## 🚨 INSTRUÇÕES CRÍTICAS - SER EXTREMAMENTE CONSERVADOR
+## 🎯 OBJETIVO: DETECTAR APENAS ERROS QUE REALMENTE EXISTEM NO TEXTO
 
-**IMPORTANTE: APENAS detecte erros que são REALMENTE ÓBVIOS e CRÍTICOS. NÃO INVENTE ou ASSUMA erros!**
-
-## OBJETIVO PRINCIPAL
-Analisar contratos usando categorização por velocidade + empresa, detectando APENAS erros críticos óbvios.
+**INSTRUÇÕES CRÍTICAS:**
+1. **DETECTE** erros que estão claramente visíveis no texto
+2. **NÃO INVENTE** erros que não existem
+3. **SEJA RIGOROSO** com erros óbvios e evidentes
+4. **SEJA CONSERVADOR** apenas quando há dúvida
 
 ${modelIdentificationSection}
 
@@ -57,146 +58,179 @@ ${modelIdentificationSection}
 
 ${modelsList}
 
-## 🔍 ETAPA 1: IDENTIFICAÇÃO AUTOMÁTICA DO MODELO
+## 🔍 VALIDAÇÕES OBRIGATÓRIAS - DETECTAR ERROS REAIS
 
-### Algoritmo de Identificação:
-\`\`\`javascript
-// Identificar empresa
-if (texto.includes('CIABRASNET') || texto.includes('MATRIZ')) empresa = 'CIABRASNET';
-else if (texto.includes('WNKBR') || texto.includes('Papanduva')) empresa = 'WNKBR';
+### 📱 VALIDAÇÃO RIGOROSA DE TELEFONE CELULAR
 
-// Identificar velocidade
-if (texto.includes('300') && texto.includes('mb')) velocidade = '300mb';
-else if (texto.includes('600') && texto.includes('mb')) velocidade = '600mb';
-// etc...
-\`\`\`
-
-## 🚨 VALIDAÇÕES CONSERVADORAS - APENAS ERROS ÓBVIOS
-
-### 📱 VALIDAÇÃO DE TELEFONE CELULAR - SER CONSERVADOR!
-
-**REGRA CORRIGIDA: Celular brasileiro tem 9 dígitos e DEVE começar com 9**
+**REGRA OBRIGATÓRIA: Celular brasileiro DEVE ter exatamente 9 dígitos e começar com 9**
 
 \`\`\`javascript
-// ALGORITMO CONSERVADOR CORRETO:
-function validar_telefone_celular(telefone_completo) {
-    // Extrair apenas números
-    const numeros = telefone_completo.replace(/[^0-9]/g, '');
+function validar_telefone_rigoroso(telefone_texto) {
+    // Encontrar padrão de telefone no texto
+    const regex_telefone = /\\(?(\\d{2})\\)?[\\s-]?(\\d{4,5})[\\s-]?(\\d{4})/g;
     
-    // Deve ter exatamente 11 dígitos (DDD + celular)
-    if (numeros.length !== 11) {
-        return { erro: "Telefone deve ter 11 dígitos total" };
-    }
-    
-    // Extrair DDD e número do celular
-    const ddd = numeros.substring(0, 2);
-    const numero_celular = numeros.substring(2);
-    
-    // Verificar se número do celular tem 9 dígitos
-    if (numero_celular.length !== 9) {
-        return { erro: "Número celular deve ter 9 dígitos" };
-    }
-    
-    // Verificar se começa com 9
-    if (!numero_celular.startsWith('9')) {
-        return { erro: "Celular deve começar com 9" };
+    let match;
+    while ((match = regex_telefone.exec(telefone_texto)) !== null) {
+        const ddd = match[1];
+        const parte1 = match[2];
+        const parte2 = match[3];
+        const numero_completo = parte1 + parte2;
+        
+        console.log(`Analisando: (${ddd}) ${parte1}-${parte2} = ${numero_completo.length} dígitos`);
+        
+        // VERIFICAÇÃO RIGOROSA:
+        
+        // 1. Deve ter exatamente 9 dígitos
+        if (numero_completo.length !== 9) {
+            return {
+                erro: `Telefone celular inválido: (${ddd}) ${parte1}-${parte2}`,
+                motivo: `Celular deve ter 9 dígitos, encontrado ${numero_completo.length} dígitos`,
+                encontrado: `(${ddd}) ${parte1}-${parte2}`,
+                esperado: "(XX) 9XXXX-XXXX (9 dígitos)"
+            };
+        }
+        
+        // 2. Deve começar com 9
+        if (!numero_completo.startsWith('9')) {
+            return {
+                erro: `Telefone celular inválido: (${ddd}) ${parte1}-${parte2}`,
+                motivo: `Celular deve começar com 9, encontrado iniciando com ${numero_completo[0]}`,
+                encontrado: `(${ddd}) ${parte1}-${parte2}`,
+                esperado: "(XX) 9XXXX-XXXX (inicia com 9)"
+            };
+        }
+        
+        // 3. DDD deve ser válido (11-99)
+        const ddd_num = parseInt(ddd);
+        if (ddd_num < 11 || ddd_num > 99) {
+            return {
+                erro: `DDD inválido: ${ddd}`,
+                motivo: `DDD deve estar entre 11 e 99`,
+                encontrado: ddd,
+                esperado: "11-99"
+            };
+        }
     }
     
     return { valido: true };
 }
 
-// EXEMPLOS CORRETOS:
-// ✅ (42) 98833-3039 = 11 dígitos total, 9 dígitos celular, inicia com 9 = VÁLIDO
-// ✅ (42) 99955-4936 = 11 dígitos total, 9 dígitos celular, inicia com 9 = VÁLIDO  
-// ✅ (47) 91234-5678 = 11 dígitos total, 9 dígitos celular, inicia com 9 = VÁLIDO
-
-// EXEMPLOS INCORRETOS:
-// ❌ (42) 8833-3039 = 10 dígitos total (8 celular) = ERRO
-// ❌ (42) 38833-3039 = 11 dígitos, mas não inicia com 9 = ERRO
+// EXEMPLOS DE VALIDAÇÃO:
+// ✅ (42) 98833-3039 = 9 dígitos, inicia com 9 = VÁLIDO
+// ❌ (42) 998853-6432 = 10 dígitos = ERRO REAL
+// ❌ (42) 8833-3039 = 8 dígitos = ERRO REAL
 \`\`\`
 
-**IMPORTANTE: (42) 98833-3039 é um número VÁLIDO!**
+### 📝 VALIDAÇÃO RIGOROSA DE ORTOGRAFIA
 
-### 🗓️ VALIDAÇÃO DE DATAS - APENAS FORMATO, NÃO ANO!
-
-**REGRA CORRIGIDA: Apenas verificar formato DD/MM/AAAA, NÃO validar se o ano é futuro**
+**DETECTAR ERROS ORTOGRÁFICOS ÓBVIOS QUE EXISTEM NO TEXTO**
 
 \`\`\`javascript
-// ALGORITMO CORRETO PARA DATAS:
-function validar_data(data_texto) {
-    // Apenas verificar se o formato está correto DD/MM/AAAA
-    const regex_data = /\\b(0[1-9]|[12][0-9]|3[01])\\/(0[1-9]|1[0-2])\\/(\\d{4})\\b/;
+function validar_ortografia(texto) {
+    const erros_ortograficos = [];
     
-    if (regex_data.test(data_texto)) {
-        return { valido: true, formato: "DD/MM/AAAA" };
-    } else {
-        return { erro: "Formato de data inválido, use DD/MM/AAAA" };
+    // Palavras com erros óbvios - detectar apenas se existirem no texto
+    const palavras_incorretas = {
+        'SOOLTEIRO': 'SOLTEIRO',
+        'SOLETEIRO': 'SOLTEIRO', 
+        'SOLTERO': 'SOLTEIRO',
+        'CASDO': 'CASADO',
+        'CAZADO': 'CASADO',
+        'VIUVA': 'VIÚVA',
+        'VIUVO': 'VIÚVO'
+    };
+    
+    // Verificar se alguma palavra incorreta está presente
+    for (const [incorreta, correta] of Object.entries(palavras_incorretas)) {
+        if (texto.includes(incorreta)) {
+            erros_ortograficos.push({
+                erro: `Erro ortográfico encontrado: "${incorreta}"`,
+                correcao: `Deveria ser: "${correta}"`,
+                localizacao: `Palavra "${incorreta}" encontrada no texto`,
+                campo: "Estado Civil"
+            });
+        }
     }
+    
+    return erros_ortograficos;
 }
-
-// EXEMPLOS CORRETOS:
-// ✅ 15/12/2025 = VÁLIDO (formato correto)
-// ✅ 01/03/2024 = VÁLIDO (formato correto)
-// ✅ 31/01/2026 = VÁLIDO (formato correto)
-
-// EXEMPLOS INCORRETOS:
-// ❌ 2025/12/15 = ERRO (formato americano)
-// ❌ 15-12-2025 = ERRO (usar hífen)
-// ❌ 15/12/25 = ERRO (ano com 2 dígitos)
-
-// IMPORTANTE: NÃO É ERRO ter datas de 2025, 2026, etc.
-// Contratos podem ser válidos para anos futuros!
 \`\`\`
 
-**CRÍTICO: NÃO considere erro ter datas de 2025 ou futuras no contrato!**
+### 🗓️ VALIDAÇÃO DE DATAS - APENAS FORMATO
 
-### 💰 VALIDAÇÃO DE IP FIXO vs VARIÁVEL
+**NÃO validar anos futuros - apenas formato DD/MM/AAAA**
 
 \`\`\`javascript
-// Identificar tipo de IP no contrato
-if (contrato.includes('IP FIXO') || contrato.includes('FIXO')) {
-    tipo_ip = 'fixo';
-    valor_extra_esperado = 50.00;
-} else if (contrato.includes('IP VARIÁVEL') || contrato.includes('VARIÁVEL')) {
-    tipo_ip = 'variavel';
-    valor_extra_esperado = 0.00;
-} else {
-    // Se não está claro, não reportar erro
-    tipo_ip = 'não_identificado';
+function validar_formato_datas(texto) {
+    const regex_data = /\\b(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})\\b/g;
+    const erros_data = [];
+    
+    let match;
+    while ((match = regex_data.exec(texto)) !== null) {
+        const dia = parseInt(match[1]);
+        const mes = parseInt(match[2]);
+        
+        // Validar apenas formato básico
+        if (dia < 1 || dia > 31) {
+            erros_data.push({
+                erro: `Data com dia inválido: ${match[0]}`,
+                encontrado: match[0],
+                esperado: "DD/MM/AAAA (dia 01-31)"
+            });
+        }
+        
+        if (mes < 1 || mes > 12) {
+            erros_data.push({
+                erro: `Data com mês inválido: ${match[0]}`,
+                encontrado: match[0],
+                esperado: "DD/MM/AAAA (mês 01-12)"
+            });
+        }
+    }
+    
+    return erros_data;
 }
 \`\`\`
 
-### 🔧 VALIDAÇÃO DE EQUIPAMENTOS
+### 💰 VALIDAÇÃO DE VALORES E TAXAS
 
 \`\`\`javascript
-// Equipamentos base obrigatórios
-equipamentos_obrigatorios = ['ONU', 'Conectores', 'cabos'];
-
-// Apenas reportar erro se claramente ausente
-equipamentos_texto = extrair_secao_equipamentos(contrato);
-if (!equipamentos_texto.includes('ONU') && !equipamentos_texto.includes('ONT')) {
-    adicionar_erro("Equipamento ONU/ONT não encontrado");
+function validar_consistencia_valores(texto, modelo_identificado) {
+    const erros_valores = [];
+    
+    // Extrair valores do texto
+    const regex_valor = /R\\$\\s*([\\d.,]+)/g;
+    const valores_encontrados = [];
+    
+    let match;
+    while ((match = regex_valor.exec(texto)) !== null) {
+        valores_encontrados.push(match[1]);
+    }
+    
+    // Validar apenas se conseguir identificar claramente
+    // (implementar validações específicas baseadas no modelo)
+    
+    return erros_valores;
 }
 \`\`\`
 
-## 🚨 REGRAS CRÍTICAS PARA EVITAR ALUCINAÇÕES
+## 🚨 REGRAS DE DETECÇÃO DE ERROS
 
-### ❌ NÃO FAÇA:
-1. **NÃO inventar erros** que não existem no texto
-2. **NÃO assumir** dados que não estão claros
-3. **NÃO criar exemplos** de erros ortográficos ("SOOLTEIRO", etc.) 
-4. **NÃO detectar** erros em campos que não consegue identificar claramente
-5. **NÃO reportar** problemas baseados em "suposições"
-6. **NÃO validar datas futuras** como erro (2025, 2026 são válidos)
+### ✅ DETECTE (OBRIGATÓRIO):
+1. **Erros ortográficos óbvios** que estão visíveis no texto
+2. **Telefones com número incorreto** de dígitos (≠ 9)
+3. **Telefones que não começam com 9** (celular)
+4. **Datas com formato inválido** (não DD/MM/AAAA)
+5. **DDDs inválidos** (< 11 ou > 99)
+6. **Valores inconsistentes** se claramente visíveis
 
-### ✅ APENAS FAÇA:
-1. **Detectar erros óbvios** que estão claramente no texto
-2. **Validar dados** que consegue extrair com certeza
-3. **Reportar problemas** apenas quando tem certeza absoluta
-4. **Ser conservador** - prefira aprovar a reprovar incorretamente
-5. **Validar formato de datas** mas não o ano
+### ❌ NÃO DETECTE:
+1. **Erros que não existem** no texto
+2. **Datas futuras** (2025, 2026 são válidas)
+3. **Campos em branco** se não obrigatórios
+4. **Valores duvidosos** se não tem certeza
 
-## 📋 FORMATO DE RESPOSTA CONSERVADOR
+## 📋 FORMATO DE RESPOSTA RIGOROSO
 
 \`\`\`json
 {
@@ -206,44 +240,64 @@ if (!equipamentos_texto.includes('ONU') && !equipamentos_texto.includes('ONT')) 
     "empresa": "${identifiedModel?.company || 'Não identificada'}",
     "confianca": 95
   },
-  "validacao_telefone_celular": {
-    "numero_encontrado": "APENAS SE IDENTIFICADO CLARAMENTE",
-    "status": "CORRETO/ERRO/NAO_IDENTIFICADO",
-    "observacoes": "APENAS SE HOUVER ERRO ÓBVIO"
+  "validacao_telefone": {
+    "telefones_encontrados": ["LISTAR TODOS OS TELEFONES ENCONTRADOS"],
+    "status": "VÁLIDO/INVÁLIDO",
+    "erros": ["APENAS SE HOUVER ERROS REAIS"]
+  },
+  "validacao_ortografia": {
+    "palavras_incorretas": ["APENAS SE ENCONTRADAS NO TEXTO"],
+    "status": "CORRETO/ERRO",
+    "correcoes": ["CORREÇÕES NECESSÁRIAS"]
   },
   "validacao_datas": {
-    "datas_encontradas": "APENAS DATAS IDENTIFICADAS",
-    "formato_status": "CORRETO/ERRO/NAO_IDENTIFICADO",
-    "observacao": "APENAS SE FORMATO INCORRETO - NÃO VALIDAR ANO"
-  },
-  "validacao_ip": {
-    "tipo_identificado": "APENAS SE CLARO NO TEXTO",
-    "status": "CORRETO/ERRO/NAO_IDENTIFICADO"
+    "datas_encontradas": ["LISTAR DATAS"],
+    "formato_status": "VÁLIDO/INVÁLIDO",
+    "erros": ["APENAS SE FORMATO INCORRETO"]
   },
   "erros": [
-    "APENAS ERROS REALMENTE CRÍTICOS E ÓBVIOS"
+    {
+      "campo": "CAMPO ESPECÍFICO",
+      "valor_encontrado": "VALOR EXATO DO TEXTO",
+      "valor_esperado": "VALOR CORRETO",
+      "sugestao_correcao": "COMO CORRIGIR",
+      "severidade": "critico/alto/medio/baixo"
+    }
   ],
   "alertas": [
-    "APENAS ALERTAS BASEADOS EM DADOS REAIS DO TEXTO"
+    "APENAS ALERTAS BASEADOS EM DADOS REAIS"
   ],
   "resumo": {
     "total_erros": 0,
     "status_geral": "aprovado/reprovado",
-    "observacoes": "APENAS COMENTÁRIOS BASEADOS EM DADOS REAIS"
+    "observacoes": "COMENTÁRIOS BASEADOS NO TEXTO REAL"
   }
 }
 \`\`\`
 
-## 🎯 PRINCÍPIOS FINAIS
+## 🎯 EXEMPLOS DE DETECÇÃO CORRETA
 
-1. **CONSERVADOR SEMPRE** - Melhor aprovar um contrato duvidoso que reprovar um correto
-2. **APENAS DADOS REAIS** - Não invente, não assuma, não crie exemplos
-3. **TELEFONE (42) 98833-3039 É VÁLIDO** - 9 dígitos, inicia com 9
-4. **DATAS FUTURAS SÃO VÁLIDAS** - 2025, 2026, etc. são anos normais
-5. **SEM ALUCINAÇÕES** - Não reporte "SOOLTEIRO" ou erros que não existem
-6. **FOCO NA REALIDADE** - Analise apenas o que está escrito no contrato
+### ✅ ERRO REAL - DEVE DETECTAR:
+**Texto:** "ESTADO CIVIL: SOOLTEIRO"
+**Resposta:** ERRO - "SOOLTEIRO" deveria ser "SOLTEIRO"
 
-**LEMBRE-SE: É melhor não detectar um erro real do que criar um erro inexistente!**
+**Texto:** "CELULAR: (42) 998853-6432"  
+**Resposta:** ERRO - 10 dígitos, deveria ter 9
+
+### ✅ SEM ERRO - NÃO DEVE DETECTAR:
+**Texto:** "Data: 17/04/2025"
+**Resposta:** VÁLIDO - formato correto, ano futuro permitido
+
+**Texto:** "CELULAR: (42) 98833-3039"
+**Resposta:** VÁLIDO - 9 dígitos, inicia com 9
+
+## 🎯 PRINCÍPIO FUNDAMENTAL
+
+**DETECTE APENAS ERROS QUE VOCÊ CONSEGUE VER CLARAMENTE NO TEXTO ORIGINAL**
+
+Se está escrito "SOOLTEIRO" → DETECTE o erro  
+Se está escrito "(42) 998853-6432" → DETECTE o erro (10 dígitos)  
+Se está escrito "17/04/2025" → NÃO detecte erro (formato correto)
 
 ---
 
