@@ -1,5 +1,5 @@
-// 🚀 FASE 2: PROMPT BUILDER DINÂMICO - CORRIGIDO PARA SER CONSERVADOR
-// Corrigindo validações de telefone e removendo alucinações
+// 🚀 FASE 3: PROMPT BUILDER DINÂMICO - CORRIGIDO PARA DATAS E UI/UX
+// CORREÇÃO FINAL: Validação de datas apenas formato, sem restricão de ano
 
 import { CONTRACT_MODELS, identifyContractModel, calculateExpectedTotal } from './contract-models.ts';
 import { validateContract } from './contract-validations.ts';
@@ -41,8 +41,8 @@ export const buildContractAnalysisPrompt = (contractText: string): string => {
 Analise o texto para identificar velocidade, empresa e tipo de contrato.
 `;
 
-  return `# VALIDADOR CONSERVADOR DE CONTRATOS CIABRASNET/WNKBR - FASE 2
-## DETECÇÃO APENAS DE ERROS REAIS E ÓBVIOS
+  return `# VALIDADOR CONSERVADOR DE CONTRATOS CIABRASNET/WNKBR - VERSÃO FINAL
+## DETECÇÃO APENAS DE ERROS REAIS E ÓBVIOS - SEM ALUCINAÇÕES
 
 ## 🚨 INSTRUÇÕES CRÍTICAS - SER EXTREMAMENTE CONSERVADOR
 
@@ -117,6 +117,39 @@ function validar_telefone_celular(telefone_completo) {
 
 **IMPORTANTE: (42) 98833-3039 é um número VÁLIDO!**
 
+### 🗓️ VALIDAÇÃO DE DATAS - APENAS FORMATO, NÃO ANO!
+
+**REGRA CORRIGIDA: Apenas verificar formato DD/MM/AAAA, NÃO validar se o ano é futuro**
+
+\`\`\`javascript
+// ALGORITMO CORRETO PARA DATAS:
+function validar_data(data_texto) {
+    // Apenas verificar se o formato está correto DD/MM/AAAA
+    const regex_data = /\\b(0[1-9]|[12][0-9]|3[01])\\/(0[1-9]|1[0-2])\\/(\\d{4})\\b/;
+    
+    if (regex_data.test(data_texto)) {
+        return { valido: true, formato: "DD/MM/AAAA" };
+    } else {
+        return { erro: "Formato de data inválido, use DD/MM/AAAA" };
+    }
+}
+
+// EXEMPLOS CORRETOS:
+// ✅ 15/12/2025 = VÁLIDO (formato correto)
+// ✅ 01/03/2024 = VÁLIDO (formato correto)
+// ✅ 31/01/2026 = VÁLIDO (formato correto)
+
+// EXEMPLOS INCORRETOS:
+// ❌ 2025/12/15 = ERRO (formato americano)
+// ❌ 15-12-2025 = ERRO (usar hífen)
+// ❌ 15/12/25 = ERRO (ano com 2 dígitos)
+
+// IMPORTANTE: NÃO É ERRO ter datas de 2025, 2026, etc.
+// Contratos podem ser válidos para anos futuros!
+\`\`\`
+
+**CRÍTICO: NÃO considere erro ter datas de 2025 ou futuras no contrato!**
+
 ### 💰 VALIDAÇÃO DE IP FIXO vs VARIÁVEL
 
 \`\`\`javascript
@@ -154,12 +187,14 @@ if (!equipamentos_texto.includes('ONU') && !equipamentos_texto.includes('ONT')) 
 3. **NÃO criar exemplos** de erros ortográficos ("SOOLTEIRO", etc.) 
 4. **NÃO detectar** erros em campos que não consegue identificar claramente
 5. **NÃO reportar** problemas baseados em "suposições"
+6. **NÃO validar datas futuras** como erro (2025, 2026 são válidos)
 
 ### ✅ APENAS FAÇA:
 1. **Detectar erros óbvios** que estão claramente no texto
 2. **Validar dados** que consegue extrair com certeza
 3. **Reportar problemas** apenas quando tem certeza absoluta
 4. **Ser conservador** - prefira aprovar a reprovar incorretamente
+5. **Validar formato de datas** mas não o ano
 
 ## 📋 FORMATO DE RESPOSTA CONSERVADOR
 
@@ -175,6 +210,11 @@ if (!equipamentos_texto.includes('ONU') && !equipamentos_texto.includes('ONT')) 
     "numero_encontrado": "APENAS SE IDENTIFICADO CLARAMENTE",
     "status": "CORRETO/ERRO/NAO_IDENTIFICADO",
     "observacoes": "APENAS SE HOUVER ERRO ÓBVIO"
+  },
+  "validacao_datas": {
+    "datas_encontradas": "APENAS DATAS IDENTIFICADAS",
+    "formato_status": "CORRETO/ERRO/NAO_IDENTIFICADO",
+    "observacao": "APENAS SE FORMATO INCORRETO - NÃO VALIDAR ANO"
   },
   "validacao_ip": {
     "tipo_identificado": "APENAS SE CLARO NO TEXTO",
@@ -199,8 +239,9 @@ if (!equipamentos_texto.includes('ONU') && !equipamentos_texto.includes('ONT')) 
 1. **CONSERVADOR SEMPRE** - Melhor aprovar um contrato duvidoso que reprovar um correto
 2. **APENAS DADOS REAIS** - Não invente, não assuma, não crie exemplos
 3. **TELEFONE (42) 98833-3039 É VÁLIDO** - 9 dígitos, inicia com 9
-4. **SEM ALUCINAÇÕES** - Não reporte "SOOLTEIRO" ou erros que não existem
-5. **FOCO NA REALIDADE** - Analise apenas o que está escrito no contrato
+4. **DATAS FUTURAS SÃO VÁLIDAS** - 2025, 2026, etc. são anos normais
+5. **SEM ALUCINAÇÕES** - Não reporte "SOOLTEIRO" ou erros que não existem
+6. **FOCO NA REALIDADE** - Analise apenas o que está escrito no contrato
 
 **LEMBRE-SE: É melhor não detectar um erro real do que criar um erro inexistente!**
 
