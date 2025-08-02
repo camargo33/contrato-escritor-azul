@@ -6,11 +6,11 @@ interface FallbackAnalysisViewProps {
 }
 
 const FallbackAnalysisView = ({ errorCount, fullContent }: FallbackAnalysisViewProps) => {
-  // 🎯 SÓ MOSTRAR CONTEÚDO SE REALMENTE HOUVER ERROS OU PROBLEMAS
+  // 🎯 INTERFACE ULTRA LIMPA - NUNCA MOSTRAR JSON BRUTO
   console.log("🔍 [FallbackAnalysisView] errorCount:", errorCount);
-  console.log("🔍 [FallbackAnalysisView] Tamanho do conteúdo:", fullContent?.length || 0);
+  console.log("🔍 [FallbackAnalysisView] Modo interface LIMPA ativado");
 
-  // Se não há erros detectados, mostrar apenas interface limpa
+  // ✅ SEMPRE MOSTRAR INTERFACE LIMPA, INDEPENDENTE DO CONTEÚDO
   if (errorCount === 0) {
     return (
       <div className="space-y-4">
@@ -36,63 +36,70 @@ const FallbackAnalysisView = ({ errorCount, fullContent }: FallbackAnalysisViewP
     );
   }
 
-  // 🚨 SÓ MOSTRAR DETALHES SE HOUVER ERROS
-  const formatContent = (text: string) => {
-    // Filtrar apenas linhas que parecem ser erros reais
-    const lines = text.split('\n').filter(line => {
-      const trimmed = line.trim();
-      if (!trimmed) return false;
-      
-      // Incluir apenas linhas que parecem ser erros ou observações importantes
-      return (
-        trimmed.match(/erro/i) ||
-        trimmed.match(/incorreto/i) ||
-        trimmed.match(/inválido/i) ||
-        trimmed.match(/crítico/i) ||
-        trimmed.match(/\\d+\\./)||
-        trimmed.startsWith('**') ||
-        trimmed.startsWith('-') ||
-        trimmed.startsWith('•')
-      );
-    });
+  // 🎨 INTERFACE LIMPA PARA ERROS - SEM JSON BRUTO
+  const extractCleanErrors = (text: string): string[] => {
+    if (!text || typeof text !== 'string') {
+      return [`Detectados ${errorCount} problema${errorCount !== 1 ? 's' : ''} durante a análise`];
+    }
 
-    return lines.map((line, index) => {
-      const trimmedLine = line.trim();
+    // 🧹 FILTRAR APENAS MENSAGENS LEGÍVEIS - NUNCA JSON
+    const cleanLines: string[] = [];
+    const lines = text.split('\n');
+    
+    for (const line of lines) {
+      const trimmed = line.trim();
       
-      if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
-        return (
-          <h4 key={index} className="text-lg font-semibold text-slate-700 mt-4 mb-2">
-            {trimmedLine.replace(/\\*\\*/g, '')}
-          </h4>
-        );
+      // ❌ PULAR completamente linhas que parecem JSON
+      if (
+        trimmed.startsWith('{') ||
+        trimmed.startsWith('}') ||
+        trimmed.includes('"erro":') ||
+        trimmed.includes('"campo":') ||
+        trimmed.includes('"status":') ||
+        trimmed.includes('":') ||
+        trimmed.includes('",') ||
+        trimmed.match(/^\s*".*":\s*/) ||
+        trimmed.match(/^\s*\[\s*$/) ||
+        trimmed.match(/^\s*\]\s*$/) ||
+        trimmed.length > 200 // Linhas muito longas provavelmente são JSON
+      ) {
+        continue;
       }
-      
-      if (/^\\d+\\./.test(trimmedLine)) {
-        return (
-          <div key={index} className="bg-red-50 border-l-4 border-red-400 p-3 mb-2 rounded-r-lg">
-            <div className="flex items-start">
-              <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 mr-3 flex-shrink-0" />
-              <p className="text-red-700 font-medium">{trimmedLine}</p>
-            </div>
-          </div>
-        );
+
+      // ✅ INCLUIR apenas mensagens legíveis
+      if (
+        trimmed.length > 5 &&
+        trimmed.length < 150 &&
+        (
+          trimmed.match(/erro/i) ||
+          trimmed.match(/incorreto/i) ||
+          trimmed.match(/inválido/i) ||
+          trimmed.match(/problema/i) ||
+          trimmed.match(/formato/i) ||
+          trimmed.match(/telefone/i) ||
+          trimmed.match(/data/i) ||
+          trimmed.match(/valor/i) ||
+          trimmed.includes('deve') ||
+          trimmed.includes('esperado') ||
+          trimmed.match(/^[-•\d+\.]\s/) // Listas numeradas ou com bullet
+        )
+      ) {
+        cleanLines.push(trimmed);
       }
-      
-      if (/^[-•]/.test(trimmedLine)) {
-        return (
-          <div key={index} className="ml-4 mb-1">
-            <p className="text-gray-700">{trimmedLine}</p>
-          </div>
-        );
-      }
-      
-      return (
-        <p key={index} className="text-gray-700 mb-2 leading-relaxed">
-          {trimmedLine}
-        </p>
-      );
-    });
+    }
+
+    // Se não conseguiu extrair nada útil, retornar mensagem genérica
+    if (cleanLines.length === 0) {
+      return [
+        `Detectados ${errorCount} problema${errorCount !== 1 ? 's' : ''} na análise`,
+        "Revise o contrato e tente uma nova análise"
+      ];
+    }
+
+    return cleanLines.slice(0, 5); // Máximo 5 linhas para manter limpo
   };
+
+  const cleanErrors = extractCleanErrors(fullContent);
 
   return (
     <div className="space-y-4">
@@ -109,7 +116,14 @@ const FallbackAnalysisView = ({ errorCount, fullContent }: FallbackAnalysisViewP
         </h3>
         
         <div className="space-y-3">
-          {formatContent(fullContent)}
+          {cleanErrors.map((error, index) => (
+            <div key={index} className="bg-red-50 border-l-4 border-red-400 p-3 rounded-r-lg">
+              <div className="flex items-start">
+                <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 mr-3 flex-shrink-0" />
+                <p className="text-red-700 font-medium">{error}</p>
+              </div>
+            </div>
+          ))}
         </div>
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
