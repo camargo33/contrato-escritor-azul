@@ -98,11 +98,10 @@ interface AnalysisData {
 }
 
 const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: AnalysisReportProps) => {
-  console.log("🔍 [AnalysisReport] Iniciando processamento - VERSÃO ULTRA ROBUSTA");
-  console.log("📄 Content recebido (300 chars):", content?.substring(0, 300));
+  console.log("🔍 [AnalysisReport] Processamento LIMPO - SEM JSON BRUTO");
 
   const parseAnalysisContent = (content: string): { analysisData: AnalysisData | null; errorCount: number; fullContent: string } => {
-    console.log("🔍 [FRONTEND] NOVA VERSÃO - Parsing ultra robusto");
+    console.log("🔍 [FRONTEND] Parsing para interface LIMPA");
     
     // 🛡️ PROTEÇÃO: Verificar se content existe
     if (!content) {
@@ -155,13 +154,11 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
       }
       
       if (!rawData) {
-        console.warn("⚠️ [FRONTEND] Não conseguiu extrair JSON, tentando fallback...");
+        console.warn("⚠️ [FRONTEND] Não conseguiu extrair JSON, usando fallback...");
         throw new Error("JSON não encontrado");
       }
       
       console.log("✅ [FRONTEND] Dados extraídos com sucesso");
-      console.log("📊 [FRONTEND] Tipo de dados:", typeof rawData);
-      console.log("📊 [FRONTEND] Chaves principais:", Object.keys(rawData));
       
       // 🔍 ETAPA 2: IDENTIFICAR FORMATO E EXTRAIR CAMPOS
       let errosOriginais: ErrorAnalysis[] = [];
@@ -297,7 +294,7 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
         analysisData.status_geral = 'reprovado';
       }
       
-      console.log("✅ [FRONTEND] ANÁLISE CONSTRUÍDA COM SUCESSO!");
+      console.log("✅ [FRONTEND] ANÁLISE CONSTRUÍDA - INTERFACE LIMPA!");
       
       return {
         analysisData,
@@ -306,10 +303,9 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
       };
       
     } catch (error) {
-      console.error("❌ [FRONTEND] Erro no parsing ultra robusto:", error);
-      console.log("📄 Content problemático (500 chars):", content?.substring(0, 500));
+      console.error("❌ [FRONTEND] Erro no parsing:", error);
       
-      // 🆘 FALLBACK FINAL
+      // 🆘 FALLBACK FINAL - APENAS PARA CASOS EXTREMOS
       console.log("🆘 [FRONTEND] Usando fallback de emergência");
       
       const errorPatterns = [/erro/gi, /incorreto/gi, /inválido/gi, /crítico/gi];
@@ -325,7 +321,7 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
 
   const { analysisData, errorCount, fullContent } = parseAnalysisContent(content);
 
-  console.log("🎯 [FRONTEND] DADOS FINAIS PARA RENDERIZAÇÃO:");
+  console.log("🎯 [FRONTEND] RENDERIZAÇÃO FINAL:");
   console.log("  - analysisData exists:", !!analysisData);
   console.log("  - erros count:", analysisData?.erros?.length || 0);
   console.log("  - alertas count:", analysisData?.alertas?.length || 0);
@@ -358,31 +354,31 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
               <TaxValidationCard taxData={analysisData.validacao_taxas} />
             )}
 
-            {/* Resumo Detalhado */}
-            {(analysisData.resumo && (analysisData.resumo.total_erros > 0 || (analysisData.alertas && analysisData.alertas.length > 0))) && (
+            {/* 🚨 APENAS MOSTRAR RESUMO SE HOUVER ERROS OU ALERTAS */}
+            {(analysisData.erros && analysisData.erros.length > 0) || (analysisData.alertas && analysisData.alertas.length > 0) ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Resumo de Erros */}
-                {analysisData.resumo.total_erros > 0 && (
+                {analysisData.erros && analysisData.erros.length > 0 && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <div className="text-center mb-3">
-                      <div className="text-3xl font-bold text-red-700">{analysisData.resumo.total_erros}</div>
+                      <div className="text-3xl font-bold text-red-700">{analysisData.erros.length}</div>
                       <div className="text-sm text-red-600">Erros Encontrados</div>
                     </div>
                     <div className="grid grid-cols-4 gap-2 text-xs">
                       <div className="text-center">
-                        <div className="font-bold text-red-600">{analysisData.resumo.criticos || 0}</div>
+                        <div className="font-bold text-red-600">{analysisData.resumo?.criticos || 0}</div>
                         <div className="text-red-500">Críticos</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-bold text-orange-600">{analysisData.resumo.altos || 0}</div>
+                        <div className="font-bold text-orange-600">{analysisData.resumo?.altos || 0}</div>
                         <div className="text-orange-500">Altos</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-bold text-yellow-600">{analysisData.resumo.medios || 0}</div>
+                        <div className="font-bold text-yellow-600">{analysisData.resumo?.medios || 0}</div>
                         <div className="text-yellow-500">Médios</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-bold text-blue-600">{analysisData.resumo.baixos || 0}</div>
+                        <div className="font-bold text-blue-600">{analysisData.resumo?.baixos || 0}</div>
                         <div className="text-blue-500">Baixos</div>
                       </div>
                     </div>
@@ -399,13 +395,17 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
                   </div>
                 )}
               </div>
+            ) : null}
+
+            {/* Lista de Erros - APENAS SE EXISTIR */}
+            {analysisData.erros && analysisData.erros.length > 0 && (
+              <ErrorListCard erros={analysisData.erros} />
             )}
 
-            {/* Lista de Erros - COM PROTEÇÃO ABSOLUTA */}
-            <ErrorListCard erros={analysisData.erros} />
-
-            {/* Lista de Alertas - COM PROTEÇÃO ABSOLUTA */}
-            <AlertListCard alertas={analysisData.alertas} />
+            {/* Lista de Alertas - APENAS SE EXISTIR */}
+            {analysisData.alertas && analysisData.alertas.length > 0 && (
+              <AlertListCard alertas={analysisData.alertas} />
+            )}
 
             {/* Validações Corretas */}
             {analysisData.validacoes_corretas && analysisData.validacoes_corretas.length > 0 && (
@@ -423,7 +423,7 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
               </div>
             )}
 
-            {/* Observações */}
+            {/* Observações - APENAS SE EXISTIR */}
             {analysisData.observacoes && analysisData.observacoes.length > 0 && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="font-semibold text-blue-800 mb-3">📋 Observações da Análise</h4>
@@ -435,23 +435,23 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
               </div>
             )}
 
-            {/* Mensagem quando não há erros - SÓ MOSTRA SE REALMENTE NÃO HÁ ERROS */}
+            {/* 🎉 MENSAGEM QUANDO NÃO HÁ ERROS - SÓ MOSTRA INTERFACE LIMPA */}
             {(!analysisData.erros || analysisData.erros.length === 0) && (!analysisData.alertas || analysisData.alertas.length === 0) && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="flex items-center gap-2 text-green-700">
                   <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
                     <span className="text-white text-xs">✓</span>
                   </div>
-                  <span className="font-medium">Contrato Aprovado</span>
+                  <span className="font-medium">Nenhum alerta foi detectado</span>
                 </div>
                 <p className="text-green-600 text-sm mt-1">
-                  Todos os campos estão corretos conforme esperado. Nenhuma correção é necessária.
+                  Todos os campos estão dentro do padrão esperado.
                 </p>
               </div>
             )}
           </div>
         ) : (
-          // Fallback para análises não estruturadas
+          // 🆘 Fallback APENAS para casos onde o JSON não pode ser parseado
           <FallbackAnalysisView errorCount={errorCount} fullContent={fullContent} />
         )}
 
