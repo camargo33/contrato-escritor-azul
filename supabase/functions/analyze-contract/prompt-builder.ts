@@ -76,16 +76,16 @@ function validar_telefone_rigoroso(telefone_texto) {
         const parte2 = match[3];
         const numero_completo = parte1 + parte2;
         
-        console.log(`Analisando: (${ddd}) ${parte1}-${parte2} = ${numero_completo.length} dígitos`);
+        console.log("Analisando: (" + ddd + ") " + parte1 + "-" + parte2 + " = " + numero_completo.length + " dígitos");
         
         // VERIFICAÇÃO RIGOROSA:
         
         // 1. Deve ter exatamente 9 dígitos
         if (numero_completo.length !== 9) {
             return {
-                erro: `Telefone celular inválido: (${ddd}) ${parte1}-${parte2}`,
-                motivo: `Celular deve ter 9 dígitos, encontrado ${numero_completo.length} dígitos`,
-                encontrado: `(${ddd}) ${parte1}-${parte2}`,
+                erro: "Telefone celular inválido: (" + ddd + ") " + parte1 + "-" + parte2,
+                motivo: "Celular deve ter 9 dígitos, encontrado " + numero_completo.length + " dígitos",
+                encontrado: "(" + ddd + ") " + parte1 + "-" + parte2,
                 esperado: "(XX) 9XXXX-XXXX (9 dígitos)"
             };
         }
@@ -93,9 +93,9 @@ function validar_telefone_rigoroso(telefone_texto) {
         // 2. Deve começar com 9
         if (!numero_completo.startsWith('9')) {
             return {
-                erro: `Telefone celular inválido: (${ddd}) ${parte1}-${parte2}`,
-                motivo: `Celular deve começar com 9, encontrado iniciando com ${numero_completo[0]}`,
-                encontrado: `(${ddd}) ${parte1}-${parte2}`,
+                erro: "Telefone celular inválido: (" + ddd + ") " + parte1 + "-" + parte2,
+                motivo: "Celular deve começar com 9, encontrado iniciando com " + numero_completo[0],
+                encontrado: "(" + ddd + ") " + parte1 + "-" + parte2,
                 esperado: "(XX) 9XXXX-XXXX (inicia com 9)"
             };
         }
@@ -104,8 +104,8 @@ function validar_telefone_rigoroso(telefone_texto) {
         const ddd_num = parseInt(ddd);
         if (ddd_num < 11 || ddd_num > 99) {
             return {
-                erro: `DDD inválido: ${ddd}`,
-                motivo: `DDD deve estar entre 11 e 99`,
+                erro: "DDD inválido: " + ddd,
+                motivo: "DDD deve estar entre 11 e 99",
                 encontrado: ddd,
                 esperado: "11-99"
             };
@@ -173,7 +173,7 @@ function validar_formato_datas(texto) {
         // Validar apenas formato básico
         if (dia < 1 || dia > 31) {
             erros_data.push({
-                erro: `Data com dia inválido: ${match[0]}`,
+                erro: "Data com dia inválido: " + match[0],
                 encontrado: match[0],
                 esperado: "DD/MM/AAAA (dia 01-31)"
             });
@@ -181,7 +181,7 @@ function validar_formato_datas(texto) {
         
         if (mes < 1 || mes > 12) {
             erros_data.push({
-                erro: `Data com mês inválido: ${match[0]}`,
+                erro: "Data com mês inválido: " + match[0],
                 encontrado: match[0],
                 esperado: "DD/MM/AAAA (mês 01-12)"
             });
