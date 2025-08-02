@@ -49,7 +49,8 @@ Analisar contratos OCR da CIABRASNET detectando APENAS ERROS CRÍTICOS ÓBVIOS q
 
 ### 🔍 ALGORITMO DE VALIDAÇÃO CONSERVADORA:
 
-\\`\\`\\`javascript
+EXEMPLO DE CÓDIGO JAVASCRIPT:
+
 // VALIDAÇÃO DE CPF - SEMPRE EXECUTAR
 cpf_numeros = extrair_apenas_numeros_do_cpf(cpf_encontrado)
 if (cpf_numeros.length !== 11) {
@@ -121,7 +122,6 @@ if (estado_civil_encontrado.includes("SOOLTEIRO")) {
         tipo: "erro_digitacao"
     })
 }
-\\`\\`\\`
 
 ## ETAPA 3: VALIDAÇÃO DE FIDELIDADE E TAXAS
 
@@ -129,7 +129,8 @@ if (estado_civil_encontrado.includes("SOOLTEIRO")) {
 
 **FÓRMULA FIXA - NUNCA EXTRAIR VALORES DIRETOS:**
 
-\\`\\`\\`javascript
+EXEMPLO DE CÓDIGO JAVASCRIPT:
+
 // VALORES BASE FIXOS
 const VALOR_BASE_INSTALACAO = 700.00;
 
@@ -162,11 +163,11 @@ if (valor_instalacao_no_contrato !== taxa_instalacao_calculada) {
         explicacao: "Taxa deve ser R$ " + VALOR_BASE_INSTALACAO + " - R$ " + desconto_valor + " = R$ " + taxa_instalacao_calculada
     });
 }
-\\`\\`\\`
 
 ### 🔍 ALGORITMO DE EXTRAÇÃO DE TELEFONE:
 
-\\`\\`\\`javascript
+EXEMPLO DE CÓDIGO JAVASCRIPT:
+
 // EXTRAIR TELEFONE COMPLETO - ATENÇÃO AOS DÍGITOS EXATOS
 telefone_patterns = [
     /CELULAR[:\\s]*\\((\\d{2})\\)[:\\s]*(\\d{4,5})-?(\\d{4})/g,
@@ -179,13 +180,13 @@ telefone_patterns = [
 // ❌ (42) 998853-6432 = DDD(2) + 998853(6) + 6432(4) = 10 dígitos no número (ERRO - sobra 1)  
 // ✅ (42) 99955-4936 = DDD(2) + 99955(5) + 4936(4) = 9 dígitos no número (CORRETO - celular)
 // ✅ (42) 3245-6789 = DDD(2) + 3245(4) + 6789(4) = 8 dígitos no número (CORRETO - fixo)
-\\`\\`\\`
 
 ## FORMATO DE RESPOSTA OBRIGATÓRIO
 
 **CRÍTICO: SEMPRE calcular taxas matematicamente!**
 
-\\`\\`\\`json
+FORMATO JSON DE RESPOSTA:
+
 {
   "modelo_identificado": {
     "nome": "2024 Combo 600Mbps",
@@ -251,7 +252,6 @@ telefone_patterns = [
     "💰 Taxa de instalação calculada corretamente: R$ 700,00 - R$ 500,00 = R$ 200,00"
   ]
 }
-\\`\\`\\`
 
 ## 🚨 REGRAS CRÍTICAS ATUALIZADAS E CONSERVADORAS
 
