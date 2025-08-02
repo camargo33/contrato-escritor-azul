@@ -3,12 +3,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Dashboard from "./pages/Dashboard";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ContractAnalysis from "./pages/ContractAnalysis";
 import BaseContracts from "./pages/BaseContracts";
-import Reports from "./pages/Reports";
-import AnalysisDetails from "./pages/AnalysisDetails";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./components/auth/AuthPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -27,7 +24,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => (
           <SidebarTrigger className="-ml-1" />
           <div className="flex-1">
             <h1 className="text-xl font-semibold text-foreground">
-              Analisador Ortográfico de Contratos
+              Analisador de Contratos CIABRASNET
             </h1>
           </div>
         </header>
@@ -48,11 +45,10 @@ const App = () => (
         <PageTransition>
           <Routes>
             <Route path="/auth" element={<AuthPage />} />
+            {/* Redirecionar página inicial para análise */}
             <Route path="/" element={
               <ProtectedRoute>
-                <AppLayout>
-                  <Dashboard />
-                </AppLayout>
+                <Navigate to="/analise" replace />
               </ProtectedRoute>
             } />
             <Route path="/analise" element={
@@ -69,21 +65,7 @@ const App = () => (
                 </AppLayout>
               </ProtectedRoute>
             } />
-            <Route path="/relatorios" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Reports />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/relatorios/analise/:id" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <AnalysisDetails />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            {/* Rotas removidas: Dashboard, Reports, AnalysisDetails */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </PageTransition>
