@@ -1,5 +1,7 @@
-// 🔍 VALIDAÇÕES RIGOROSAS - DETECTA ERROS REAIS, NÃO INVENTA
-// CORREÇÃO: Detectar telefone com 10 dígitos e erros ortográficos óbvios
+// 🔍 VALIDAÇÕES COMPLETAS - DETECTA ERROS REAIS + INCONSISTÊNCIAS DE TAXAS
+// CORREÇÃO: Detectar telefone, ortografia, taxas e lógica de valores
+
+import { validateTaxLogic } from './tax-validations.ts';
 
 export interface ValidationRule {
   field: string;
@@ -104,29 +106,6 @@ export const validateCellPhone = (phone: string): ValidationResult => {
   };
 };
 
-// 🧪 FUNÇÃO DE TESTE RIGOROSO PARA TELEFONES
-export const testCellPhoneValidation = () => {
-  const testCases = [
-    { phone: "(42) 98833-3039", expected: true, description: "Número válido - 9 dígitos" },
-    { phone: "(42) 99955-4936", expected: true, description: "Exemplo válido - 9 dígitos" },
-    { phone: "(47) 91234-5678", expected: true, description: "WNKBR válido - 9 dígitos" },
-    { phone: "(42) 998853-6432", expected: false, description: "❌ ERRO REAL - 10 dígitos" },
-    { phone: "(42) 8833-3039", expected: false, description: "❌ ERRO - 8 dígitos" },
-    { phone: "(42) 38833-3039", expected: false, description: "❌ ERRO - não inicia com 9" },
-    { phone: "42988333039", expected: true, description: "Sem formatação - 9 dígitos válido" }
-  ];
-
-  console.log("🧪 TESTE RIGOROSO - Validação de telefones:");
-  testCases.forEach(test => {
-    const result = validateCellPhone(test.phone);
-    const passed = result.valid === test.expected;
-    console.log(`${passed ? '✅' : '❌'} ${test.phone} → ${result.valid} (esperado: ${test.expected}) - ${test.description}`);
-    if (!passed) {
-      console.log(`   ⚠️ Mensagem: ${result.message}`);
-    }
-  });
-};
-
 // 📝 VALIDAÇÃO DE ERROS ORTOGRÁFICOS ÓBVIOS
 export const validateSpelling = (text: string): ValidationResult[] => {
   const errors: ValidationResult[] = [];
@@ -201,7 +180,7 @@ export const validateDateFormat = (text: string): ValidationResult[] => {
   return errors;
 };
 
-// 🌐 VALIDAÇÃO DE IP FIXO vs VARIÁVEL (MANTIDA)
+// 🌐 VALIDAÇÃO DE IP FIXO vs VARIÁVEL (MANTIDA PARA COMPATIBILIDADE)
 export const validateIPConfiguration = (ipType: string, totalValue: number, baseValue: number): ValidationResult => {
   const ipTypeLower = ipType?.toLowerCase() || '';
   
@@ -302,14 +281,14 @@ export const validateEquipment = (equipmentText: string, speed: string): Validat
   };
 };
 
-// 🎯 FUNÇÃO PRINCIPAL DE VALIDAÇÃO RIGOROSA - DETECTA ERROS REAIS
+// 🎯 FUNÇÃO PRINCIPAL DE VALIDAÇÃO COMPLETA - DETECTA TODOS OS ERROS
 export const validateContract = (contractData: any, identifiedModel?: any): ContractValidationResult => {
   const errors: ValidationResult[] = [];
   const warnings: ValidationResult[] = [];
   const info: ValidationResult[] = [];
   const validatedFields: string[] = [];
   
-  console.log("🔍 INICIANDO VALIDAÇÃO RIGOROSA - DETECTAR ERROS REAIS");
+  console.log("🔍 INICIANDO VALIDAÇÃO COMPLETA - ERROS REAIS + TAXAS");
   
   // 1. Validar telefone celular (RIGOROSO)
   if (contractData.cellPhone) {
@@ -321,7 +300,7 @@ export const validateContract = (contractData: any, identifiedModel?: any): Cont
     validatedFields.push('cellPhone');
   }
   
-  // 2. Validar erros ortográficos óbvios (NOVO)
+  // 2. Validar erros ortográficos óbvios
   if (contractData.fullText) {
     console.log("📝 Verificando ortografia...");
     const spellingErrors = validateSpelling(contractData.fullText);
@@ -345,7 +324,19 @@ export const validateContract = (contractData: any, identifiedModel?: any): Cont
     if (dateErrors.length > 0) validatedFields.push('dateFormat');
   }
   
-  // 4. Validar IP (conservador)
+  // 4. 💰 NOVA: Validar lógica de taxas, IP e fidelidade
+  if (contractData.fullText) {
+    console.log("💰 Verificando lógica de taxas...");
+    const taxErrors = validateTaxLogic(contractData.fullText);
+    taxErrors.forEach(error => {
+      if (error.severity === 'error') errors.push(error);
+      else if (error.severity === 'warning') warnings.push(error);
+      else info.push(error);
+    });
+    if (taxErrors.length > 0) validatedFields.push('taxLogic');
+  }
+  
+  // 5. Validar IP (conservador - compatibilidade)
   if (contractData.ipType && contractData.totalValue && contractData.baseValue) {
     const ipResult = validateIPConfiguration(contractData.ipType, contractData.totalValue, contractData.baseValue);
     if (ipResult.severity === 'error') errors.push(ipResult);
@@ -354,7 +345,7 @@ export const validateContract = (contractData: any, identifiedModel?: any): Cont
     validatedFields.push('ipConfiguration');
   }
   
-  // 5. Validar equipamentos (conservador)
+  // 6. Validar equipamentos (conservador)
   if (contractData.equipment && contractData.speed) {
     const equipmentResult = validateEquipment(contractData.equipment, contractData.speed);
     if (equipmentResult.severity === 'error') errors.push(equipmentResult);
@@ -363,7 +354,7 @@ export const validateContract = (contractData: any, identifiedModel?: any): Cont
     validatedFields.push('equipment');
   }
   
-  console.log(`✅ Validação rigorosa concluída: ${errors.length} erros, ${warnings.length} alertas`);
+  console.log(`✅ Validação completa concluída: ${errors.length} erros, ${warnings.length} alertas`);
   console.log("📋 Erros encontrados:", errors.map(e => e.message));
   
   return {
@@ -378,11 +369,12 @@ export const validateContract = (contractData: any, identifiedModel?: any): Cont
   };
 };
 
-// 📋 LISTA DE VALIDAÇÕES DISPONÍVEIS
+// 📋 LISTA DE VALIDAÇÕES DISPONÍVEIS COMPLETA
 export const AVAILABLE_VALIDATIONS = [
   'cellPhone',
   'spelling',
   'dateFormat',
+  'taxLogic',         // NOVA
   'ipConfiguration', 
   'equipment'
 ] as const;
@@ -399,6 +391,3 @@ export const getValidationSummary = (result: ContractValidationResult) => {
     fields_validated: result.validatedFields
   };
 };
-
-// 🧪 EXECUTAR TESTE AUTOMÁTICO (DESCOMENTE PARA TESTAR)
-// testCellPhoneValidation();
