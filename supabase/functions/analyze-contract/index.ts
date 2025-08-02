@@ -158,30 +158,45 @@ Deno.serve(async (req) => {
 
       console.log('🤖 Análise recebida da IA:', analysisText.length, 'caracteres')
 
-      // 📊 ETAPA 4: PROCESSAR RESULTADO
+      // 📊 ETAPA 4: PROCESSAR RESULTADO COM LIMPEZA ROBUSTA
       let analysisResult
       try {
-        // Limpar o texto caso tenha markdown
-        const cleanText = analysisText
-          .replace(/```json\n?/g, '')
-          .replace(/```\n?/g, '')
+        // Limpeza mais robusta do texto markdown
+        let cleanText = analysisText
+          .replace(/```json\s*/g, '')  // Remove ```json com espaços opcionais
+          .replace(/```\s*/g, '')      // Remove ``` com espaços opcionais
+          .replace(/^[`\s]*/, '')      // Remove backticks e espaços no início
+          .replace(/[`\s]*$/, '')      // Remove backticks e espaços no final
           .trim()
+        
+        // Se ainda não conseguir fazer parse, tentar encontrar JSON válido no texto
+        if (!cleanText.startsWith('{')) {
+          const jsonMatch = cleanText.match(/\{[\s\S]*\}/)
+          if (jsonMatch) {
+            cleanText = jsonMatch[0]
+          }
+        }
         
         analysisResult = JSON.parse(cleanText)
         console.log('✅ Parse do resultado JSON bem-sucedido')
       } catch (parseError) {
-        console.warn('⚠️ Erro ao fazer parse JSON:', parseError)
-        // Fallback: retornar texto estruturado
+        console.warn('⚠️ Erro ao fazer parse JSON - usando fallback:', parseError.message)
+        console.log('📝 Texto original (primeiros 500 chars):', analysisText.substring(0, 500))
+        
+        // Fallback estruturado baseado no modelo identificado
         analysisResult = {
-          status: "PROCESSADO_COM_TEXTO",
+          status: "PROCESSADO_COM_FALLBACK",
           modelo_identificado: identifiedModel ? {
             nome: identifiedModel.name,
             velocidade: identifiedModel.speed,
-            empresa: identifiedModel.company
+            empresa: identifiedModel.company,
+            cidade: identifiedModel.city,
+            ddd: identifiedModel.ddd
           } : null,
           erros: [],
-          alertas: [],
-          resumo: "Análise processada como texto",
+          alertas: ["Resposta da IA processada como texto devido a formato inválido"],
+          resumo: "Análise processada com fallback estruturado",
+          detalhes: "O modelo de IA retornou uma resposta em formato inválido",
           raw_response: analysisText
         }
       }
