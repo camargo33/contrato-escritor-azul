@@ -67,10 +67,8 @@ export const contractService = {
     try {
       console.log("🚀 Iniciando upload do contrato:", file.name);
       
-      // 🔧 CORREÇÃO: Validação de conectividade
       await ensureConnection();
       
-      // 🔧 CORREÇÃO: Validação de arquivo
       if (!file) {
         return { success: false, error: "Arquivo não fornecido" };
       }
@@ -79,11 +77,10 @@ export const contractService = {
         return { success: false, error: "Apenas arquivos PDF são permitidos" };
       }
       
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      if (file.size > 10 * 1024 * 1024) {
         return { success: false, error: "Arquivo muito grande. Limite: 10MB" };
       }
       
-      // 🔧 CORREÇÃO: Validação de dados
       const validatedData = validateContractData(contractData);
       
       const { data: { user } } = await supabase.auth.getUser();
@@ -94,7 +91,7 @@ export const contractService = {
 
       console.log("✅ Usuário autenticado:", user.id);
 
-      // 1. Upload do arquivo para o storage
+      // Upload do arquivo para o storage
       const fileName = `${user.id}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
       console.log("📤 Fazendo upload do arquivo:", fileName);
       
@@ -108,7 +105,6 @@ export const contractService = {
       if (uploadError) {
         console.error("❌ Erro no upload:", uploadError);
         
-        // Mensagens de erro mais específicas
         if (uploadError.message?.includes('Bucket not found')) {
           return { 
             success: false, 
@@ -135,7 +131,7 @@ export const contractService = {
 
       console.log("✅ Upload realizado com sucesso:", uploadData);
 
-      // 2. Salvar registro do contrato no banco
+      // Salvar registro do contrato no banco
       const contractRecord = {
         user_id: user.id,
         name: validatedData.name,
@@ -166,7 +162,6 @@ export const contractService = {
           console.error("❌ Erro ao limpar arquivo:", cleanupError);
         }
         
-        // Mensagens de erro específicas para banco
         if (dbError.code === '23505') {
           return { success: false, error: "📄 Contrato com este nome já existe" };
         }
@@ -180,7 +175,7 @@ export const contractService = {
 
       console.log("✅ Contrato salvo com sucesso:", savedContract);
 
-      // 3. Processar PDF em background (não bloquear resposta)
+      // Processar PDF em background
       this.processContractInBackground(savedContract.id, file).catch(error => {
         console.error("⚠️ Erro no processamento em background:", error);
       });
@@ -189,8 +184,6 @@ export const contractService = {
       
     } catch (error: any) {
       console.error("💥 Erro geral no upload:", error);
-      
-      // Log detalhado para debug
       console.error("Stack trace:", error.stack);
       
       return { 
@@ -200,12 +193,11 @@ export const contractService = {
     }
   },
 
-  // 🔧 CORREÇÃO: Remover contrato base com transação segura
+  // Remover contrato base
   async deleteBaseContract(contractId: string): Promise<{ success: boolean; error?: string }> {
     try {
       console.log("🗑️ Iniciando remoção do contrato:", contractId);
       
-      // Validação de entrada
       if (!contractId || typeof contractId !== 'string') {
         return { success: false, error: "ID do contrato inválido" };
       }
@@ -218,7 +210,7 @@ export const contractService = {
         return { success: false, error: "Usuário não autenticado" };
       }
 
-      // 1. Buscar dados do contrato para obter o file_path
+      // Buscar dados do contrato para obter o file_path
       const { data: contract, error: fetchError } = await supabase
         .from('base_contracts')
         .select('file_path, user_id, name')
@@ -238,20 +230,7 @@ export const contractService = {
 
       console.log("✅ Contrato encontrado:", contract.name);
 
-      // 2. Remover cláusulas relacionadas primeiro (foreign key)
-      const { error: clausesError } = await supabase
-        .from('contract_clauses')
-        .delete()
-        .eq('base_contract_id', contractId);
-
-      if (clausesError) {
-        console.error("❌ Erro ao remover cláusulas:", clausesError);
-        return { success: false, error: "📋 Erro ao remover cláusulas do contrato" };
-      }
-
-      console.log("✅ Cláusulas removidas com sucesso");
-
-      // 3. Remover registro do banco
+      // Remover registro do banco
       const { error: deleteError } = await supabase
         .from('base_contracts')
         .delete()
@@ -265,7 +244,7 @@ export const contractService = {
 
       console.log("✅ Contrato removido do banco com sucesso");
 
-      // 4. Remover arquivo do storage (não crítico se falhar)
+      // Remover arquivo do storage
       if (contract.file_path) {
         const { error: storageError } = await supabase.storage
           .from('base-contracts')
@@ -292,7 +271,7 @@ export const contractService = {
     }
   },
 
-  // 🔧 CORREÇÃO: Processamento em background com timeout e retry
+  // Processamento em background
   async processContractInBackground(contractId: string, file: File) {
     const maxRetries = 3;
     let attempt = 0;
@@ -301,7 +280,6 @@ export const contractService = {
       try {
         console.log(`🔄 Tentativa ${attempt + 1}/${maxRetries} - Processando contrato:`, contractId);
         
-        // Timeout de 30 segundos para extração de PDF
         const extractionPromise = extractTextFromPDF(file);
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Timeout na extração de PDF')), 30000)
@@ -310,9 +288,6 @@ export const contractService = {
         const extractedText = await Promise.race([extractionPromise, timeoutPromise]) as string;
         
         if (extractedText && extractedText !== "PDF_NO_TEXT") {
-          // Analisar e extrair cláusulas
-          const clauses = await this.extractClausesFromText(extractedText, contractId);
-          
           // Marcar como processado
           const { error: updateError } = await supabase
             .from('base_contracts')
@@ -325,10 +300,10 @@ export const contractService = {
           if (updateError) {
             console.error("❌ Erro ao marcar como processado:", updateError);
           } else {
-            console.log(`✅ Contrato ${contractId} processado. ${clauses.length} cláusulas extraídas.`);
+            console.log(`✅ Contrato ${contractId} processado.`);
           }
           
-          return; // Sucesso, sair do loop
+          return;
         } else {
           console.warn("⚠️ PDF sem texto extraível:", contractId);
           return;
@@ -341,7 +316,6 @@ export const contractService = {
         if (attempt >= maxRetries) {
           console.error(`💥 Falha final no processamento após ${maxRetries} tentativas:`, contractId);
           
-          // Marcar como erro de processamento
           try {
             await supabase
               .from('base_contracts')
@@ -354,104 +328,13 @@ export const contractService = {
             console.error("❌ Erro ao marcar falha de processamento:", updateError);
           }
         } else {
-          // Aguardar antes da próxima tentativa
           await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
         }
       }
     }
   },
 
-  // 🔧 CORREÇÃO: Extração de cláusulas com timeout
-  async extractClausesFromText(text: string, contractId: string): Promise<ContractClause[]> {
-    try {
-      if (!text || text.trim().length === 0) {
-        console.warn("⚠️ Texto vazio para extração de cláusulas");
-        return [];
-      }
-      
-      const commonClauses = this.identifyCommonClauses(text);
-      
-      if (commonClauses.length === 0) {
-        console.log("ℹ️ Nenhuma cláusula comum identificada");
-        return [];
-      }
-      
-      const clausesToInsert = commonClauses.map(clause => ({
-        base_contract_id: contractId,
-        clause_type: clause.type,
-        clause_title: clause.title,
-        clause_content: clause.content.substring(0, 2000), // Limite de caracteres
-        section_number: clause.section,
-        is_standard: true
-      }));
-
-      const { data, error } = await supabase
-        .from('contract_clauses')
-        .insert(clausesToInsert)
-        .select();
-
-      if (error) {
-        console.error("❌ Erro ao salvar cláusulas:", error);
-        return [];
-      }
-
-      console.log(`✅ ${data?.length || 0} cláusulas salvas com sucesso`);
-      return data || [];
-      
-    } catch (error) {
-      console.error("❌ Erro na extração de cláusulas:", error);
-      return [];
-    }
-  },
-
-  // Identificar cláusulas comuns (mantido igual)
-  identifyCommonClauses(text: string) {
-    const clauses = [];
-    const lowerText = text.toLowerCase();
-
-    // Procurar por cláusulas de preço
-    if (lowerText.includes('valor') || lowerText.includes('preço') || lowerText.includes('mensalidade')) {
-      const priceMatch = text.match(/(?:valor|preço|mensalidade)[^.]*\./gi);
-      if (priceMatch) {
-        clauses.push({
-          type: 'preco',
-          title: 'Cláusula de Preço',
-          content: priceMatch[0],
-          section: '1'
-        });
-      }
-    }
-
-    // Procurar por cláusulas de fidelidade
-    if (lowerText.includes('fidelidade') || lowerText.includes('permanência')) {
-      const fidelityMatch = text.match(/(?:fidelidade|permanência)[^.]*\./gi);
-      if (fidelityMatch) {
-        clauses.push({
-          type: 'fidelidade',
-          title: 'Cláusula de Fidelidade',
-          content: fidelityMatch[0],
-          section: '2'
-        });
-      }
-    }
-
-    // Procurar por cláusulas de cancelamento
-    if (lowerText.includes('cancelamento') || lowerText.includes('rescisão')) {
-      const cancelMatch = text.match(/(?:cancelamento|rescisão)[^.]*\./gi);
-      if (cancelMatch) {
-        clauses.push({
-          type: 'cancelamento',
-          title: 'Cláusula de Cancelamento',
-          content: cancelMatch[0],
-          section: '3'
-        });
-      }
-    }
-
-    return clauses;
-  },
-
-  // 🔧 CORREÇÃO: Buscar contratos com paginação e filtros
+  // Buscar contratos do usuário
   async getUserBaseContracts(options?: {
     limit?: number;
     offset?: number;
@@ -472,7 +355,6 @@ export const contractService = {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      // Filtros opcionais
       if (options?.contractType) {
         query = query.eq('contract_type', options.contractType);
       }
@@ -501,37 +383,7 @@ export const contractService = {
     }
   },
 
-  // 🔧 CORREÇÃO: Buscar cláusulas com cache
-  async getContractClauses(contractId: string): Promise<ContractClause[]> {
-    try {
-      if (!contractId) {
-        console.warn("⚠️ ID do contrato não fornecido");
-        return [];
-      }
-      
-      await ensureConnection();
-
-      const { data, error } = await supabase
-        .from('contract_clauses')
-        .select('*')
-        .eq('base_contract_id', contractId)
-        .order('clause_type');
-
-      if (error) {
-        console.error("❌ Erro ao buscar cláusulas:", error);
-        return [];
-      }
-
-      console.log(`✅ ${data?.length || 0} cláusulas carregadas para contrato ${contractId}`);
-      return data || [];
-      
-    } catch (error) {
-      console.error("❌ Erro ao buscar cláusulas:", error);
-      return [];
-    }
-  },
-
-  // 🔧 CORREÇÃO: Salvar análise com validação
+  // Salvar análise no histórico
   async saveAnalysisHistory(analysisData: {
     analyzed_filename: string;
     analysis_content: any;
@@ -548,7 +400,6 @@ export const contractService = {
         return { success: false, error: "Usuário não autenticado" };
       }
 
-      // Validação dos dados de entrada
       if (!analysisData.analyzed_filename) {
         return { success: false, error: "Nome do arquivo é obrigatório" };
       }

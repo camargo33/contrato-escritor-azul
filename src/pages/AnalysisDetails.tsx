@@ -128,7 +128,7 @@ const AnalysisDetails = () => {
               // Se é string, usar direto
               return String(analysis.analysis_content || '');
             })()}
-            timestamp={analysis.analysis_timestamp}
+            timestamp={analysis.created_at}
             filename={analysis.analyzed_filename}
             onNewAnalysis={() => navigate('/analise')}
           />

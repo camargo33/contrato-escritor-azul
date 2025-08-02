@@ -142,9 +142,9 @@ serve(async (req) => {
           const numeroCompleto = parte1 + parte2;
           const totalDigitos = numeroCompleto.length;
           
-          console.log(`📋 Telefone encontrado: ${telefone}`);
-          console.log(`  - DDD: ${ddd}`);
-          console.log(`  - Número: ${parte1}-${parte2} (${totalDigitos} dígitos)`);
+          console.log(`📋 Telefone encontrado: ${telefone.trim()} → DDD: ${ddd}`);
+          console.log(`📋 Número completo: ${numeroCompleto} (${totalDigitos} dígitos)`);
+          console.log(`📋 Partes: ${parte1} + ${parte2} = ${numeroCompleto}`);
           
           // ✅ VALIDAÇÃO DE DDD (conservadora - apenas fora da faixa 11-99)
           if (ddd < 11 || ddd > 99) {
