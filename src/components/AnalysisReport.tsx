@@ -98,10 +98,38 @@ interface AnalysisData {
 }
 
 const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: AnalysisReportProps) => {
-  console.log("🔍 [AnalysisReport] INTERFACE ULTRA LIMPA - ZERO JSON BRUTO");
+  console.log("🔍 [AnalysisReport] INTERFACE ULTRA LIMPA - CONTADORES CORRETOS");
+
+  // 🔧 FUNÇÃO PARA VALIDAR SE UM ERRO É REALMENTE VÁLIDO
+  const isValidError = (error: any): boolean => {
+    return (
+      error &&
+      typeof error === 'object' &&
+      error.campo &&
+      error.valor_encontrado &&
+      typeof error.campo === 'string' &&
+      error.campo.trim() !== '' &&
+      error.campo !== 'undefined' &&
+      error.campo !== 'null'
+    );
+  };
+
+  // 🔧 FUNÇÃO PARA VALIDAR SE UM ALERTA É REALMENTE VÁLIDO
+  const isValidAlert = (alert: any): boolean => {
+    return (
+      alert &&
+      typeof alert === 'object' &&
+      alert.campo &&
+      alert.tipo &&
+      typeof alert.campo === 'string' &&
+      alert.campo.trim() !== '' &&
+      alert.campo !== 'undefined' &&
+      alert.campo !== 'null'
+    );
+  };
 
   const parseAnalysisContent = (content: string): { analysisData: AnalysisData | null; errorCount: number; fullContent: string } => {
-    console.log("🔍 [FRONTEND] PARSING ULTRA LIMPO - SEM JSON NA INTERFACE");
+    console.log("🔍 [FRONTEND] PARSING COM VALIDAÇÃO RIGOROSA DE CONTADORES");
     
     // 🛡️ PROTEÇÃO: Verificar se content existe
     if (!content) {
@@ -158,9 +186,9 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
         throw new Error("JSON não encontrado");
       }
       
-      console.log("✅ [FRONTEND] Dados extraídos - construindo interface limpa");
+      console.log("✅ [FRONTEND] Dados extraídos - validando rigorosamente");
       
-      // 🔍 ETAPA 2: IDENTIFICAR FORMATO E EXTRAIR CAMPOS LIMPOS
+      // 🔍 ETAPA 2: IDENTIFICAR FORMATO E EXTRAIR CAMPOS COM VALIDAÇÃO RIGOROSA
       let errosOriginais: ErrorAnalysis[] = [];
       let alertasOriginais: AlertItem[] = [];
       let modeloIdentificado: ModeloIdentificado | undefined;
@@ -170,21 +198,29 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
       const possibleErrorFields = ['erros', 'errors', 'erro_list', 'validacoes', 'problems'];
       const possibleAlertFields = ['alertas', 'alerts', 'warnings', 'avisos', 'observacoes'];
       
-      // Buscar erros
+      // Buscar erros COM VALIDAÇÃO
       for (const field of possibleErrorFields) {
         if (rawData[field] && Array.isArray(rawData[field])) {
-          console.log(`✅ [FRONTEND] Erros encontrados em '${field}':`, rawData[field].length);
-          errosOriginais = rawData[field];
-          break;
+          console.log(`🔍 [FRONTEND] Validando erros em '${field}':`, rawData[field].length);
+          const validErrors = rawData[field].filter(isValidError);
+          console.log(`✅ [FRONTEND] Erros válidos em '${field}':`, validErrors.length);
+          if (validErrors.length > 0) {
+            errosOriginais = validErrors;
+            break;
+          }
         }
       }
       
-      // Buscar alertas
+      // Buscar alertas COM VALIDAÇÃO
       for (const field of possibleAlertFields) {
         if (rawData[field] && Array.isArray(rawData[field])) {
-          console.log(`✅ [FRONTEND] Alertas encontrados em '${field}':`, rawData[field].length);
-          alertasOriginais = rawData[field];
-          break;
+          console.log(`🔍 [FRONTEND] Validando alertas em '${field}':`, rawData[field].length);
+          const validAlerts = rawData[field].filter(isValidAlert);
+          console.log(`✅ [FRONTEND] Alertas válidos em '${field}':`, validAlerts.length);
+          if (validAlerts.length > 0) {
+            alertasOriginais = validAlerts;
+            break;
+          }
         }
       }
       
@@ -208,7 +244,7 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
         }
       }
       
-      // 🧮 BUSCA EM METADATA (NOVA ESTRUTURA DA EDGE FUNCTION)
+      // 🧮 BUSCA EM METADATA COM VALIDAÇÃO
       if (rawData.metadata && typeof rawData.metadata === 'object') {
         console.log("🔍 [FRONTEND] Verificando metadata...");
         
@@ -222,17 +258,23 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
           const validations = rawData.metadata.additional_validations;
           
           if (validations.errors && Array.isArray(validations.errors)) {
-            errosOriginais = validations.errors;
+            const validErrors = validations.errors.filter(isValidError);
+            if (validErrors.length > 0) {
+              errosOriginais = validErrors;
+            }
           }
           if (validations.warnings && Array.isArray(validations.warnings)) {
-            alertasOriginais = validations.warnings;
+            const validAlerts = validations.warnings.filter(isValidAlert);
+            if (validAlerts.length > 0) {
+              alertasOriginais = validAlerts;
+            }
           }
         }
       }
       
-      // 🔍 EXTRAÇÃO FINAL DE DADOS ANINHADOS
+      // 🔍 EXTRAÇÃO FINAL COM VALIDAÇÃO RIGOROSA
       if (errosOriginais.length === 0 && alertasOriginais.length === 0) {
-        console.log("🔍 [FRONTEND] Tentando extração profunda...");
+        console.log("🔍 [FRONTEND] Tentando extração profunda com validação...");
         
         // Buscar em todos os objetos aninhados
         const searchInObject = (obj: any, depth = 0): void => {
@@ -240,18 +282,18 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
           
           for (const [key, value] of Object.entries(obj)) {
             if (Array.isArray(value) && value.length > 0) {
-              const firstItem = value[0];
-              if (firstItem && typeof firstItem === 'object') {
-                // Verificar se parece com erro
-                if (firstItem.campo || firstItem.field || firstItem.error) {
-                  console.log(`🔍 [FRONTEND] Possíveis erros em '${key}':`, value.length);
-                  if (errosOriginais.length === 0) errosOriginais = value;
-                }
-                // Verificar se parece com alerta
-                if (firstItem.tipo || firstItem.type || firstItem.alert) {
-                  console.log(`🔍 [FRONTEND] Possíveis alertas em '${key}':`, value.length);
-                  if (alertasOriginais.length === 0) alertasOriginais = value;
-                }
+              // Validar se é array de erros
+              const validErrors = value.filter(isValidError);
+              if (validErrors.length > 0 && errosOriginais.length === 0) {
+                console.log(`🔍 [FRONTEND] Erros válidos em '${key}':`, validErrors.length);
+                errosOriginais = validErrors;
+              }
+              
+              // Validar se é array de alertas
+              const validAlerts = value.filter(isValidAlert);
+              if (validAlerts.length > 0 && alertasOriginais.length === 0) {
+                console.log(`🔍 [FRONTEND] Alertas válidos em '${key}':`, validAlerts.length);
+                alertasOriginais = validAlerts;
               }
             } else if (typeof value === 'object' && value !== null) {
               searchInObject(value, depth + 1);
@@ -262,21 +304,21 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
         searchInObject(rawData);
       }
       
-      console.log("📊 [FRONTEND] EXTRAÇÃO LIMPA COMPLETA:");
-      console.log(`  - Erros: ${errosOriginais.length}`);
-      console.log(`  - Alertas: ${alertasOriginais.length}`);
+      console.log("📊 [FRONTEND] EXTRAÇÃO COM VALIDAÇÃO RIGOROSA:");
+      console.log(`  - Erros válidos: ${errosOriginais.length}`);
+      console.log(`  - Alertas válidos: ${alertasOriginais.length}`);
       console.log(`  - Modelo: ${modeloIdentificado ? 'SIM' : 'NÃO'}`);
       console.log(`  - Status: ${statusGeral}`);
       
-      // 🏗️ CONSTRUIR ANÁLISE FINAL LIMPA
+      // 🏗️ CONSTRUIR ANÁLISE FINAL LIMPA COM CONTADORES CORRETOS
       const analysisData: AnalysisData = {
         modelo_identificado: modeloIdentificado,
         erros: errosOriginais,
         alertas: alertasOriginais,
         validacoes_corretas: rawData.validacoes_corretas || [],
         resumo: {
-          total_erros: errosOriginais.length,
-          total_alertas: alertasOriginais.length,
+          total_erros: errosOriginais.length, // CONTAGEM CORRETA
+          total_alertas: alertasOriginais.length, // CONTAGEM CORRETA
           criticos: errosOriginais.filter(e => e.severidade === 'critico').length,
           altos: errosOriginais.filter(e => e.severidade === 'alto').length,
           medios: errosOriginais.filter(e => e.severidade === 'medio').length,
@@ -288,17 +330,17 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
         validacao_taxas: rawData.validacao_taxas
       };
       
-      // Atualizar status baseado em erros críticos
+      // Atualizar status baseado em erros críticos REAIS
       const temErrosCriticos = analysisData.resumo!.criticos! > 0 || analysisData.resumo!.altos! > 0;
       if (temErrosCriticos) {
         analysisData.status_geral = 'reprovado';
       }
       
-      console.log("✅ [FRONTEND] ANÁLISE LIMPA CONSTRUÍDA - ZERO JSON NA UI!");
+      console.log("✅ [FRONTEND] ANÁLISE COM CONTADORES CORRETOS CONSTRUÍDA!");
       
       return {
         analysisData,
-        errorCount: errosOriginais.length,
+        errorCount: errosOriginais.length, // CONTAGEM CORRETA
         fullContent: '' // 🚨 CRÍTICO: NÃO PASSAR JSON BRUTO
       };
       
@@ -326,12 +368,19 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
 
   const { analysisData, errorCount, fullContent } = parseAnalysisContent(content);
 
-  console.log("🎯 [FRONTEND] RENDERIZAÇÃO ULTRA LIMPA:");
+  // 🧮 CONTADORES FINAIS RIGOROSAMENTE VALIDADOS
+  const errosValidos = analysisData?.erros?.filter(isValidError) || [];
+  const alertasValidos = analysisData?.alertas?.filter(isValidAlert) || [];
+  const temErrosReais = errosValidos.length > 0;
+  const temAlertasReais = alertasValidos.length > 0;
+
+  console.log("🎯 [FRONTEND] RENDERIZAÇÃO COM CONTADORES CORRETOS:");
   console.log("  - analysisData exists:", !!analysisData);
-  console.log("  - erros count:", analysisData?.erros?.length || 0);
-  console.log("  - alertas count:", analysisData?.alertas?.length || 0);
+  console.log("  - erros válidos:", errosValidos.length);
+  console.log("  - alertas válidos:", alertasValidos.length);
+  console.log("  - tem erros reais:", temErrosReais);
+  console.log("  - tem alertas reais:", temAlertasReais);
   console.log("  - status:", analysisData?.status_geral);
-  console.log("  - 🚫 JSON BRUTO: NUNCA MOSTRADO");
 
   return (
     <Card className="mt-6 bg-white border-2">
@@ -360,42 +409,42 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
               <TaxValidationCard taxData={analysisData.validacao_taxas} />
             )}
 
-            {/* 🚨 APENAS MOSTRAR RESUMO SE HOUVER ERROS OU ALERTAS */}
-            {(analysisData.erros && analysisData.erros.length > 0) || (analysisData.alertas && analysisData.alertas.length > 0) ? (
+            {/* 🚨 APENAS MOSTRAR RESUMO SE HOUVER ERROS OU ALERTAS REAIS */}
+            {(temErrosReais || temAlertasReais) ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Resumo de Erros */}
-                {analysisData.erros && analysisData.erros.length > 0 && (
+                {/* Resumo de Erros - SÓ SE TIVER ERROS REAIS */}
+                {temErrosReais && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <div className="text-center mb-3">
-                      <div className="text-3xl font-bold text-red-700">{analysisData.erros.length}</div>
+                      <div className="text-3xl font-bold text-red-700">{errosValidos.length}</div>
                       <div className="text-sm text-red-600">Erros Encontrados</div>
                     </div>
                     <div className="grid grid-cols-4 gap-2 text-xs">
                       <div className="text-center">
-                        <div className="font-bold text-red-600">{analysisData.resumo?.criticos || 0}</div>
+                        <div className="font-bold text-red-600">{errosValidos.filter(e => e.severidade === 'critico').length}</div>
                         <div className="text-red-500">Críticos</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-bold text-orange-600">{analysisData.resumo?.altos || 0}</div>
+                        <div className="font-bold text-orange-600">{errosValidos.filter(e => e.severidade === 'alto').length}</div>
                         <div className="text-orange-500">Altos</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-bold text-yellow-600">{analysisData.resumo?.medios || 0}</div>
+                        <div className="font-bold text-yellow-600">{errosValidos.filter(e => e.severidade === 'medio').length}</div>
                         <div className="text-yellow-500">Médios</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-bold text-blue-600">{analysisData.resumo?.baixos || 0}</div>
+                        <div className="font-bold text-blue-600">{errosValidos.filter(e => e.severidade === 'baixo').length}</div>
                         <div className="text-blue-500">Baixos</div>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Resumo de Alertas */}
-                {analysisData.alertas && analysisData.alertas.length > 0 && (
+                {/* Resumo de Alertas - SÓ SE TIVER ALERTAS REAIS */}
+                {temAlertasReais && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <div className="text-center mb-3">
-                      <div className="text-3xl font-bold text-yellow-700">{analysisData.alertas.length}</div>
+                      <div className="text-3xl font-bold text-yellow-700">{alertasValidos.length}</div>
                       <div className="text-sm text-yellow-600">Alertas Detectados</div>
                     </div>
                   </div>
@@ -403,14 +452,14 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
               </div>
             ) : null}
 
-            {/* Lista de Erros - APENAS SE EXISTIR */}
-            {analysisData.erros && analysisData.erros.length > 0 && (
-              <ErrorListCard erros={analysisData.erros} />
+            {/* Lista de Erros - APENAS SE EXISTIR ERROS REAIS */}
+            {temErrosReais && (
+              <ErrorListCard erros={errosValidos} />
             )}
 
-            {/* Lista de Alertas - APENAS SE EXISTIR */}
-            {analysisData.alertas && analysisData.alertas.length > 0 && (
-              <AlertListCard alertas={analysisData.alertas} />
+            {/* Lista de Alertas - APENAS SE EXISTIR ALERTAS REAIS */}
+            {temAlertasReais && (
+              <AlertListCard alertas={alertasValidos} />
             )}
 
             {/* Validações Corretas */}
@@ -443,8 +492,8 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
               </div>
             )}
 
-            {/* 🎉 MENSAGEM QUANDO NÃO HÁ ERROS - INTERFACE LIMPA */}
-            {(!analysisData.erros || analysisData.erros.length === 0) && (!analysisData.alertas || analysisData.alertas.length === 0) && (
+            {/* 🎉 MENSAGEM QUANDO NÃO HÁ ERROS REAIS - INTERFACE LIMPA */}
+            {!temErrosReais && !temAlertasReais && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="flex items-center gap-2 text-green-700">
                   <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
@@ -465,7 +514,7 @@ const AnalysisReport = ({ content, timestamp, filename, onNewAnalysis }: Analysi
 
         <AnalysisFooter 
           statusGeral={analysisData?.status_geral}
-          errorCount={errorCount}
+          errorCount={errosValidos.length} // USAR CONTAGEM CORRETA
           onNewAnalysis={onNewAnalysis}
         />
       </CardContent>
