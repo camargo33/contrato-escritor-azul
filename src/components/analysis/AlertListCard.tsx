@@ -42,23 +42,23 @@ const AlertListCard = ({ alertas }: AlertListCardProps) => {
     
     // Telefone no formato correto não é alerta
     if (campo.includes('telefone') || campo.includes('celular')) {
-      const telefoneRegex = /^\\(?\\d{2}\\)?\\s?\\d{4,5}-?\\d{4}$/;
-      if (telefoneRegex.test(valorEncontrado.replace(/\\s/g, ''))) {
+      const telefoneRegex = /^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/;
+      if (telefoneRegex.test(valorEncontrado.replace(/\s/g, ''))) {
         return false;
       }
     }
     
     // CPF no formato correto não é alerta
     if (campo.includes('cpf')) {
-      const cpfRegex = /^\\d{3}\\.?\\d{3}\\.?\\d{3}-?\\d{2}$/;
-      if (cpfRegex.test(valorEncontrado.replace(/\\s/g, ''))) {
+      const cpfRegex = /^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/;
+      if (cpfRegex.test(valorEncontrado.replace(/\s/g, ''))) {
         return false;
       }
     }
     
     // E-mail válido não é alerta
     if (campo.includes('email') || campo.includes('e-mail')) {
-      const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (emailRegex.test(valorEncontrado)) {
         return false;
       }
