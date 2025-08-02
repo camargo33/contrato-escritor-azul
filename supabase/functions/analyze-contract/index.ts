@@ -1,12 +1,14 @@
 // 🚀 FASE 2: EDGE FUNCTION SIMPLIFICADA COM NOVO SISTEMA DE CATEGORIZAÇÃO
 // Análise inteligente por velocidade + empresa, sem salvamento de histórico
 // 🔧 VERSÃO CORRIGIDA - Imports fixados para Deno/Supabase Edge Functions
+// 💰 VALIDAÇÕES DE TAXAS INTEGRADAS
 
 // ✅ IMPORT CORRETO PARA SUPABASE EDGE FUNCTIONS
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { buildContractAnalysisPrompt } from './prompt-builder.ts'
 import { identifyContractModel, getModelStats } from './contract-models.ts'
 import { validateContract } from './contract-validations.ts'
+import { validateTaxLogic } from './tax-validations.ts'
 
 // Configuração CORS para permitir requisições do frontend
 const corsHeaders = {
@@ -18,20 +20,23 @@ const corsHeaders = {
 // Health check simplificado
 async function healthCheck() {
   try {
-    console.log('🔍 FASE 2 - Health check executado - VERSÃO CORRIGIDA')
+    console.log('🔍 FASE 2 - Health check executado - VERSÃO COM VALIDAÇÕES DE TAXAS')
     
     // Estatísticas dos modelos disponíveis
     const stats = getModelStats()
     
     return {
       success: true,
-      message: "Edge Function FASE 2 funcionando - Sistema por velocidade + empresa",
+      message: "Edge Function FASE 2 funcionando - Sistema por velocidade + empresa + validações de taxas",
       status: "healthy",
-      version: "2.1.0-FIXED",
+      version: "2.2.0-TAX-VALIDATIONS",
       features: [
         "Categorização por velocidade (300mb-1gb)",
         "Suporte CIABRASNET + WNKBR", 
         "Validações específicas por modelo",
+        "🆕 Validações rigorosas de taxas e IP",
+        "🆕 Validação de lógica de fidelidade",
+        "🆕 Detecção de inconsistências de valores",
         "Sem histórico persistente",
         "Análise em tempo real",
         "⚡ Imports corrigidos para Edge Functions"
@@ -39,8 +44,14 @@ async function healthCheck() {
       models_available: stats,
       timestamp: new Date().toISOString(),
       deploy_info: {
-        last_update: "2025-08-02T03:25:00Z",
-        fixes_applied: ["Supabase import path corrected", "Cache cleared"]
+        last_update: "2025-08-02T03:45:00Z",
+        fixes_applied: [
+          "Supabase import path corrected", 
+          "Cache cleared",
+          "🆕 Tax validations integrated",
+          "🆕 IP logic validation added",
+          "🆕 Fidelity math validation added"
+        ]
       }
     }
   } catch (error) {
@@ -55,7 +66,7 @@ async function healthCheck() {
 
 // Função principal
 Deno.serve(async (req) => {
-  console.log(`📥 FASE 2 - Requisição recebida: ${req.method} ${req.url} - VERSÃO CORRIGIDA`)
+  console.log(`📥 FASE 2 - Requisição recebida: ${req.method} ${req.url} - VERSÃO COM VALIDAÇÕES DE TAXAS`)
 
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -86,7 +97,7 @@ Deno.serve(async (req) => {
         })
       }
 
-      console.log('🎯 FASE 2 - Iniciando análise inteligente...')
+      console.log('🎯 FASE 2 - Iniciando análise inteligente com validações de taxas...')
       console.log('📄 Tamanho do texto:', body.contractText.length, 'caracteres')
 
       // 🔍 ETAPA 1: IDENTIFICAÇÃO AUTOMÁTICA DO MODELO
@@ -99,6 +110,20 @@ Deno.serve(async (req) => {
         console.log('📍 Cidade:', identifiedModel.city, '- DDD', identifiedModel.ddd)
       } else {
         console.log('⚠️ Modelo não identificado automaticamente - análise manual necessária')
+      }
+
+      // 💰 ETAPA 1.5: VALIDAÇÕES RIGOROSAS DE TAXAS (NOVA!)
+      console.log('💰 Executando validações rigorosas de taxas...')
+      const taxValidationErrors = validateTaxLogic(body.contractText)
+      console.log(`💰 Validações de taxas concluídas: ${taxValidationErrors.length} inconsistências encontradas`)
+      
+      if (taxValidationErrors.length > 0) {
+        console.log('🚨 INCONSISTÊNCIAS DE TAXAS DETECTADAS:')
+        taxValidationErrors.forEach((error, index) => {
+          console.log(`  ${index + 1}. ${error.message}`)
+          console.log(`     Encontrado: ${error.found}`)
+          console.log(`     Esperado: ${error.expected}`)
+        })
       }
 
       // 🚀 ETAPA 2: CONSTRUIR PROMPT DINÂMICO
@@ -227,13 +252,43 @@ Deno.serve(async (req) => {
         }
       }
 
+      // 💰 ETAPA 5.5: INTEGRAR ERROS DE TAXAS NO RESULTADO FINAL
+      if (taxValidationErrors.length > 0) {
+        // Converter ValidationResult para formato de erro padrão
+        const taxErrors = taxValidationErrors.map(taxError => ({
+          campo: taxError.message.includes('IP') ? 'IP/Taxas' : 
+                 taxError.message.includes('fidelidade') ? 'Fidelidade' : 
+                 taxError.message.includes('valores mensais') ? 'Valores Mensais' : 'Taxas',
+          valor_encontrado: taxError.found || 'Inconsistência detectada',
+          valor_esperado: taxError.expected || 'Valor/lógica correta',
+          sugestao_correcao: taxError.message,
+          severidade: taxError.severity || 'error'
+        }))
+
+        // Adicionar os erros de taxas ao resultado da IA
+        if (!analysisResult.erros) {
+          analysisResult.erros = []
+        }
+        analysisResult.erros.push(...taxErrors)
+
+        // Atualizar contadores se existirem
+        if (analysisResult.resumo && typeof analysisResult.resumo === 'object') {
+          analysisResult.resumo.total_erros = (analysisResult.resumo.total_erros || 0) + taxErrors.length
+          if (taxErrors.length > 0) {
+            analysisResult.resumo.status_geral = 'reprovado'
+          }
+        }
+
+        console.log(`💰 ${taxErrors.length} erros de taxas adicionados ao resultado final`)
+      }
+
       // 🎯 ETAPA 6: MONTAR RESULTADO FINAL
       const finalResult = {
         success: true,
         ...analysisResult,
         metadata: {
           timestamp: new Date().toISOString(),
-          version: "2.1.0-FIXED",
+          version: "2.2.0-TAX-VALIDATIONS",
           model_used: "anthropic/claude-3.5-sonnet",
           auto_identified_model: identifiedModel ? {
             id: identifiedModel.id,
@@ -244,23 +299,44 @@ Deno.serve(async (req) => {
             ddd: identifiedModel.ddd
           } : null,
           additional_validations: additionalValidations,
+          tax_validations: {
+            executed: true,
+            errors_found: taxValidationErrors.length,
+            validation_types: [
+              "IP Fixo vs Variável",
+              "Lógica de fidelidade",
+              "Soma de valores mensais",
+              "Consistência de taxas"
+            ]
+          },
           analysis_features: [
             "Identificação automática de modelo",
             "Validações específicas por velocidade",
             "Comparação empresa vs DDD",
             "Cálculo automático de valores",
             "Validação de telefone celular",
+            "🆕 Validações rigorosas de taxas",
+            "🆕 Detecção de inconsistências IP",
+            "🆕 Validação de matemática da fidelidade",
             "⚡ Edge Function Corrigida"
           ],
           text_size: body.contractText.length,
           prompt_size: prompt.length,
-          fixes_applied: ["Supabase import corrected", "Telefone validation fixed", "SOOLTEIRO removed"]
+          fixes_applied: [
+            "Supabase import corrected", 
+            "Telefone validation fixed", 
+            "SOOLTEIRO removed",
+            "🆕 Tax validations integrated",
+            "🆕 IP logic validation active",
+            "🆕 Fidelity inconsistencies detected"
+          ]
         }
       }
 
-      console.log('🎉 FASE 2 - Análise concluída com sucesso! (VERSÃO CORRIGIDA)')
+      console.log('🎉 FASE 2 - Análise concluída com sucesso! (VERSÃO COM VALIDAÇÕES DE TAXAS)')
       console.log('📊 Modelo:', identifiedModel?.name || 'Manual')
-      console.log('🔍 Validações:', additionalValidations?.validatedFields.length || 0)
+      console.log('🔍 Validações tradicionais:', additionalValidations?.validatedFields.length || 0)
+      console.log('💰 Validações de taxas:', taxValidationErrors.length)
 
       // 📤 RETORNAR RESULTADO (SEM SALVAR NO BANCO)
       return new Response(JSON.stringify({
@@ -284,14 +360,14 @@ Deno.serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('💥 Erro fatal na Edge Function FASE 2 (VERSÃO CORRIGIDA):', error)
+    console.error('💥 Erro fatal na Edge Function FASE 2 (VERSÃO COM VALIDAÇÕES DE TAXAS):', error)
     console.error('Stack trace:', error.stack)
     
     return new Response(JSON.stringify({
       success: false,
       error: "Erro interno do servidor",
       message: error.message,
-      version: "2.1.0-FIXED",
+      version: "2.2.0-TAX-VALIDATIONS",
       timestamp: new Date().toISOString()
     }), {
       status: 500,
@@ -300,7 +376,8 @@ Deno.serve(async (req) => {
   }
 })
 
-console.log('🚀 FASE 2 - Edge Function iniciada (VERSÃO CORRIGIDA)')
+console.log('🚀 FASE 2 - Edge Function iniciada (VERSÃO COM VALIDAÇÕES DE TAXAS)')
 console.log('✅ Sistema de categorização por velocidade + empresa ativo')
+console.log('💰 Validações rigorosas de taxas ativas')
 console.log('🔧 Imports corrigidos para Edge Functions')
 console.log('📋 Modelos disponíveis:', getModelStats().total_models)
